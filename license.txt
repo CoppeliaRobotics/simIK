@@ -1,0 +1,47 @@
+All the files in each directory are licensed under the terms of the
+license text contained at the beginning of the same file, or if not
+present, under the terms of the license file (license, license.txt,
+copying, etc.) contained in the same directory if it is present, or
+under the same terms of the files in the parent directory otherwise.
+
+-------------------------------------------------------------------
+KINEMATICS PLUGIN source code files
+
+Copyright (C) 2020 Coppelia Robotics GmbH / Marc Freese
+
+All rights reserved.
+
+The KINEMATICS PLUGIN is licensed under the terms of EITHER:
+  1. KINEMATICS PLUGIN commercial license (contact us for details)
+  2. KINEMATICS PLUGIN educational license (see below)
+
+KINEMATICS PLUGIN educational license:
+=====================================
+The KINEMATICS PLUGIN educational license applies only to EDUCATIONAL
+ENTITIES composed by following people and institutions:
+
+1. Hobbyists, students, teachers and professors
+2. Schools and universities
+
+EDUCATIONAL ENTITIES do NOT include companies, research institutions,
+non-profit organisations, foundations, etc.
+
+An EDUCATIONAL ENTITY may use, modify, compile and distribute the
+modified/unmodified KINEMATICS PLUGIN under following conditions:
+ 
+1. Distribution should be free of charge.
+2. Distribution should be to EDUCATIONAL ENTITIES only.
+3. Usage should be non-commercial.
+4. Altered source versions must be plainly marked as such and distributed
+   along with any compiled code.
+5. When using the KINEMATICS PLUGIN in conjunction with CoppeliaSim, the "EDU"
+   watermark in the CoppeliaSim scene view should not be removed.
+6. The origin of the KINEMATICS PLUGIN must not be misrepresented. you must
+   not claim that you wrote the original software.
+
+THE KINEMATICS PLUGIN IS DISTRIBUTED "AS IS", WITHOUT ANY EXPRESS
+OR IMPLIED WARRANTY. THE USER WILL USE IT AT HIS/HER OWN RISK. THE ORIGINAL
+AUTHOR NOR COPPELIA ROBOTICS GMBH WILL NOT BE LIABLE FOR INJURIES, DEATHS,
+DATA LOSS, DAMAGES, LOSS OF PROFITS OR ANY OTHER KIND OF LOSS WHILE USING
+OR MISUSING THIS SOFTWARE.
+-------------------------------------------------------------------
