@@ -2524,12 +2524,12 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simLib=loadSimLibrary(temp.c_str());
     if (simLib==NULL)
     {
-        outputMsg(sim_verbosity_errors,"simExtIK plugin error: could not find or correctly load the CoppeliaSim library. Cannot start 'IK' plugin.");
+        outputMsg(sim_verbosity_errors,"simExtIK: error: could not find or correctly load the CoppeliaSim library. Cannot start 'IK' plugin.");
         return(0);
     }
     if (getSimProcAddresses(simLib)==0)
     {
-        outputMsg(sim_verbosity_errors,"simExtIK plugin error: could not find all required functions in the CoppeliaSim library. Cannot start 'IK' plugin.");
+        outputMsg(sim_verbosity_errors,"simExtIK: error: could not find all required functions in the CoppeliaSim library. Cannot start 'IK' plugin.");
         unloadSimLibrary(simLib);
         return(0);
     }
