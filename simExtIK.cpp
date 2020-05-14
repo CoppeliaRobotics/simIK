@@ -34,17 +34,20 @@ static LIBRARY simLib;
 
 static std::vector<int> _environmentsToDestroyAtSimulationEnd;
 
-bool canOutputMsg(int msgType)
+void _logCallback(int verbosity,const char* msg)
 {
-    int plugin_verbosity = sim_verbosity_default;
-    simGetModuleInfo("IK",sim_moduleinfo_verbosity,nullptr,&plugin_verbosity);
-    return(plugin_verbosity>=msgType);
-}
-
-void outputMsg(int msgType,const char* msg)
-{
-    if (canOutputMsg(msgType))
-        printf("%s\n",msg);
+    int v=sim_verbosity_none;
+    if (verbosity==1)
+        v=sim_verbosity_errors;
+    if (verbosity==2)
+        v=sim_verbosity_warnings;
+    if (verbosity==3)
+        v=sim_verbosity_infos;
+    if (verbosity==4)
+        v=sim_verbosity_debug;
+    if (verbosity==5)
+        v=sim_verbosity_trace;
+    simAddLog("IK",v,msg);
 }
 
 // --------------------------------------------------------------------------------------
@@ -2524,12 +2527,12 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simLib=loadSimLibrary(temp.c_str());
     if (simLib==NULL)
     {
-        outputMsg(sim_verbosity_errors,"simExtIK: error: could not find or correctly load the CoppeliaSim library. Cannot start 'IK' plugin.");
+        simAddLog("IK",sim_verbosity_errors,"could not find or correctly load the CoppeliaSim library. Cannot start the plugin.");
         return(0);
     }
     if (getSimProcAddresses(simLib)==0)
     {
-        outputMsg(sim_verbosity_errors,"simExtIK: error: could not find all required functions in the CoppeliaSim library. Cannot start 'IK' plugin.");
+        simAddLog("IK",sim_verbosity_errors,"could not find all required functions in the CoppeliaSim library. Cannot start the plugin.");
         unloadSimLibrary(simLib);
         return(0);
     }
@@ -2625,6 +2628,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.result_success@simExtIK",std::to_string(ik_result_success).c_str(),0);
     simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(ik_result_fail).c_str(),0);
 
+    ikSetLogCallback(_logCallback);
+
     return(1);
 }
 
@@ -2642,15 +2647,32 @@ SIM_DLLEXPORT void* simMessage(int message,int*,void*,int*)
             ikEraseEnvironment();
         }
     }
+    if (message==sim_message_eventcallback_instancepass)
+    {
+        int consoleV=sim_verbosity_none;
+        int statusbarV=sim_verbosity_none;
+        simGetModuleInfo("IK",sim_moduleinfo_verbosity,nullptr,&consoleV);
+        simGetModuleInfo("IK",sim_moduleinfo_statusbarverbosity,nullptr,&statusbarV);
+        if ( (consoleV>sim_verbosity_none)||(statusbarV>sim_verbosity_none) )
+        {
+            if ( (consoleV>=sim_verbosity_trace)||(statusbarV>=sim_verbosity_trace) )
+                ikSetVerbosity(5);
+            else
+            {
+                if ( (consoleV>=sim_verbosity_debug)||(statusbarV>=sim_verbosity_debug) )
+                    ikSetVerbosity(4);
+                else
+                    ikSetVerbosity(1);
+            }
+        }
+        else
+            ikSetVerbosity(0);
+    }
     return(nullptr);
 }
 
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
-SIM_DLLEXPORT void ikPlugin_setVerbosity(int level)
-{
-    ikSetVerbosity(level);
-}
 
 SIM_DLLEXPORT int ikPlugin_createEnvironment()
 {

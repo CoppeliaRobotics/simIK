@@ -13,7 +13,6 @@ SIM_DLLEXPORT void simEnd();
 SIM_DLLEXPORT void* simMessage(int,int*,void*,int*);
 
 
-SIM_DLLEXPORT void ikPlugin_setVerbosity(int level);
 SIM_DLLEXPORT int ikPlugin_createEnvironment();
 SIM_DLLEXPORT bool ikPlugin_switchEnvironment(int handle);
 SIM_DLLEXPORT void ikPlugin_eraseEnvironment();
