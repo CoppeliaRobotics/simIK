@@ -2858,14 +2858,18 @@ SIM_DLLEXPORT bool ikPlugin_computeJacobian(int ikGroupHandle,int options)
 
 SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikGroupHandle,int* matrixSize)
 {
+    float* retVal=nullptr;
     size_t ms[2];
     simReal* m=ikGetJacobian(ikGroupHandle,ms);
-    matrixSize[0]=int(ms[0]);
-    matrixSize[1]=int(ms[1]);
-    float* retVal=reinterpret_cast<float*>(simCreateBuffer(int(sizeof(float)*ms[0]*ms[1])));
-    for (size_t i=0;i<ms[0]*ms[1];i++)
-        retVal[i]=float(m[i]);
-    ikReleaseBuffer(m);
+    if (m!=nullptr)
+    {
+        matrixSize[0]=int(ms[0]);
+        matrixSize[1]=int(ms[1]);
+        retVal=reinterpret_cast<float*>(simCreateBuffer(int(sizeof(float)*ms[0]*ms[1])));
+        for (size_t i=0;i<ms[0]*ms[1];i++)
+            retVal[i]=float(m[i]);
+        ikReleaseBuffer(m);
+    }
     return(retVal);
 }
 
