@@ -535,6 +535,45 @@ void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.getJointType
+// --------------------------------------------------------------------------------------
+#define LUA_GETJOINTTYPE_COMMAND_PLUGIN "simIK.getJointType@IK"
+#define LUA_GETJOINTTYPE_COMMAND "simIK.getJointType"
+
+const int inArgs_GETJOINTTYPE[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETJOINTTYPE_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    int retVal=-1;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTYPE,inArgs_GETJOINTTYPE[0],LUA_GETJOINTTYPE_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        if (ikSwitchEnvironment(envId))
+        {
+            result=ikGetJointType(jointHandle,&retVal);
+            if (!result)
+                simSetLastError(LUA_GETJOINTTYPE_COMMAND,ikGetLastError().c_str());
+        }
+        else
+            simSetLastError(LUA_GETJOINTTYPE_COMMAND,ikGetLastError().c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(retVal));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getJointMode
 // --------------------------------------------------------------------------------------
 #define LUA_GETJOINTMODE_COMMAND_PLUGIN "simIK.getJointMode@IK"
@@ -2553,6 +2592,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETLINKEDDUMMY_COMMAND_PLUGIN,strConCat("number linkedDummyHandle=",LUA_GETLINKEDDUMMY_COMMAND,"(number environmentHandle,number dummyHandle)"),LUA_GETLINKEDDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETLINKEDDUMMY_COMMAND_PLUGIN,strConCat("",LUA_SETLINKEDDUMMY_COMMAND,"(number environmentHandle,\nnumber dummyHandle,number linkedDummyHandle)"),LUA_SETLINKEDDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_CREATEJOINT_COMMAND_PLUGIN,strConCat("number jointHandle=",LUA_CREATEJOINT_COMMAND,"(number environmentHandle,number jointType,string jointName='')"),LUA_CREATEJOINT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTTYPE_COMMAND_PLUGIN,strConCat("number jointType=",LUA_GETJOINTTYPE_COMMAND,"(number environmentHandle,number jointHandle)"),LUA_GETJOINTTYPE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTMODE_COMMAND_PLUGIN,strConCat("number jointMode=",LUA_GETJOINTMODE_COMMAND,"(number environmentHandle,number jointHandle)"),LUA_GETJOINTMODE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTMODE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMODE_COMMAND,"(number environmentHandle,\nnumber jointHandle,number jointMode)"),LUA_SETJOINTMODE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("bool cyclic,table_2 interval=",LUA_GETJOINTINTERVAL_COMMAND,"(number environmentHandle,number jointHandle)"),LUA_GETJOINTINTERVAL_CALLBACK);
