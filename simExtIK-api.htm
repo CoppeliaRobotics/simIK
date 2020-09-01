@@ -321,7 +321,7 @@
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Useful when called after <a href="#simIK.getConfigForTipPose">simIK.getConfigForTipPose</a>: generates alternative manipulator configurations, for a same end-effector pose, for a manipulator that has revolute joints with a range larger than 360 degrees. The original submitted configuration will be part of the returned configurations..</td>
+<td class="apiTableRightDescr">Useful when called after <a href="#simIK.getConfigForTipPose">simIK.getConfigForTipPose</a>: generates alternative manipulator configurations, for a same end-effector pose, for a manipulator that has revolute joints with a range larger than 360 degrees. The original submitted configuration will be part of the returned configurations.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Synopsis</td>
@@ -332,8 +332,8 @@
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>jointHandles</strong>: a table with the handles of the manipulator joints.</div>
-<div><strong>tipHandle</strong>: the handle of the object acting as end-effector or tip of the kinematic chain, used to make sure the additional configurations have the same end-effector pose (e.g. in case some joints are dependent on others). Can be set to -1 if there are no joint dependencies involved.</div>
 <div><strong>inputConfig</strong>: the manipulator configuration (i.e. joint values).</div>
+<div><strong>tipHandle</strong>: the handle of the object acting as end-effector or tip of the kinematic chain, used to make sure the additional configurations have the same end-effector pose (e.g. in case some joints are dependent on others). Can be set to -1 if there are no joint dependencies involved.</div>
 <div><strong>lowLimits</strong>: a table with joint low limit values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
 <div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
 </td>
