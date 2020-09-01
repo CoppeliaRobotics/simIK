@@ -1,16 +1,20 @@
 local simIK={}
 
-function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,tipHandle,desiredPose,confS,x,index)
+function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index,tipHandle)
     if index>#jointHandles then
-        for i=1,#jointHandles,1 do
-            simIK.setJointPosition(ikEnvironment,jointHandles[i],confS[i])
-        end
-        local p=simIK.getObjectMatrix(ikEnvironment,tipHandle,-1)
-        local axis,angle=sim.getRotationAxis(desiredPose,p)
-        if math.abs(angle)<0.1*180/math.pi then -- checking is needed in case some joints are dependent on others
+        if tipHandle==-1 then
             return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
         else
-            return {}
+            for i=1,#jointHandles,1 do
+                simIK.setJointPosition(ikEnvironment,jointHandles[i],confS[i])
+            end
+            local p=simIK.getObjectMatrix(ikEnvironment,tipHandle,-1)
+            local axis,angle=sim.getRotationAxis(desiredPose,p)
+            if math.abs(angle)<0.1*180/math.pi then -- checking is needed in case some joints are dependent on others
+                return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+            else
+                return {}
+            end
         end
     else
         local c={}
@@ -19,7 +23,7 @@ function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandle
         end
         local solutions={}
         while c[index]<=x[index][2] do
-            local s=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,tipHandle,desiredPose,c,x,index+1)
+            local s=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,c,x,index+1,tipHandle)
             for i=1,#s,1 do
                 solutions[#solutions+1]=s[i]
             end
@@ -29,7 +33,7 @@ function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandle
     end
 end
 
-function simIK.getAlternateConfigs(ikEnvironment,jointHandles,tipHandle,inputConfig,lowLimits,ranges)
+function simIK.getAlternateConfigs(ikEnvironment,jointHandles,inputConfig,tipHandle,lowLimits,ranges)
     local retVal={}
     sim.setThreadAutomaticSwitch(false)
     local initConfig={}
@@ -91,8 +95,14 @@ function simIK.getAlternateConfigs(ikEnvironment,jointHandles,tipHandle,inputCon
     for i=1,#jointHandles,1 do
         simIK.setJointPosition(ikEnvironment,jointHandles[i],inputConfig[i])
     end
-    local desiredPose=simIK.getObjectMatrix(ikEnvironment,tipHandle,-1)
-    local configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,tipHandle,desiredPose,confS,x,1)
+    local desiredPose=0
+    if not tipHandle then
+        tipHandle=-1
+    end
+    if tipHandle~=-1 then
+        desiredPose=simIK.getObjectMatrix(ikEnvironment,tipHandle,-1)
+    end
+    local configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,1,tipHandle)
     
     for i=1,#jointHandles,1 do
         simIK.setJointPosition(ikEnvironment,jointHandles[i],initConfig[i])
@@ -103,7 +113,7 @@ end
 
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
-    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(table jointHandles,\nnumber tipHandle,table inputConfig,table lowLimits=nil,table ranges=nil)')
+    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(table jointHandles,\ntable inputConfig,number tipHandle=-1,table lowLimits=nil,table ranges=nil)')
     simIK.init=nil
 end
 

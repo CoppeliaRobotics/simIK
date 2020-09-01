@@ -325,14 +325,14 @@
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Synopsis</td>
-<td class="apiTableRightLSyn">table configurations=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,number tipHandle,table inputConfig,table lowLimits=nil,table ranges=nil)</td>
+<td class="apiTableRightLSyn">table configurations=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table inputConfig,number tipHandle=-1,table lowLimits=nil,table ranges=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>jointHandles</strong>: a table with the handles of the manipulator joints.</div>
-<div><strong>tipHandle</strong>: the handle of the object acting as end-effector or tip of the kinematic chain.</div>
+<div><strong>tipHandle</strong>: the handle of the object acting as end-effector or tip of the kinematic chain, used to make sure the additional configurations have the same end-effector pose (e.g. in case some joints are dependent on others). Can be set to -1 if there are no joint dependencies involved.</div>
 <div><strong>inputConfig</strong>: the manipulator configuration (i.e. joint values).</div>
 <div><strong>lowLimits</strong>: a table with joint low limit values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
 <div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
