@@ -113,7 +113,7 @@ end
 
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
-    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(table jointHandles,\ntable inputConfig,number tipHandle=-1,table lowLimits=nil,table ranges=nil)')
+    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,\ntable inputConfig,number tipHandle=-1,table lowLimits=nil,table ranges=nil)')
     simIK.init=nil
 end
 

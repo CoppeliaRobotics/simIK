@@ -119,6 +119,51 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.duplicateEnvironment
+// --------------------------------------------------------------------------------------
+#define LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN "simIK.duplicateEnvironment@IK"
+#define LUA_DUPLICATEENVIRONMENT_COMMAND "simIK.duplicateEnvironment"
+
+const int inArgs_DUPLICATEENVIRONMENT[]={
+    1,
+    sim_script_arg_int32,0,
+};
+
+void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    int retVal=-1;
+    bool res=false;
+    if (D.readDataFromStack(p->stackID,inArgs_DUPLICATEENVIRONMENT,inArgs_DUPLICATEENVIRONMENT[0],LUA_DUPLICATEENVIRONMENT_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        if (ikSwitchEnvironment(envId))
+        {
+            if (ikDuplicateEnvironment(&retVal))
+            {
+                int scriptType;
+                int objectH;
+                simGetScriptProperty(p->scriptID,&scriptType,&objectH);
+                if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
+                    _environmentsToDestroyAtSimulationEnd.push_back(retVal);
+                res=true;
+            }
+            else
+                simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+        }
+        else
+            simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+    }
+    if (res)
+    {
+        D.pushOutData(CScriptFunctionDataItem(retVal));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.load
 // --------------------------------------------------------------------------------------
 #define LUA_LOAD_COMMAND_PLUGIN "simIK.load@IK"
@@ -2581,6 +2626,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     // Register the new Lua commands:
     simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"()"),LUA_CREATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,strConCat("",LUA_ERASEENVIRONMENT_COMMAND,"(number environmentHandle)"),LUA_ERASEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(number environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(number environmentHandle,string data)"),LUA_LOAD_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTS_COMMAND_PLUGIN,strConCat("number objectHandle,string objectName,bool isJoint,number jointType=",LUA_GETOBJECTS_COMMAND,"(number environmentHandle,number index)"),LUA_GETOBJECTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTHANDLE_COMMAND_PLUGIN,strConCat("number objectHandle=",LUA_GETOBJECTHANDLE_COMMAND,"(number environmentHandle,string objectName)"),LUA_GETOBJECTHANDLE_CALLBACK);
@@ -2686,6 +2732,7 @@ SIM_DLLEXPORT void* simMessage(int message,int*,void*,int*)
             ikSwitchEnvironment(_environmentsToDestroyAtSimulationEnd[i]);
             ikEraseEnvironment();
         }
+        _environmentsToDestroyAtSimulationEnd.clear();
     }
     if (message==sim_message_eventcallback_instancepass)
     {
