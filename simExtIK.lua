@@ -36,14 +36,14 @@ end
 function simIK.getAlternateConfigs(ikEnvironment,jointHandles,inputConfig,tipHandle,lowLimits,ranges)
     local retVal={}
     sim.setThreadAutomaticSwitch(false)
-    local initConfig={}
+    local env=simIK.duplicateEnvironment(ikEnvironment) -- leave the original intact
     local x={}
     local confS={}
+    local err=false
     for i=1,#jointHandles,1 do
-        initConfig[i]=simIK.getJointPosition(ikEnvironment,jointHandles[i])
-        local c,interv=simIK.getJointInterval(ikEnvironment,jointHandles[i])
-        local t=simIK.getJointType(ikEnvironment,jointHandles[i])
-        local sp=simIK.getJointScrewPitch(ikEnvironment,jointHandles[i])
+        local c,interv=simIK.getJointInterval(env,jointHandles[i])
+        local t=simIK.getJointType(env,jointHandles[i])
+        local sp=simIK.getJointScrewPitch(env,jointHandles[i])
         if t==simIK.jointtype_revolute and not c then
             if sp==0 then
                 if inputConfig[i]-math.pi*2>=interv[1] or inputConfig[i]+math.pi*2<=interv[1]+interv[2] then
@@ -61,28 +61,48 @@ function simIK.getAlternateConfigs(ikEnvironment,jointHandles,inputConfig,tipHan
                 -- the user specified low and range values. Use those instead:
                 local l=lowLimits[i]
                 local r=ranges[i]
-                if l<interv[1] then
-                    -- correct for user bad input
-                    r=r-(interv[1]-l)
-                    l=interv[1] 
-                end
-                if l>interv[1]+interv[2] then
-                    -- bad user input. No alternative position for this joint
-                    x[i]={inputConfig[i],inputConfig[i]}
-                else
-                    if l+r>interv[1]+interv[2] then
-                        -- correct for user bad input
-                        r=interv[1]+interv[2]-l
-                    end
-                    if inputConfig[i]-math.pi*2>=l or inputConfig[i]+math.pi*2<=l+r then
-                        local y=inputConfig[i]
-                        while y-math.pi*2>=l do
-                            y=y-math.pi*2
+                if r~=0 then
+                    if r>0 then
+                        if l<interv[1] then
+                            -- correct for user bad input
+                            r=r-(interv[1]-l)
+                            l=interv[1] 
                         end
-                        x[i]={y,l+r}
+                        if l>interv[1]+interv[2] then
+                            -- bad user input. No alternative position for this joint
+                            x[i]={inputConfig[i],inputConfig[i]}
+                            err=true
+                        else
+                            if l+r>interv[1]+interv[2] then
+                                -- correct for user bad input
+                                r=interv[1]+interv[2]-l
+                            end
+                            if inputConfig[i]-math.pi*2>=l or inputConfig[i]+math.pi*2<=l+r then
+                                local y=inputConfig[i]
+                                while y<l do
+                                    y=y+math.pi*2
+                                end
+                                while y-math.pi*2>=l do
+                                    y=y-math.pi*2
+                                end
+                                x[i]={y,l+r}
+                            else
+                                -- no alternative position for this joint
+                                x[i]={inputConfig[i],inputConfig[i]}
+                                err=(inputConfig[i]<l) or (inputConfig[i]>l+r)
+                            end
+                        end
                     else
-                        -- no alternative position for this joint
-                        x[i]={inputConfig[i],inputConfig[i]}
+                        r=-r
+                        l=inputConfig[i]-r*0.5
+                        if l<x[i][1] then
+                            l=x[i][1]
+                        end
+                        local u=inputConfig[i]+r*0.5
+                        if u>x[i][2] then
+                            u=x[i][2]
+                        end
+                        x[i]={l,u}
                     end
                 end
             end
@@ -92,21 +112,22 @@ function simIK.getAlternateConfigs(ikEnvironment,jointHandles,inputConfig,tipHan
         end
         confS[i]=x[i][1]
     end
-    for i=1,#jointHandles,1 do
-        simIK.setJointPosition(ikEnvironment,jointHandles[i],inputConfig[i])
+    local configs={}
+    if not err then
+        for i=1,#jointHandles,1 do
+            simIK.setJointPosition(env,jointHandles[i],inputConfig[i])
+        end
+        local desiredPose=0
+        if not tipHandle then
+            tipHandle=-1
+        end
+        if tipHandle~=-1 then
+            desiredPose=simIK.getObjectMatrix(env,tipHandle,-1)
+        end
+        configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(env,jointHandles,desiredPose,confS,x,1,tipHandle)
     end
-    local desiredPose=0
-    if not tipHandle then
-        tipHandle=-1
-    end
-    if tipHandle~=-1 then
-        desiredPose=simIK.getObjectMatrix(ikEnvironment,tipHandle,-1)
-    end
-    local configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,1,tipHandle)
     
-    for i=1,#jointHandles,1 do
-        simIK.setJointPosition(ikEnvironment,jointHandles[i],initConfig[i])
-    end
+    simIK.eraseEnvironment(env)
     sim.setThreadAutomaticSwitch(true)
     return configs
 end

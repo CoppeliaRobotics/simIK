@@ -2710,6 +2710,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.method_pseudo_inverse@simExtIK",std::to_string(ik_method_pseudo_inverse).c_str(),0);
     simRegisterScriptVariable("simIK.method_damped_least_squares@simExtIK",std::to_string(ik_method_damped_least_squares).c_str(),0);
     simRegisterScriptVariable("simIK.method_jacobian_transpose@simExtIK",std::to_string(ik_method_jacobian_transpose).c_str(),0);
+    simRegisterScriptVariable("simIK.method_undamped_pseudo_inverse@simExtIK",std::to_string(ik_method_undamped_pseudo_inverse).c_str(),0);
     simRegisterScriptVariable("simIK.result_not_performed@simExtIK",std::to_string(ik_result_not_performed).c_str(),0);
     simRegisterScriptVariable("simIK.result_success@simExtIK",std::to_string(ik_result_success).c_str(),0);
     simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(ik_result_fail).c_str(),0);

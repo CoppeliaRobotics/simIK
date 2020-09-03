@@ -365,7 +365,7 @@
 <div><strong>inputConfig</strong>: the manipulator configuration (i.e. joint values).</div>
 <div><strong>tipHandle</strong>: the handle of the object acting as end-effector or tip of the kinematic chain, used to make sure the additional configurations have the same end-effector pose (e.g. in case some joints are dependent on others). Can be set to -1 if there are no joint dependencies involved.</div>
 <div><strong>lowLimits</strong>: a table with joint low limit values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
-<div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
+<div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals. If the range value is 0, then the lowLimit and range values are taken from the joint's properties. If the range value is negative, then the search interval will be centered around the current joint position, with an extent of (-range).</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -405,7 +405,7 @@
 <div><strong>scriptType</strong>: the type of the script the callback function is contained in. Can be sim_scripttype_mainscript, sim.scripttype_sandboxscript, sim_scripttype_childscript, sim_scripttype_customizationscript, or sim.scripttype_addonscript</div>
 <div><strong>jointOptions</strong>: a table with bit-coded values corresponding to each specified joint handle. Bit 0 (i.e. 1) indicates the corresponding joint is dependent of another joint.</div>
 <div><strong>lowLimits</strong>: a table with joint low limit values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
-<div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
+<div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals. If the range value is 0, then the lowLimit and range values are taken from the joint's properties. If the range value is negative, then the search interval will be centered around the current joint position, with an extent of (-range).</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -603,7 +603,7 @@
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Return values</td>
 <td class="apiTableRightLRet">
-<div><strong>method</strong>: the resolution method. Possible values are simIK.method_pseudo_inverse and simIK.method_damped_least_squares.</div>
+<div><strong>method</strong>: the resolution method. Possible values are simIK.method_pseudo_inverse (features a tiny bit of hard-coded damping), simIK.method_undamped_pseudo_inverse, simIK.method_damped_least_squares and simIK.method_jacobian_transpose.</div>
 <div><strong>damping</strong>: the damping, in case the resolution method is simIK.method_damped_least_squares.</div>
 <div><strong>maxIterations</strong>: the maximum number of iterations.</div>
 </td>
@@ -1486,7 +1486,7 @@
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-<div><strong>method</strong>: the resolution method. Possible values are simIK.method_pseudo_inverse and simIK.method_damped_least_squares.</div>
+<div><strong>method</strong>: the resolution method. Possible values are simIK.method_pseudo_inverse (features a tiny bit of hard-coded damping), simIK.method_undamped_pseudo_inverse, simIK.method_damped_least_squares and simIK.method_jacobian_transpose.</div>
 <div><strong>damping</strong>: the damping, in case the resolution method is simIK.method_damped_least_squares.</div>
 <div><strong>maxIterations</strong>: the maximum number of iterations.</div>
 </td>
