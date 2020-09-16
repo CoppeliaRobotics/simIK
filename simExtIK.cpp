@@ -34,20 +34,30 @@ static LIBRARY simLib;
 
 static std::vector<int> _environmentsToDestroyAtSimulationEnd;
 
-void _logCallback(int verbosity,const char* msg)
+bool _logCallback(int verbosity,const char* funcName,const char* msg)
 {
+    bool retVal=true;
     int v=sim_verbosity_none;
     if (verbosity==1)
-        v=sim_verbosity_errors;
+        v=sim_verbosity_scripterrors;
     if (verbosity==2)
-        v=sim_verbosity_warnings;
+        v=sim_verbosity_scriptwarnings;
     if (verbosity==3)
-        v=sim_verbosity_infos;
+        v=sim_verbosity_scriptinfos;
     if (verbosity==4)
         v=sim_verbosity_debug;
     if (verbosity==5)
         v=sim_verbosity_trace;
-    simAddLog("IK",v,msg);
+    if (verbosity!=1)
+    {
+        std::string m(funcName);
+        m+=": ";
+        m+=msg;
+        simAddLog("IK",v,m.c_str());
+    }
+    else
+        retVal=false;
+    return(retVal);
 }
 
 // --------------------------------------------------------------------------------------
@@ -88,10 +98,10 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.eraseEnvironment
+// simIK._eraseEnvironment
 // --------------------------------------------------------------------------------------
-#define LUA_ERASEENVIRONMENT_COMMAND_PLUGIN "simIK.eraseEnvironment@IK"
-#define LUA_ERASEENVIRONMENT_COMMAND "simIK.eraseEnvironment"
+#define LUA_ERASEENVIRONMENT_COMMAND_PLUGIN "simIK._eraseEnvironment@IK"
+#define LUA_ERASEENVIRONMENT_COMMAND "simIK._eraseEnvironment"
 
 const int inArgs_ERASEENVIRONMENT[]={
     1,
@@ -431,7 +441,7 @@ void LUA_GETOBJECTS_CALLBACK(SScriptCallBack* p)
 const int inArgs_CREATEDUMMY[]={
     2,
     sim_script_arg_int32,0,
-    sim_script_arg_string,0,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
@@ -546,7 +556,7 @@ const int inArgs_CREATEJOINT[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_string,0,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
@@ -1418,7 +1428,7 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
 const int inArgs_CREATEIKGROUP[]={
     2,
     sim_script_arg_int32,0,
-    sim_script_arg_string,0,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
@@ -1853,7 +1863,7 @@ const int inArgs_SETIKELEMENTBASE[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_int32,0,
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
@@ -2176,22 +2186,22 @@ bool validationCallback(simReal* conf)
 // --------------------------------------------------------------------------------------
 // simIK.getConfigForTipPose
 // --------------------------------------------------------------------------------------
-#define LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN "simIK.getConfigForTipPose@IK"
-#define LUA_GETCONFIGFORTIPPOSE_COMMAND "simIK.getConfigForTipPose"
+#define LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN "simIK._getConfigForTipPose@IK"
+#define LUA_GETCONFIGFORTIPPOSE_COMMAND "simIK._getConfigForTipPose"
 
 const int inArgs_GETCONFIGFORTIPPOSE[]={
     11,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32|sim_script_arg_table,0,
-    sim_script_arg_real,0,
-    sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,4,
-    sim_script_arg_string,0,
-    sim_script_arg_int32,0,
-    sim_script_arg_int32|sim_script_arg_table,0,
-    sim_script_arg_real|sim_script_arg_table,0,
-    sim_script_arg_real|sim_script_arg_table,0,
+    sim_script_arg_real|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_int32|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
@@ -2625,7 +2635,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
 
     // Register the new Lua commands:
     simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"()"),LUA_CREATEENVIRONMENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,strConCat("",LUA_ERASEENVIRONMENT_COMMAND,"(number environmentHandle)"),LUA_ERASEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(number environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(number environmentHandle,string data)"),LUA_LOAD_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTS_COMMAND_PLUGIN,strConCat("number objectHandle,string objectName,bool isJoint,number jointType=",LUA_GETOBJECTS_COMMAND,"(number environmentHandle,number index)"),LUA_GETOBJECTS_CALLBACK);
@@ -2678,7 +2688,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("table_2 weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(number environmentHandle,\nnumber ikGroupHandle,number elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(number environmentHandle,\nnumber ikGroupHandle,number elementHandle,table_2 weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,strConCat("number result=",LUA_HANDLEIKGROUP_COMMAND,"(number environmentHandle,number ikGroupHandle=simIK.handle_all)"),LUA_HANDLEIKGROUP_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,strConCat("table jointPositions=",LUA_GETCONFIGFORTIPPOSE_COMMAND,"(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number thresholdDist=0.1,\nnumber maxIterations=1000,table_4 metric={1,1,1,0.1},string validationCallback='',\nnumber scriptType=sim.scripttype_childscript,table jointOptions={},\ntable lowLimits={},table ranges={})"),LUA_GETCONFIGFORTIPPOSE_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("table_3 position,table_4 quaternion,table_3 euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(\nnumber environmentHandle,number objectHandle,number relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(number environmentHandle,number objectHandle,\nnumber relativeToObjectHandle,table_3 position,table eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("table_12 matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(number environmentHandle,\nnumber objectHandle,number relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
