@@ -205,6 +205,50 @@ void LUA_LOAD_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.save
+// --------------------------------------------------------------------------------------
+#define LUA_SAVE_COMMAND_PLUGIN "simIK.save@IK"
+#define LUA_SAVE_COMMAND "simIK.save"
+
+const int inArgs_SAVE[]={
+    1,
+    sim_script_arg_int32,0,
+};
+
+void LUA_SAVE_CALLBACK(SScriptCallBack* p)
+{
+    std::string retVal;
+    bool res=false;
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_SAVE,inArgs_SAVE[0],LUA_SAVE_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+
+        if (ikSwitchEnvironment(envId))
+        {
+            size_t l;
+            unsigned char* data=ikSave(&l);
+            if (data!=nullptr)
+            {
+                res=true;
+                retVal.assign(data,data+l);
+            }
+            else
+                simSetLastError(LUA_SAVE_COMMAND,ikGetLastError().c_str());
+        }
+        else
+            simSetLastError(LUA_SAVE_COMMAND,ikGetLastError().c_str());
+    }
+    if (res)
+    {
+        D.pushOutData(CScriptFunctionDataItem(retVal));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getObjectHandle
 // --------------------------------------------------------------------------------------
 #define LUA_GETOBJECTHANDLE_COMMAND_PLUGIN "simIK.getObjectHandle@IK"
@@ -2638,6 +2682,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(number environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(number environmentHandle,string data)"),LUA_LOAD_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SAVE_COMMAND_PLUGIN,strConCat("string data",LUA_SAVE_COMMAND,"(number environmentHandle)"),LUA_SAVE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTS_COMMAND_PLUGIN,strConCat("number objectHandle,string objectName,bool isJoint,number jointType=",LUA_GETOBJECTS_COMMAND,"(number environmentHandle,number index)"),LUA_GETOBJECTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTHANDLE_COMMAND_PLUGIN,strConCat("number objectHandle=",LUA_GETOBJECTHANDLE_COMMAND,"(number environmentHandle,string objectName)"),LUA_GETOBJECTHANDLE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DOESOBJECTEXIST_COMMAND_PLUGIN,strConCat("bool result=",LUA_DOESOBJECTEXIST_COMMAND,"(number environmentHandle,string objectName)"),LUA_DOESOBJECTEXIST_CALLBACK);
