@@ -200,13 +200,16 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     end
     if not __HIDDEN__.ikEnvs[ikEnv].ikGroups then
         __HIDDEN__.ikEnvs[ikEnv].ikGroups={}
+        __HIDDEN__.ikEnvs[ikEnv].allObjects={}
     end
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
+    -- allObjects, i.e. the mapping, need to be scoped by ik env, and not ik group,
+    -- otherwise we may have duplicates:
+    local allObjects=__HIDDEN__.ikEnvs[ikEnv].allObjects
     if not groupData then
         groupData={}
         groupData.passiveJoints={}
         groupData.joints={}
-        groupData.objects={}
         groupData.bases={}
         groupData.targets={}
         groupData.targetBasePairs={}
@@ -215,27 +218,27 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     end
     local ikBase=-1
     if simBase~=-1 then
-        ikBase=groupData.objects[simBase] -- maybe already there
+        ikBase=allObjects[simBase] -- maybe already there
         if not ikBase then
             ikBase=simIK.createDummy(ikEnv,sim.getObjectName(simBase))
             simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
-            groupData.objects[simBase]=ikBase
+            allObjects[simBase]=ikBase
         end
         groupData.bases[simBase]=ikBase
     end
     
-    local ikTip=groupData.objects[simTip] -- maybe already there
+    local ikTip=allObjects[simTip] -- maybe already there
     if not ikTip then
         ikTip=simIK.createDummy(ikEnv,sim.getObjectName(simTip))
         simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
-        groupData.objects[simTip]=ikTip
+        allObjects[simTip]=ikTip
     end
 
-    local ikTarget=groupData.objects[simTarget] -- maybe already there
+    local ikTarget=allObjects[simTarget] -- maybe already there
     if not ikTarget then
         ikTarget=simIK.createDummy(ikEnv,sim.getObjectName(simTarget))
         simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
-        groupData.objects[simTarget]=ikTarget
+        allObjects[simTarget]=ikTarget
     end
     groupData.targets[simTarget]=ikTarget
     groupData.targetBasePairs[#groupData.targetBasePairs+1]={simTarget,simBase,ikTarget,ikBase}
@@ -247,9 +250,9 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     local ikPrevIterator=ikTip
     local ikIterator=-1
     while simIterator~=simBase do
-        if groupData.objects[simIterator] then
+        if allObjects[simIterator] then
             -- object already added, and parenting to child done
-            ikIterator=groupData.objects[simIterator]
+            ikIterator=allObjects[simIterator]
         else
             if sim.getObjectType(simIterator)~=sim.object_joint_type then
                 ikIterator=simIK.createDummy(ikEnv,sim.getObjectName(simIterator))
@@ -276,7 +279,7 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
                 end
                 groupData.joints[simIterator]=ikIterator
             end
-            groupData.objects[simIterator]=ikIterator
+            allObjects[simIterator]=ikIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
         end    
         simIK.setObjectParent(ikEnv,ikPrevIterator,ikIterator)
@@ -292,7 +295,7 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     simIK.setIkElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
     simIK.setIkElementConstraints(ikEnv,ikGroup,ikElement,constraints)
     sim.setThreadAutomaticSwitch(lb)
-    return ikElement,groupData.objects
+    return ikElement,allObjects
 end
 
 function simIK.eraseEnvironment(ikEnv)
