@@ -272,16 +272,13 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
                 else
                     simIK.setJointPosition(ikEnv,ikIterator,sim.getJointPosition(simIterator))
                 end
-                local excl=false
-                if excl then
-                    simIK.setJointMode(ikEnv,ikIterator,simIK.jointmode_passive)
-                    groupData.passiveJoints[simIterator]=ikIterator
-                end
-                groupData.joints[simIterator]=ikIterator
             end
             allObjects[simIterator]=ikIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
-        end    
+        end 
+        if sim.getObjectType(simIterator)==sim.object_joint_type then
+            groupData.joints[simIterator]=ikIterator
+        end
         simIK.setObjectParent(ikEnv,ikPrevIterator,ikIterator)
         simPrevIterator=simIterator
         ikPrevIterator=ikIterator
