@@ -2674,7 +2674,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
         unloadSimLibrary(simLib);
         return(0);
     }
-
+    
     simRegisterScriptVariable("simIK","require('simExtIK')",0);
 
     // Register the new Lua commands:
