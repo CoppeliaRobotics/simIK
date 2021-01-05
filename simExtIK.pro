@@ -1,7 +1,7 @@
 TARGET = simExtIK
 TEMPLATE = lib
 DEFINES -= UNICODE
-CONFIG += shared
+CONFIG += shared plugin
 CONFIG -= core
 CONFIG -= gui
 
