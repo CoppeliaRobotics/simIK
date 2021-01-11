@@ -2675,7 +2675,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
         return(0);
     }
     
-    simRegisterScriptVariable("simIK","require('simExtIK')",0);
+    simRegisterScriptVariable("simIK","require('simIK')",0);
 
     // Register the new Lua commands:
     simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("number environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"()"),LUA_CREATEENVIRONMENT_CALLBACK);
