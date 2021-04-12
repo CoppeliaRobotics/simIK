@@ -156,8 +156,9 @@ function simIK.applySceneToIkEnvironment(...)
             simIK.setJointPosition(ikEnv,v,sim.getJointPosition(k))
         end
     end
-    for i=1,#groupData.targetBasePairs,1 do
-        simIK.setObjectMatrix(ikEnv,groupData.targetBasePairs[i][3],groupData.targetBasePairs[i][4],sim.getObjectMatrix(groupData.targetBasePairs[i][1],groupData.targetBasePairs[i][2]))
+    for i=1,#groupData.targetTipBaseTriplets,1 do
+        simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][4],groupData.targetTipBaseTriplets[i][6],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][1],groupData.targetTipBaseTriplets[i][3]))
+        simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][2],groupData.targetTipBaseTriplets[i][3]))
     end
     sim.setThreadAutomaticSwitch(lb)
 end
@@ -216,7 +217,7 @@ function simIK.addIkElementFromScene(...)
         groupData.joints={}
         groupData.bases={}
         groupData.targets={}
-        groupData.targetBasePairs={}
+        groupData.targetTipBaseTriplets={}
         groupData.notYetApplied=true
         _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
@@ -245,7 +246,7 @@ function simIK.addIkElementFromScene(...)
         allObjects[simTarget]=ikTarget
     end
     groupData.targets[simTarget]=ikTarget
-    groupData.targetBasePairs[#groupData.targetBasePairs+1]={simTarget,simBase,ikTarget,ikBase}
+    groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
     
     simIK.setLinkedDummy(ikEnv,ikTip,ikTarget)
 
