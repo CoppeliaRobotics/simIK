@@ -15,24 +15,67 @@
     #pragma comment(lib, "Shlwapi.lib")
 #endif
 #endif
+#ifdef _WIN32
+    #include <Windows.h>
+    typedef CRITICAL_SECTION WMutex;
+#endif
 #if defined (__linux) || defined (__APPLE__)
     #include <unistd.h>
+    #include <pthread.h>
+    typedef pthread_mutex_t WMutex;
 #endif
 
 #define CONCAT(x,y,z) x y z
 #define strConCat(x,y,z)    CONCAT(x,y,z)
 
 #ifdef SIM_MATH_DOUBLE
-#define realData doubleData
-#define sim_script_arg_real sim_script_arg_double
+    #define realData doubleData
+    #define sim_script_arg_real sim_script_arg_double
 #else
-#define realData floatData
-#define sim_script_arg_real sim_script_arg_float
+    #define realData floatData
+    #define sim_script_arg_real sim_script_arg_float
 #endif
 
 static LIBRARY simLib;
-
+static WMutex _simpleMutex;
 static std::vector<int> _environmentsToDestroyAtSimulationEnd;
+
+void lockInterface()
+{
+    #ifdef _WIN32
+        EnterCriticalSection(&_simpleMutex);
+    #endif
+    #ifdef __APPLE__
+        while (pthread_mutex_lock(&_simpleMutex)==-1)
+            pthread_yield_np();
+    #endif
+    #ifdef __linux
+        while (pthread_mutex_lock(&_simpleMutex)==-1)
+            pthread_yield();
+    #endif
+}
+
+void unlockInterface()
+{
+    #ifdef _WIN32
+        LeaveCriticalSection(&_simpleMutex);
+    #else
+        pthread_mutex_unlock(&_simpleMutex);
+    #endif
+}
+
+class CLockInterface
+{
+public:
+    CLockInterface()
+    {
+        lockInterface();
+    };
+    virtual ~CLockInterface()
+    {
+        unlockInterface();
+    };
+};
 
 bool _logCallback(int verbosity,const char* funcName,const char* msg)
 {
@@ -77,17 +120,23 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     bool res=false;
     if (D.readDataFromStack(p->stackID,inArgs_CREATEENVIRONMENT,inArgs_CREATEENVIRONMENT[0],LUA_CREATEENVIRONMENT_COMMAND))
     {
-        res=ikCreateEnvironment(&retVal);
-        if (res)
+        std::string err;
         {
-            int scriptType;
-            int objectH;
-            simGetScriptProperty(p->scriptID,&scriptType,&objectH);
-            if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
-                _environmentsToDestroyAtSimulationEnd.push_back(retVal);
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            res=ikCreateEnvironment(&retVal);
+            if (res)
+            {
+                int scriptType;
+                int objectH;
+                simGetScriptProperty(p->scriptID,&scriptType,&objectH);
+                if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
+                    _environmentsToDestroyAtSimulationEnd.push_back(retVal);
+            }
+            else
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_CREATEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_CREATEENVIRONMENT_COMMAND,err.c_str());
     }
     if (res)
     {
@@ -115,15 +164,21 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            if (ikEraseEnvironment())
-                _environmentsToDestroyAtSimulationEnd.erase(std::remove(_environmentsToDestroyAtSimulationEnd.begin(),_environmentsToDestroyAtSimulationEnd.end(),envId),_environmentsToDestroyAtSimulationEnd.end());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                if (ikEraseEnvironment())
+                    _environmentsToDestroyAtSimulationEnd.erase(std::remove(_environmentsToDestroyAtSimulationEnd.begin(),_environmentsToDestroyAtSimulationEnd.end(),envId),_environmentsToDestroyAtSimulationEnd.end());
+                else
+                    err=ikGetLastError();
+            }
             else
-                simSetLastError(LUA_ERASEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_ERASEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_ERASEENVIRONMENT_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -148,22 +203,28 @@ void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            if (ikDuplicateEnvironment(&retVal))
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
             {
-                int scriptType;
-                int objectH;
-                simGetScriptProperty(p->scriptID,&scriptType,&objectH);
-                if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
-                    _environmentsToDestroyAtSimulationEnd.push_back(retVal);
-                res=true;
+                if (ikDuplicateEnvironment(&retVal))
+                {
+                    int scriptType;
+                    int objectH;
+                    simGetScriptProperty(p->scriptID,&scriptType,&objectH);
+                    if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
+                        _environmentsToDestroyAtSimulationEnd.push_back(retVal);
+                    res=true;
+                }
+                else
+                    err=ikGetLastError();
             }
             else
-                simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,err.c_str());
     }
     if (res)
     {
@@ -193,13 +254,19 @@ void LUA_LOAD_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         std::string buff(inData->at(1).stringData[0]);
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            if (!ikLoad((unsigned char*)buff.c_str(),buff.length()))
-                simSetLastError(LUA_LOAD_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                if (!ikLoad((unsigned char*)buff.c_str(),buff.length()))
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_LOAD_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_LOAD_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -225,20 +292,26 @@ void LUA_SAVE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
 
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            size_t l;
-            unsigned char* data=ikSave(&l);
-            if (data!=nullptr)
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
             {
-                res=true;
-                retVal.assign(data,data+l);
+                size_t l;
+                unsigned char* data=ikSave(&l);
+                if (data!=nullptr)
+                {
+                    res=true;
+                    retVal.assign(data,data+l);
+                }
+                else
+                     err=ikGetLastError();
             }
             else
-                simSetLastError(LUA_SAVE_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SAVE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SAVE_COMMAND,err.c_str());
     }
     if (res)
     {
@@ -269,14 +342,20 @@ void LUA_GETOBJECTHANDLE_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetObjectHandle(inData->at(1).stringData[0].c_str(),&retVal);
-            if (!result)
-                simSetLastError(LUA_GETOBJECTHANDLE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetObjectHandle(inData->at(1).stringData[0].c_str(),&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETOBJECTHANDLE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTHANDLE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -307,13 +386,19 @@ void LUA_DOESOBJECTEXIST_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            retVal=ikDoesObjectExist(inData->at(1).stringData[0].c_str());
-            result=true;
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                retVal=ikDoesObjectExist(inData->at(1).stringData[0].c_str());
+                result=true;
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_DOESOBJECTEXIST_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_DOESOBJECTEXIST_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -343,13 +428,19 @@ void LUA_ERASEOBJECT_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int objectHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            if (!ikEraseObject(objectHandle))
-                simSetLastError(LUA_ERASEOBJECT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                if (!ikEraseObject(objectHandle))
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_ERASEOBJECT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_ERASEOBJECT_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -376,14 +467,20 @@ void LUA_GETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int objectHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetObjectParent(objectHandle,&retVal);
-            if (!result)
-                simSetLastError(LUA_GETOBJECTPARENT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetObjectParent(objectHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETOBJECTPARENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTPARENT_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -419,14 +516,20 @@ void LUA_SETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
         bool keepInPlace=true;
         if ( (inData->size()>3)&&(inData->at(3).boolData.size()==1) )
             keepInPlace=inData->at(3).boolData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetObjectParent(objectHandle,parentObjectHandle,keepInPlace);
-            if (!result)
-                simSetLastError(LUA_SETOBJECTPARENT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetObjectParent(objectHandle,parentObjectHandle,keepInPlace);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETOBJECTPARENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETOBJECTPARENT_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -456,14 +559,20 @@ void LUA_GETOBJECTS_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int index=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetObjects(size_t(index),&objectHandle,&objectName,&isJoint,&jointType);
-            if (!result)
-                simSetLastError(LUA_GETOBJECTS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetObjects(size_t(index),&objectHandle,&objectName,&isJoint,&jointType);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETOBJECTS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -497,17 +606,23 @@ void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            const char* nm=nullptr;
-            if ( (inData->size()>1)&&(inData->at(1).stringData.size()==1)&&(inData->at(1).stringData[0].size()>0) )
-                nm=inData->at(1).stringData[0].c_str();
-            result=ikCreateDummy(nm,&retVal);
-            if (!result)
-                simSetLastError(LUA_CREATEDUMMY_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                const char* nm=nullptr;
+                if ( (inData->size()>1)&&(inData->at(1).stringData.size()==1)&&(inData->at(1).stringData[0].size()>0) )
+                    nm=inData->at(1).stringData[0].c_str();
+                result=ikCreateDummy(nm,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_CREATEDUMMY_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_CREATEDUMMY_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -539,14 +654,20 @@ void LUA_GETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int dummyHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetLinkedDummy(dummyHandle,&retVal);
-            if (!result)
-                simSetLastError(LUA_GETLINKEDDUMMY_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetLinkedDummy(dummyHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETLINKEDDUMMY_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETLINKEDDUMMY_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -578,14 +699,20 @@ void LUA_SETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int dummyHandle=inData->at(1).int32Data[0];
         int linkedDummyHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetLinkedDummy(dummyHandle,linkedDummyHandle);
-            if (!result)
-                simSetLastError(LUA_SETLINKEDDUMMY_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetLinkedDummy(dummyHandle,linkedDummyHandle);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETLINKEDDUMMY_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETLINKEDDUMMY_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -612,18 +739,24 @@ void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            int jType=inData->at(1).int32Data[0];
-            const char* nm=nullptr;
-            if ( (inData->size()>2)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0) )
-                nm=inData->at(2).stringData[0].c_str();
-            result=ikCreateJoint(nm,jType,&retVal);
-            if (!result)
-                simSetLastError(LUA_CREATEJOINT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                int jType=inData->at(1).int32Data[0];
+                const char* nm=nullptr;
+                if ( (inData->size()>2)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0) )
+                    nm=inData->at(2).stringData[0].c_str();
+                result=ikCreateJoint(nm,jType,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_CREATEJOINT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_CREATEJOINT_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -655,14 +788,20 @@ void LUA_GETJOINTTYPE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointType(jointHandle,&retVal);
-            if (!result)
-                simSetLastError(LUA_GETJOINTTYPE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointType(jointHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTTYPE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTTYPE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -694,14 +833,20 @@ void LUA_GETJOINTMODE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointMode(jointHandle,&retVal);
-            if (!result)
-                simSetLastError(LUA_GETJOINTMODE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointMode(jointHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTMODE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTMODE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -733,14 +878,20 @@ void LUA_SETJOINTMODE_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         int jointMode=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointMode(jointHandle,jointMode);
-            if (!result)
-                simSetLastError(LUA_SETJOINTMODE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointMode(jointHandle,jointMode);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTMODE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTMODE_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -768,14 +919,20 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointInterval(jointHandle,&cyclic,interv);
-            if (!result)
-                simSetLastError(LUA_GETJOINTINTERVAL_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointInterval(jointHandle,&cyclic,interv);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTINTERVAL_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTINTERVAL_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -810,18 +967,24 @@ void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         bool cyclic=inData->at(2).boolData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            simReal* interv=nullptr;
-            if ( (inData->size()>3)&&(inData->at(3).realData.size()>=2) )
-                interv=&inData->at(3).realData[0];
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                simReal* interv=nullptr;
+                if ( (inData->size()>3)&&(inData->at(3).realData.size()>=2) )
+                    interv=&inData->at(3).realData[0];
 
-            bool result=ikSetJointInterval(jointHandle,cyclic,interv);
-            if (!result)
-                simSetLastError(LUA_SETJOINTINTERVAL_COMMAND,ikGetLastError().c_str());
+                bool result=ikSetJointInterval(jointHandle,cyclic,interv);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTINTERVAL_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTINTERVAL_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -848,14 +1011,20 @@ void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointScrewPitch(jointHandle,&pitch);
-            if (!result)
-                simSetLastError(LUA_GETJOINTSCREWPITCH_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointScrewPitch(jointHandle,&pitch);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTSCREWPITCH_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTSCREWPITCH_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -887,14 +1056,20 @@ void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         simReal pitch=inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointScrewPitch(jointHandle,pitch);
-            if (!result)
-                simSetLastError(LUA_SETJOINTSCREWPITCH_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointScrewPitch(jointHandle,pitch);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTSCREWPITCH_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTSCREWPITCH_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -921,14 +1096,20 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointIkWeight(jointHandle,&weight);
-            if (!result)
-                simSetLastError(LUA_GETJOINTIKWEIGHT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointIkWeight(jointHandle,&weight);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTIKWEIGHT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTIKWEIGHT_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -960,14 +1141,20 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         simReal weight=inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointIkWeight(jointHandle,weight);
-            if (!result)
-                simSetLastError(LUA_SETJOINTIKWEIGHT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointIkWeight(jointHandle,weight);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTIKWEIGHT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTIKWEIGHT_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -994,14 +1181,20 @@ void LUA_GETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointMaxStepSize(jointHandle,&stepSize);
-            if (!result)
-                simSetLastError(LUA_GETJOINTMAXSTEPSIZE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointMaxStepSize(jointHandle,&stepSize);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTMAXSTEPSIZE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTMAXSTEPSIZE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1033,14 +1226,20 @@ void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         simReal stepSize=inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointMaxStepSize(jointHandle,stepSize);
-            if (!result)
-                simSetLastError(LUA_SETJOINTMAXSTEPSIZE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointMaxStepSize(jointHandle,stepSize);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTMAXSTEPSIZE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTMAXSTEPSIZE_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1069,14 +1268,20 @@ void LUA_GETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointDependency(jointHandle,&depJoint,&offset,&mult);
-            if (!result)
-                simSetLastError(LUA_GETJOINTDEPENDENCY_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointDependency(jointHandle,&depJoint,&offset,&mult);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTDEPENDENCY_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTDEPENDENCY_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1121,14 +1326,20 @@ void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
             off=inData->at(3).realData[0];
         if ( (inData->size()>4)&&(inData->at(4).realData.size()==1) )
             mult=inData->at(4).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointDependency(jointHandle,depJointHandle,off,mult);
-            if (!result)
-                simSetLastError(LUA_SETJOINTDEPENDENCY_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointDependency(jointHandle,depJointHandle,off,mult);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTDEPENDENCY_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTDEPENDENCY_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1155,14 +1366,20 @@ void LUA_GETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetJointPosition(jointHandle,&pos);
-            if (!result)
-                simSetLastError(LUA_GETJOINTPOSITION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointPosition(jointHandle,&pos);
+                if (!result)
+                    err=ikGetLastError();
+            }
+            else
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTPOSITION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTPOSITION_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1194,14 +1411,20 @@ void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         simReal pos=inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetJointPosition(jointHandle,pos);
-            if (!result)
-                simSetLastError(LUA_SETJOINTPOSITION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointPosition(jointHandle,pos);
+                if (!result)
+                    err=ikGetLastError();
+            }
+            else
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETJOINTPOSITION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTPOSITION_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1228,17 +1451,23 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C7Vector tr;
-            result=ikGetJointTransformation(jointHandle,&tr);
-            if (result)
-                tr.getMatrix().copyToInterface(matrix);
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                C7Vector tr;
+                result=ikGetJointTransformation(jointHandle,&tr);
+                if (result)
+                    tr.getMatrix().copyToInterface(matrix);
+                else
+                     err=ikGetLastError();
+            }
             else
-                simSetLastError(LUA_GETJOINTMATRIX_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTMATRIX_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTMATRIX_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1271,17 +1500,23 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         simReal* m=&inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C4X4Matrix _m;
-            _m.copyFromInterface(m);
-            C4Vector q(_m.M.getQuaternion());
-            bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
-            if (!result)
-                simSetLastError(LUA_SETSPHERICALJOINTMATRIX_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                C4X4Matrix _m;
+                _m.copyFromInterface(m);
+                C4Vector q(_m.M.getQuaternion());
+                bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETSPHERICALJOINTMATRIX_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETSPHERICALJOINTMATRIX_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1310,25 +1545,31 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C7Vector tr;
-            result=ikGetJointTransformation(jointHandle,&tr);
-            if (result)
-            {   // CoppeliaSim quaternion, internally: w x y z
-                // CoppeliaSim quaternion, at interfaces: x y z w
-                tr.X.copyTo(pos);
-                quat[0]=tr.Q(1);
-                quat[1]=tr.Q(2);
-                quat[2]=tr.Q(3);
-                quat[3]=tr.Q(0);
-                tr.Q.getEulerAngles().copyTo(e);
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                C7Vector tr;
+                result=ikGetJointTransformation(jointHandle,&tr);
+                if (result)
+                {   // CoppeliaSim quaternion, internally: w x y z
+                    // CoppeliaSim quaternion, at interfaces: x y z w
+                    tr.X.copyTo(pos);
+                    quat[0]=tr.Q(1);
+                    quat[1]=tr.Q(2);
+                    quat[2]=tr.Q(3);
+                    quat[3]=tr.Q(0);
+                    tr.Q.getEulerAngles().copyTo(e);
+                }
+                else
+                     err=ikGetLastError();
             }
             else
-                simSetLastError(LUA_GETJOINTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETJOINTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTTRANSFORMATION_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1370,20 +1611,26 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
             euler=&inData->at(2).realData[0];
         else
             quat=&inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
-        {   // CoppeliaSim quaternion, internally: w x y z
-            // CoppeliaSim quaternion, at interfaces: x y z w
-            C4Vector q;
-            if (euler!=nullptr)
-                q.setEulerAngles(C3Vector(euler));
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {   // CoppeliaSim quaternion, internally: w x y z
+                // CoppeliaSim quaternion, at interfaces: x y z w
+                C4Vector q;
+                if (euler!=nullptr)
+                    q.setEulerAngles(C3Vector(euler));
+                else
+                    q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
+                bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
+                if (!result)
+                     err=ikGetLastError();
+            }
             else
-                q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
-            bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
-            if (!result)
-                simSetLastError(LUA_SETSPHERICALJOINTROTATION_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETSPHERICALJOINTROTATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETSPHERICALJOINTROTATION_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1409,14 +1656,20 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkGroupHandle(inData->at(1).stringData[0].c_str(),&retVal);
-            if (!result)
-                simSetLastError(LUA_GETIKGROUPHANDLE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkGroupHandle(inData->at(1).stringData[0].c_str(),&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKGROUPHANDLE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKGROUPHANDLE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1447,13 +1700,19 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            retVal=ikDoesIkGroupExist(inData->at(1).stringData[0].c_str());
-            result=true;
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                retVal=ikDoesIkGroupExist(inData->at(1).stringData[0].c_str());
+                result=true;
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_DOESIKGROUPEXIST_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_DOESIKGROUPEXIST_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1484,17 +1743,23 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            const char* nm=nullptr;
-            if ( (inData->size()>1)&&(inData->at(1).stringData.size()==1)&&(inData->at(1).stringData[0].size()>0) )
-                nm=inData->at(1).stringData[0].c_str();
-            result=ikCreateIkGroup(nm,&retVal);
-            if (!result)
-                simSetLastError(LUA_CREATEIKGROUP_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                const char* nm=nullptr;
+                if ( (inData->size()>1)&&(inData->at(1).stringData.size()==1)&&(inData->at(1).stringData[0].size()>0) )
+                    nm=inData->at(1).stringData[0].c_str();
+                result=ikCreateIkGroup(nm,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_CREATEIKGROUP_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_CREATEIKGROUP_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1526,14 +1791,20 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkGroupFlags(ikGroupHandle,&flags);
-            if (!result)
-                simSetLastError(LUA_GETIKGROUPFLAGS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkGroupFlags(ikGroupHandle,&flags);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKGROUPFLAGS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKGROUPFLAGS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1565,14 +1836,20 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int flags=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkGroupFlags(ikGroupHandle,flags);
-            if (!result)
-                simSetLastError(LUA_SETIKGROUPFLAGS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkGroupFlags(ikGroupHandle,flags);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKGROUPFLAGS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKGROUPFLAGS_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1601,14 +1878,20 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkGroupCalculation(ikGroupHandle,&method,&damping,&iterations);
-            if (!result)
-                simSetLastError(LUA_GETIKGROUPCALCULATION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkGroupCalculation(ikGroupHandle,&method,&damping,&iterations);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKGROUPCALCULATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKGROUPCALCULATION_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1646,14 +1929,20 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
         int method=inData->at(2).int32Data[0];
         simReal damping=inData->at(3).realData[0];
         int iterations=inData->at(4).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkGroupCalculation(ikGroupHandle,method,damping,iterations);
-            if (!result)
-                simSetLastError(LUA_SETIKGROUPCALCULATION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkGroupCalculation(ikGroupHandle,method,damping,iterations);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKGROUPCALCULATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKGROUPCALCULATION_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1681,14 +1970,20 @@ void LUA_GETIKGROUPLIMITTHRESHOLDS_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkGroupLimitThresholds(ikGroupHandle,thresholds);
-            if (!result)
-                simSetLastError(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkGroupLimitThresholds(ikGroupHandle,thresholds);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1721,14 +2016,20 @@ void LUA_SETIKGROUPLIMITTHRESHOLDS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         simReal* thresholds=&inData->at(2).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkGroupLimitThresholds(ikGroupHandle,thresholds);
-            if (!result)
-                simSetLastError(LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkGroupLimitThresholds(ikGroupHandle,thresholds);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1758,14 +2059,20 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int tipDummyHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikAddIkElement(ikGroupHandle,tipDummyHandle,&elementHandle);
-            if (!result)
-                simSetLastError(LUA_ADDIKELEMENT_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikAddIkElement(ikGroupHandle,tipDummyHandle,&elementHandle);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_ADDIKELEMENT_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_ADDIKELEMENT_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1799,14 +2106,20 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkElementFlags(ikGroupHandle,ikElementHandle,&flags);
-            if (!result)
-                simSetLastError(LUA_GETIKELEMENTFLAGS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkElementFlags(ikGroupHandle,ikElementHandle,&flags);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKELEMENTFLAGS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKELEMENTFLAGS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1840,14 +2153,20 @@ void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
         int flags=inData->at(3).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
-            if (!result)
-                simSetLastError(LUA_SETIKELEMENTFLAGS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKELEMENTFLAGS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKELEMENTFLAGS_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1877,14 +2196,20 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkElementBase(ikGroupHandle,ikElementHandle,&baseHandle,&constrBaseHandle);
-            if (!result)
-                simSetLastError(LUA_GETIKELEMENTBASE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkElementBase(ikGroupHandle,ikElementHandle,&baseHandle,&constrBaseHandle);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKELEMENTBASE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKELEMENTBASE_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -1923,14 +2248,20 @@ void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
         int constrBaseHandle=-1;
         if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
             constrBaseHandle=inData->at(4).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constrBaseHandle);
-            if (!result)
-                simSetLastError(LUA_SETIKELEMENTBASE_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constrBaseHandle);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKELEMENTBASE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKELEMENTBASE_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1959,14 +2290,20 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkElementConstraints(ikGroupHandle,ikElementHandle,&constraints);
-            if (!result)
-                simSetLastError(LUA_GETIKELEMENTCONSTRAINTS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkElementConstraints(ikGroupHandle,ikElementHandle,&constraints);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKELEMENTCONSTRAINTS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKELEMENTCONSTRAINTS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2000,14 +2337,20 @@ void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
         int constraints=inData->at(3).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
-            if (!result)
-                simSetLastError(LUA_SETIKELEMENTCONSTRAINTS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKELEMENTCONSTRAINTS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKELEMENTCONSTRAINTS_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2036,14 +2379,20 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkElementPrecision(ikGroupHandle,ikElementHandle,precision+0,precision+1);
-            if (!result)
-                simSetLastError(LUA_GETIKELEMENTPRECISION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkElementPrecision(ikGroupHandle,ikElementHandle,precision+0,precision+1);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKELEMENTPRECISION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKELEMENTPRECISION_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2078,14 +2427,20 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
         simReal* precision=&inData->at(3).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,precision[0],precision[1]);
-            if (!result)
-                simSetLastError(LUA_SETIKELEMENTPRECISION_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,precision[0],precision[1]);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKELEMENTPRECISION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKELEMENTPRECISION_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2114,14 +2469,20 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            result=ikGetIkElementWeights(ikGroupHandle,ikElementHandle,weights+0,weights+1);
-            if (!result)
-                simSetLastError(LUA_GETIKELEMENTWEIGHTS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkElementWeights(ikGroupHandle,ikElementHandle,weights+0,weights+1);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETIKELEMENTWEIGHTS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKELEMENTWEIGHTS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2156,14 +2517,20 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
         simReal* weights=&inData->at(3).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            bool result=ikSetIkElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1]);
-            if (!result)
-                simSetLastError(LUA_SETIKELEMENTWEIGHTS_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetIkElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1]);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETIKELEMENTWEIGHTS_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETIKELEMENTWEIGHTS_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2190,16 +2557,22 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=ik_handle_all;
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
-                ikGroupHandle=inData->at(1).int32Data[0];
-            result=ikHandleIkGroup(ikGroupHandle,&ikRes);
-            if (!result)
-                simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
+                    ikGroupHandle=inData->at(1).int32Data[0];
+                result=ikHandleIkGroup(ikGroupHandle,&ikRes);
+                if (!result)
+                    err=ikGetLastError();
+            }
+            else
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2211,10 +2584,12 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
 
 static std::string validationCallback_funcNameAtScriptName;
 static int validationCallback_scriptType;
+static int validationCallback_envId;
 static size_t validationCallback_jointCnt;
 
 bool validationCallback(simReal* conf)
 {
+    unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     simBool retVal=1;
     int stack=simCreateStack();
 #ifdef SIM_MATH_DOUBLE
@@ -2224,6 +2599,8 @@ bool validationCallback(simReal* conf)
 #endif
     if (simCallScriptFunctionEx(validationCallback_scriptType,validationCallback_funcNameAtScriptName.c_str(),stack)!=-1)
         simGetStackBoolValue(stack,&retVal);
+    lockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(validationCallback_envId); // actually required to correctly support CoppeliaSim's old GUI-based IK
     return(retVal!=0);
 }
 
@@ -2259,50 +2636,57 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            jointCnt=inData->at(2).int32Data.size();
-            if (jointCnt>0)
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
             {
-                retConfig=new simReal[jointCnt];
-                simReal thresholdDist=simReal(0.1);
-                int iterations=1000;
-                simReal* metric=nullptr;
-                int* jointOptions=nullptr;
-                simReal* lowLimits=nullptr;
-                simReal* ranges=nullptr;
-                bool(*cb)(simReal*)=nullptr;
-                int scriptType=sim_scripttype_childscript;
-                if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
-                    iterations=inData->at(4).int32Data[0];
-                if ( (inData->size()>8)&&(inData->at(8).int32Data.size()>=jointCnt) )
-                    jointOptions=&inData->at(8).int32Data[0];
-                if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
-                    scriptType=inData->at(7).int32Data[0];
-                if ( (inData->size()>6)&&(inData->at(6).stringData.size()==1)&&(inData->at(6).stringData[0].size()>0) )
+                jointCnt=inData->at(2).int32Data.size();
+                if (jointCnt>0)
                 {
-                    validationCallback_funcNameAtScriptName=inData->at(6).stringData[0];
-                    validationCallback_scriptType=scriptType;
-                    validationCallback_jointCnt=jointCnt;
-                    cb=validationCallback;
+                    retConfig=new simReal[jointCnt];
+                    simReal thresholdDist=simReal(0.1);
+                    int iterations=1000;
+                    simReal* metric=nullptr;
+                    int* jointOptions=nullptr;
+                    simReal* lowLimits=nullptr;
+                    simReal* ranges=nullptr;
+                    bool(*cb)(simReal*)=nullptr;
+                    int scriptType=sim_scripttype_childscript;
+                    if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
+                        iterations=inData->at(4).int32Data[0];
+                    if ( (inData->size()>8)&&(inData->at(8).int32Data.size()>=jointCnt) )
+                        jointOptions=&inData->at(8).int32Data[0];
+                    if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
+                        scriptType=inData->at(7).int32Data[0];
+                    if ( (inData->size()>6)&&(inData->at(6).stringData.size()==1)&&(inData->at(6).stringData[0].size()>0) )
+                    {
+                        validationCallback_funcNameAtScriptName=inData->at(6).stringData[0];
+                        validationCallback_scriptType=scriptType;
+                        validationCallback_jointCnt=jointCnt;
+                        validationCallback_envId=envId;
+                        cb=validationCallback;
+                    }
+                    if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
+                        thresholdDist=inData->at(3).realData[0];
+                    if ( (inData->size()>5)&&(inData->at(5).realData.size()>=4) )
+                        metric=&inData->at(5).realData[0];
+                    if ( (inData->size()>9)&&(inData->at(9).realData.size()>=jointCnt) )
+                        lowLimits=&inData->at(9).realData[0];
+                    if ( (inData->size()>10)&&(inData->at(10).realData.size()>=jointCnt) )
+                        ranges=&inData->at(10).realData[0];
+                    calcResult=ikGetConfigForTipPose(ikGroupHandle,jointCnt,&inData->at(2).int32Data[0],thresholdDist,iterations,retConfig,metric,cb,jointOptions,lowLimits,ranges);
+                    if (calcResult==-1)
+                         err=ikGetLastError();
                 }
-                if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
-                    thresholdDist=inData->at(3).realData[0];
-                if ( (inData->size()>5)&&(inData->at(5).realData.size()>=4) )
-                    metric=&inData->at(5).realData[0];
-                if ( (inData->size()>9)&&(inData->at(9).realData.size()>=jointCnt) )
-                    lowLimits=&inData->at(9).realData[0];
-                if ( (inData->size()>10)&&(inData->at(10).realData.size()>=jointCnt) )
-                    ranges=&inData->at(10).realData[0];
-                calcResult=ikGetConfigForTipPose(ikGroupHandle,jointCnt,&inData->at(2).int32Data[0],thresholdDist,iterations,retConfig,metric,cb,jointOptions,lowLimits,ranges);
-                if (calcResult==-1)
-                    simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,ikGetLastError().c_str());
+                else
+                    err="invalid joint handles";
             }
             else
-                simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,"invalid joint handles");
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,err.c_str());
     }
     if (calcResult==1)
     {
@@ -2341,25 +2725,31 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
         int relHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C7Vector tr;
-            result=ikGetObjectTransformation(objHandle,relHandle,&tr);
-            if (result)
-            {   // CoppeliaSim quaternion, internally: w x y z
-                // CoppeliaSim quaternion, at interfaces: x y z w
-                tr.X.copyTo(pos);
-                q[0]=tr.Q(1);
-                q[1]=tr.Q(2);
-                q[2]=tr.Q(3);
-                q[3]=tr.Q(0);
-                tr.Q.getEulerAngles().copyTo(e);
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                C7Vector tr;
+                result=ikGetObjectTransformation(objHandle,relHandle,&tr);
+                if (result)
+                {   // CoppeliaSim quaternion, internally: w x y z
+                    // CoppeliaSim quaternion, at interfaces: x y z w
+                    tr.X.copyTo(pos);
+                    q[0]=tr.Q(1);
+                    q[1]=tr.Q(2);
+                    q[2]=tr.Q(3);
+                    q[3]=tr.Q(0);
+                    tr.Q.getEulerAngles().copyTo(e);
+                }
+                else
+                     err=ikGetLastError();
             }
             else
-                simSetLastError(LUA_GETOBJECTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETOBJECTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTTRANSFORMATION_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2405,21 +2795,27 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
             euler=&inData->at(4).realData[0];
         else
             quat=&inData->at(4).realData[0];
-        if (ikSwitchEnvironment(envId))
-        {   // CoppeliaSim quaternion, internally: w x y z
-            // CoppeliaSim quaternion, at interfaces: x y z w
-            C7Vector tr;
-            tr.X=C3Vector(pos);
-            if (euler!=nullptr)
-                tr.Q.setEulerAngles(C3Vector(euler));
-            if (quat!=nullptr)
-                tr.Q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
-            bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
-            if (!result)
-                simSetLastError(LUA_SETOBJECTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {   // CoppeliaSim quaternion, internally: w x y z
+                // CoppeliaSim quaternion, at interfaces: x y z w
+                C7Vector tr;
+                tr.X=C3Vector(pos);
+                if (euler!=nullptr)
+                    tr.Q.setEulerAngles(C3Vector(euler));
+                if (quat!=nullptr)
+                    tr.Q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
+                bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETOBJECTTRANSFORMATION_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETOBJECTTRANSFORMATION_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2448,20 +2844,26 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
         int relHandle=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C7Vector tr;
-            result=ikGetObjectTransformation(objHandle,relHandle,&tr);
-            if (result)
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
             {
-                C4X4Matrix m(tr.getMatrix());
-                m.copyToInterface(matr);
+                C7Vector tr;
+                result=ikGetObjectTransformation(objHandle,relHandle,&tr);
+                if (result)
+                {
+                    C4X4Matrix m(tr.getMatrix());
+                    m.copyToInterface(matr);
+                }
+                else
+                     err=ikGetLastError();
             }
             else
-                simSetLastError(LUA_GETOBJECTMATRIX_COMMAND,ikGetLastError().c_str());
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_GETOBJECTMATRIX_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTMATRIX_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -2496,17 +2898,23 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
         int objHandle=inData->at(1).int32Data[0];
         int relHandle=inData->at(2).int32Data[0];
         simReal* m=&inData->at(3).realData[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            C4X4Matrix _m;
-            _m.copyFromInterface(m);
-            C7Vector tr(_m.getTransformation());
-            bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
-            if (!result)
-                simSetLastError(LUA_SETOBJECTMATRIX_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                C4X4Matrix _m;
+                _m.copyFromInterface(m);
+                C7Vector tr(_m.getTransformation());
+                bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
+                if (!result)
+                    err=ikGetLastError();
+            }
+            else
+                err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_SETOBJECTMATRIX_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_SETOBJECTMATRIX_COMMAND,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2535,14 +2943,20 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int options=inData->at(2).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            success=ikComputeJacobian(ikGroupHandle,options,&retVal);
-            if (!success)
-                simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                success=ikComputeJacobian(ikGroupHandle,options,&retVal);
+                if (!success)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
     }
     if (success)
     {
@@ -2574,14 +2988,20 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            matr=ikGetJacobian(ikGroupHandle,matrSize);
-//            if (!success)
-//                simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                matr=ikGetJacobian(ikGroupHandle,matrSize);
+    //            if (!success)
+    //                 err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
     }
     if (matr!=nullptr)
     {
@@ -2619,14 +3039,20 @@ void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
-        if (ikSwitchEnvironment(envId))
+        std::string err;
         {
-            success=ikGetManipulability(ikGroupHandle,&retVal);
-            if (!success)
-                simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                success=ikGetManipulability(ikGroupHandle,&retVal);
+                if (!success)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
         }
-        else
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,ikGetLastError().c_str());
+        if (err.size()>0)
+            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
     }
     if (success)
     {
@@ -2772,11 +3198,22 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
 
     ikSetLogCallback(_logCallback);
 
+    #ifdef _WIN32
+        InitializeCriticalSection(&_simpleMutex);
+    #else
+        pthread_mutex_init(&_simpleMutex,0);
+    #endif
+
     return(1);
 }
 
 SIM_DLLEXPORT void simEnd()
 {
+#ifdef _WIN32
+    DeleteCriticalSection(&_simpleMutex);
+#else
+    pthread_mutex_destroy(&_simpleMutex);
+#endif
 }
 
 SIM_DLLEXPORT void* simMessage(int message,int*,void*,int*)
@@ -2817,97 +3254,131 @@ SIM_DLLEXPORT void* simMessage(int message,int*,void*,int*)
 //---------------------------------------------------------------------
 //---------------------------------------------------------------------
 
-SIM_DLLEXPORT int ikPlugin_createEnvironment()
+SIM_DLLEXPORT int ikPlugin_createEnv()
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1;
     ikCreateEnvironment(&retVal,true);
     return(retVal);
 }
 
+/*
 SIM_DLLEXPORT bool ikPlugin_switchEnvironment(int handle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     return(ikSwitchEnvironment(handle,true));
 }
+*/
 
-SIM_DLLEXPORT void ikPlugin_eraseEnvironment()
+SIM_DLLEXPORT void ikPlugin_eraseEnvironment(int ikEnv)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikEraseEnvironment();
 }
 
-SIM_DLLEXPORT void ikPlugin_eraseObject(int objectHandle)
+SIM_DLLEXPORT void ikPlugin_eraseObject(int ikEnv,int objectHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikEraseObject(objectHandle);
 }
 
-SIM_DLLEXPORT void ikPlugin_setObjectParent(int objectHandle,int parentObjectHandle)
+SIM_DLLEXPORT void ikPlugin_setObjectParent(int ikEnv,int objectHandle,int parentObjectHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetObjectParent(objectHandle,parentObjectHandle,false);
 }
 
-SIM_DLLEXPORT int ikPlugin_createDummy()
+SIM_DLLEXPORT int ikPlugin_createDummy(int ikEnv)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
     ikCreateDummy(nullptr,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT void ikPlugin_setLinkedDummy(int dummyHandle,int linkedDummyHandle)
+SIM_DLLEXPORT void ikPlugin_setLinkedDummy(int ikEnv,int dummyHandle,int linkedDummyHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetLinkedDummy(dummyHandle,linkedDummyHandle);
 }
 
-SIM_DLLEXPORT int ikPlugin_createJoint(int jointType)
+SIM_DLLEXPORT int ikPlugin_createJoint(int ikEnv,int jointType)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
     ikCreateJoint(nullptr,jointType,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointMode(int jointHandle,int jointMode)
+SIM_DLLEXPORT void ikPlugin_setJointMode(int ikEnv,int jointHandle,int jointMode)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointMode(jointHandle,jointMode);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointInterval(int jointHandle,bool cyclic,const float* intervalMinAndRange)
+SIM_DLLEXPORT void ikPlugin_setJointInterval(int ikEnv,int jointHandle,bool cyclic,const float* intervalMinAndRange)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     simReal v[2]={simReal(intervalMinAndRange[0]),simReal(intervalMinAndRange[1])};
     ikSetJointInterval(jointHandle,cyclic,v);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int jointHandle,float pitch)
+SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int ikEnv,int jointHandle,float pitch)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointScrewPitch(jointHandle,simReal(pitch));
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int jointHandle,float ikWeight)
+SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,float ikWeight)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointIkWeight(jointHandle,simReal(ikWeight));
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int jointHandle,float maxStepSize)
+SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,float maxStepSize)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointMaxStepSize(jointHandle,simReal(maxStepSize));
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointDependency(int jointHandle,int dependencyJointHandle,float offset,float mult)
+SIM_DLLEXPORT void ikPlugin_setJointDependency(int ikEnv,int jointHandle,int dependencyJointHandle,float offset,float mult)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointDependency(jointHandle,dependencyJointHandle,simReal(offset),simReal(mult));
 }
 
-SIM_DLLEXPORT float ikPlugin_getJointPosition(int jointHandle)
+SIM_DLLEXPORT float ikPlugin_getJointPosition(int ikEnv,int jointHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     simReal p;
     ikGetJointPosition(jointHandle,&p);
     return(float(p));
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointPosition(int jointHandle,float position)
+SIM_DLLEXPORT void ikPlugin_setJointPosition(int ikEnv,int jointHandle,float position)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetJointPosition(jointHandle,simReal(position));
 }
 
-SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int jointHandle,float quaternion[4])
+SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandle,float quaternion[4])
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
     ikGetJointTransformation(jointHandle,&tr);
     quaternion[0]=float(tr.Q(0));
@@ -2916,8 +3387,10 @@ SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int jointHandle,float qu
     quaternion[3]=float(tr.Q(3));
 }
 
-SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int jointHandle,const float* quaternion)
+SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int ikEnv,int jointHandle,const float* quaternion)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     C4Vector q;
     q(0)=simReal(quaternion[0]);
     q(1)=simReal(quaternion[1]);
@@ -2926,81 +3399,109 @@ SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int jointHandle,const fl
     ikSetSphericalJointQuaternion(jointHandle,&q);
 }
 
-SIM_DLLEXPORT int ikPlugin_createIkGroup()
+SIM_DLLEXPORT int ikPlugin_createIkGroup(int ikEnv)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
     ikCreateIkGroup(nullptr,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT void ikPlugin_eraseIkGroup(int ikGroupHandle)
+SIM_DLLEXPORT void ikPlugin_eraseIkGroup(int ikEnv,int ikGroupHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikEraseIkGroup(ikGroupHandle);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkGroupFlags(int ikGroupHandle,int flags)
+SIM_DLLEXPORT void ikPlugin_setIkGroupFlags(int ikEnv,int ikGroupHandle,int flags)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkGroupFlags(ikGroupHandle,flags);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikGroupHandle,int method,float damping,int maxIterations)
+SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,int method,float damping,int maxIterations)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkGroupCalculation(ikGroupHandle,method,simReal(damping),maxIterations);
 }
 
-SIM_DLLEXPORT int ikPlugin_addIkElement(int ikGroupHandle,int tipHandle)
+SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
     ikAddIkElement(ikGroupHandle,tipHandle,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT void ikPlugin_eraseIkElement(int ikGroupHandle,int ikElementHandle)
+SIM_DLLEXPORT void ikPlugin_eraseIkElement(int ikEnv,int ikGroupHandle,int ikElementHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikEraseIkElement(ikGroupHandle,ikElementHandle);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementFlags(int ikGroupHandle,int ikElementHandle,int flags)
+SIM_DLLEXPORT void ikPlugin_setIkElementFlags(int ikEnv,int ikGroupHandle,int ikElementHandle,int flags)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementBase(int ikGroupHandle,int ikElementHandle,int baseHandle,int constraintsBaseHandle)
+SIM_DLLEXPORT void ikPlugin_setIkElementBase(int ikEnv,int ikGroupHandle,int ikElementHandle,int baseHandle,int constraintsBaseHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constraintsBaseHandle);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementConstraints(int ikGroupHandle,int ikElementHandle,int constraints)
+SIM_DLLEXPORT void ikPlugin_setIkElementConstraints(int ikEnv,int ikGroupHandle,int ikElementHandle,int constraints)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikGroupHandle,int ikElementHandle,float linearPrecision,float angularPrecision)
+SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearPrecision,float angularPrecision)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,simReal(linearPrecision),simReal(angularPrecision));
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
+SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     ikSetIkElementWeights(ikGroupHandle,ikElementHandle,simReal(linearWeight),simReal(angularWeight));
 }
 
-SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikGroupHandle)
+SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
     ikHandleIkGroup(ikGroupHandle,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT bool ikPlugin_computeJacobian(int ikGroupHandle,int options)
+SIM_DLLEXPORT bool ikPlugin_computeJacobian(int ikEnv,int ikGroupHandle,int options)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     bool retVal=false;
     ikComputeJacobian(ikGroupHandle,options,&retVal);
     return(retVal);
 }
 
-SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikGroupHandle,int* matrixSize)
+SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matrixSize)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     float* retVal=nullptr;
     size_t ms[2];
     simReal* m=ikGetJacobian(ikGroupHandle,ms);
@@ -3016,15 +3517,19 @@ SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikGroupHandle,int* matrixSize)
     return(retVal);
 }
 
-SIM_DLLEXPORT float ikPlugin_getManipulability(int ikGroupHandle)
+SIM_DLLEXPORT float ikPlugin_getManipulability(int ikEnv,int ikGroupHandle)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     simReal retVal=simReal(0.0);
     ikGetManipulability(ikGroupHandle,&retVal);
     return(float(retVal));
 }
 
-SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int objectHandle,float* pos,float* quat)
+SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHandle,float* pos,float* quat)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
     ikGetObjectTransformation(objectHandle,ik_handle_parent,&tr);
     pos[0]=float(tr.X(0));
@@ -3036,8 +3541,10 @@ SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int objectHandle,float*
     quat[3]=float(tr.Q(3));
 }
 
-SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int objectHandle,const float* pos,const float* quat)
+SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHandle,const float* pos,const float* quat)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
     tr.X(0)=simReal(pos[0]);
     tr.X(1)=simReal(pos[1]);
@@ -3060,8 +3567,10 @@ bool _validationCallback(simReal* conf)
     return(__validationCallback(_validationCallback_config));
 }
 
-SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikGroupHandle,int jointCnt,const int* jointHandles,float thresholdDist,int maxIterations,int* result,float* retConfig,const float* metric,bool(*validationCallback)(float*),const int* jointOptions,const float* lowLimits,const float* ranges)
+SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int jointCnt,const int* jointHandles,float thresholdDist,int maxIterations,int* result,float* retConfig,const float* metric,bool(*validationCallback)(float*),const int* jointOptions,const float* lowLimits,const float* ranges)
 {
+    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(ikEnv,true);
     std::vector<simReal> _retConfig;
     _retConfig.resize(size_t(jointCnt));
     simReal* _metric=nullptr;
