@@ -2599,6 +2599,7 @@ bool validationCallback(simReal* conf)
 #endif
     if (simCallScriptFunctionEx(validationCallback_scriptType,validationCallback_funcNameAtScriptName.c_str(),stack)!=-1)
         simGetStackBoolValue(stack,&retVal);
+    simReleaseStack(stack);
     lockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     ikSwitchEnvironment(validationCallback_envId); // actually required to correctly support CoppeliaSim's old GUI-based IK
     return(retVal!=0);
