@@ -119,7 +119,7 @@ function simIK.getAlternateConfigs(...)
     simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
     
-    if configs~={} then
+    if next(configs)~=nil then
         configs=Matrix:fromtable(configs)
         configs=configs:data()
     end
