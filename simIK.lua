@@ -225,7 +225,7 @@ function simIK.addIkElementFromScene(...)
     if simBase~=-1 then
         ikBase=allObjects[simBase] -- maybe already there
         if not ikBase then
-            ikBase=simIK.createDummy(ikEnv,sim.getObjectName(simBase))
+            ikBase=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simBase,3))
             simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
             allObjects[simBase]=ikBase
         end
@@ -234,14 +234,14 @@ function simIK.addIkElementFromScene(...)
     
     local ikTip=allObjects[simTip] -- maybe already there
     if not ikTip then
-        ikTip=simIK.createDummy(ikEnv,sim.getObjectName(simTip))
+        ikTip=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simTip,3))
         simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
         allObjects[simTip]=ikTip
     end
 
     local ikTarget=allObjects[simTarget] -- maybe already there
     if not ikTarget then
-        ikTarget=simIK.createDummy(ikEnv,sim.getObjectName(simTarget))
+        ikTarget=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simTarget,3))
         simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
         allObjects[simTarget]=ikTarget
     end
@@ -260,10 +260,10 @@ function simIK.addIkElementFromScene(...)
             ikIterator=allObjects[simIterator]
         else
             if sim.getObjectType(simIterator)~=sim.object_joint_type then
-                ikIterator=simIK.createDummy(ikEnv,sim.getObjectName(simIterator))
+                ikIterator=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simIterator,3))
             else
                 local t=sim.getJointType(simIterator)
-                ikIterator=simIK.createJoint(ikEnv,t,sim.getObjectName(simIterator))
+                ikIterator=simIK.createJoint(ikEnv,t) --name not really needed in this context-- ,sim.getObjectAlias(simIterator,3))
                 local c,interv=sim.getJointInterval(simIterator)
                 simIK.setJointInterval(ikEnv,ikIterator,c,interv)
                 local sp=sim.getObjectFloatParam(simIterator,sim.jointfloatparam_screw_pitch)
@@ -342,11 +342,7 @@ function simIK.getConfigForTipPose(...)
         local funcNm,t
         if callback then
             funcNm='__cb'
-            local nm=sim.getScriptName(sim.handle_self)
-            if nm~='' then
-                funcNm=funcNm..'@'..nm
-            end
-            t=sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripttype)
+            t=sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)
         end
         retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
     end
