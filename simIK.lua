@@ -413,9 +413,6 @@ function simIK.init()
     simIK.init=nil
 end
 
-if not __initFunctions then
-    __initFunctions={}
-end
-__initFunctions[#__initFunctions+1]=simIK.init
+sim.registerScriptFuncHook('sysCall_init','simIK.init',true)
 
 return simIK
