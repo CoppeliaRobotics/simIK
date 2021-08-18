@@ -1,4 +1,5 @@
 #include "simExtIK.h"
+#include "envCont.h"
 #include "simLib.h"
 #include "ik.h"
 #include "4X4Matrix.h"
@@ -38,7 +39,7 @@
 
 static LIBRARY simLib;
 static WMutex _simpleMutex;
-static std::vector<int> _environmentsToDestroyAtSimulationEnd;
+static CEnvCont* _allEnvironments;
 
 void lockInterface()
 {
@@ -125,13 +126,7 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             res=ikCreateEnvironment(&retVal);
             if (res)
-            {
-                int scriptType;
-                int objectH;
-                simGetScriptProperty(p->scriptID,&scriptType,&objectH);
-                if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
-                    _environmentsToDestroyAtSimulationEnd.push_back(retVal);
-            }
+                _allEnvironments->add(retVal,p->scriptID);
             else
                 err=ikGetLastError();
         }
@@ -170,7 +165,7 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
             if (ikSwitchEnvironment(envId))
             {
                 if (ikEraseEnvironment())
-                    _environmentsToDestroyAtSimulationEnd.erase(std::remove(_environmentsToDestroyAtSimulationEnd.begin(),_environmentsToDestroyAtSimulationEnd.end(),envId),_environmentsToDestroyAtSimulationEnd.end());
+                    _allEnvironments->removeFromEnvHandle(envId);
                 else
                     err=ikGetLastError();
             }
@@ -210,11 +205,7 @@ void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
             {
                 if (ikDuplicateEnvironment(&retVal))
                 {
-                    int scriptType;
-                    int objectH;
-                    simGetScriptProperty(p->scriptID,&scriptType,&objectH);
-                    if ( (scriptType==sim_scripttype_childscript)||(scriptType==sim_scripttype_mainscript) )
-                        _environmentsToDestroyAtSimulationEnd.push_back(retVal);
+                    _allEnvironments->add(retVal,p->scriptID);
                     res=true;
                 }
                 else
@@ -3205,11 +3196,14 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
         pthread_mutex_init(&_simpleMutex,0);
     #endif
 
-    return(1);
+    _allEnvironments=new CEnvCont();
+
+    return(2); // 2 since V4.3.0
 }
 
 SIM_DLLEXPORT void simEnd()
 {
+    delete _allEnvironments;
 #ifdef _WIN32
     DeleteCriticalSection(&_simpleMutex);
 #else
@@ -3217,17 +3211,18 @@ SIM_DLLEXPORT void simEnd()
 #endif
 }
 
-SIM_DLLEXPORT void* simMessage(int message,int*,void*,int*)
+SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
 {
-    if (message==sim_message_eventcallback_simulationended)
-    { // Simulation just ended
-        for (size_t i=0;i<_environmentsToDestroyAtSimulationEnd.size();i++)
+    if (message==sim_message_eventcallback_scriptstatedestroyed)
+    {
+        int env=_allEnvironments->removeFromScriptHandle(auxiliaryData[0]);
+        if (env>=0)
         {
-            ikSwitchEnvironment(_environmentsToDestroyAtSimulationEnd[i]);
+            ikSwitchEnvironment(env);
             ikEraseEnvironment();
         }
-        _environmentsToDestroyAtSimulationEnd.clear();
     }
+
     if (message==sim_message_eventcallback_instancepass)
     {
         int consoleV=sim_verbosity_none;

@@ -53,6 +53,7 @@ INCLUDEPATH += "../simMath"
 INCLUDEPATH += "../coppeliaKinematicsRoutines"
 
 HEADERS += simExtIK.h \
+    envCont.h \
     ../include/simLib.h \
     ../include/scriptFunctionData.h \
     ../include/scriptFunctionDataItem.h \
@@ -79,6 +80,7 @@ HEADERS += simExtIK.h \
     ../simMath/MMatrix.h \
 
 SOURCES += simExtIK.cpp \
+    envCont.cpp \
     ../common/simLib.cpp \
     ../common/scriptFunctionData.cpp \
     ../common/scriptFunctionDataItem.cpp \

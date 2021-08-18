@@ -21,6 +21,7 @@ coppeliasim_add_plugin(
     LEGACY
     SOURCES
     simExtIK.cpp
+    envCont.cpp
     ../coppeliaKinematicsRoutines/ik.cpp
     ../coppeliaKinematicsRoutines/environment.cpp
     ../coppeliaKinematicsRoutines/serialization.cpp
