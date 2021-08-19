@@ -26,7 +26,7 @@ void CEnvCont::removeFromEnvHandle(int h)
     }
 }
 
-int CEnvCont::removeFromScriptHandle(int h)
+int CEnvCont::removeOneFromScriptHandle(int h)
 {
     for (size_t i=0;i<_allObjects.size()/2;i++)
     {

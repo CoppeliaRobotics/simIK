@@ -3215,11 +3215,12 @@ SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
 {
     if (message==sim_message_eventcallback_scriptstatedestroyed)
     {
-        int env=_allEnvironments->removeFromScriptHandle(auxiliaryData[0]);
-        if (env>=0)
+        int env=_allEnvironments->removeOneFromScriptHandle(auxiliaryData[0]);
+        while (env>=0)
         {
             if (ikSwitchEnvironment(env))
                 ikEraseEnvironment();
+            env=_allEnvironments->removeOneFromScriptHandle(auxiliaryData[0]);
         }
     }
 
