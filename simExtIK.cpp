@@ -3218,8 +3218,8 @@ SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
         int env=_allEnvironments->removeFromScriptHandle(auxiliaryData[0]);
         if (env>=0)
         {
-            ikSwitchEnvironment(env);
-            ikEraseEnvironment();
+            if (ikSwitchEnvironment(env))
+                ikEraseEnvironment();
         }
     }
 
@@ -3269,114 +3269,117 @@ SIM_DLLEXPORT bool ikPlugin_switchEnvironment(int handle)
 SIM_DLLEXPORT void ikPlugin_eraseEnvironment(int ikEnv)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikEraseEnvironment();
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikEraseEnvironment();
 }
 
 SIM_DLLEXPORT void ikPlugin_eraseObject(int ikEnv,int objectHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikEraseObject(objectHandle);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikEraseObject(objectHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setObjectParent(int ikEnv,int objectHandle,int parentObjectHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetObjectParent(objectHandle,parentObjectHandle,false);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetObjectParent(objectHandle,parentObjectHandle,false);
 }
 
 SIM_DLLEXPORT int ikPlugin_createDummy(int ikEnv)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
-    ikCreateDummy(nullptr,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikCreateDummy(nullptr,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT void ikPlugin_setLinkedDummy(int ikEnv,int dummyHandle,int linkedDummyHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetLinkedDummy(dummyHandle,linkedDummyHandle);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetLinkedDummy(dummyHandle,linkedDummyHandle);
 }
 
 SIM_DLLEXPORT int ikPlugin_createJoint(int ikEnv,int jointType)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
-    ikCreateJoint(nullptr,jointType,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikCreateJoint(nullptr,jointType,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointMode(int ikEnv,int jointHandle,int jointMode)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointMode(jointHandle,jointMode);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointMode(jointHandle,jointMode);
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointInterval(int ikEnv,int jointHandle,bool cyclic,const float* intervalMinAndRange)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    simReal v[2]={simReal(intervalMinAndRange[0]),simReal(intervalMinAndRange[1])};
-    ikSetJointInterval(jointHandle,cyclic,v);
+    if (ikSwitchEnvironment(ikEnv,true))
+    {
+        simReal v[2]={simReal(intervalMinAndRange[0]),simReal(intervalMinAndRange[1])};
+        ikSetJointInterval(jointHandle,cyclic,v);
+    }
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int ikEnv,int jointHandle,float pitch)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointScrewPitch(jointHandle,simReal(pitch));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointScrewPitch(jointHandle,simReal(pitch));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,float ikWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointIkWeight(jointHandle,simReal(ikWeight));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointIkWeight(jointHandle,simReal(ikWeight));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,float maxStepSize)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointMaxStepSize(jointHandle,simReal(maxStepSize));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointMaxStepSize(jointHandle,simReal(maxStepSize));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointDependency(int ikEnv,int jointHandle,int dependencyJointHandle,float offset,float mult)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointDependency(jointHandle,dependencyJointHandle,simReal(offset),simReal(mult));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointDependency(jointHandle,dependencyJointHandle,simReal(offset),simReal(mult));
 }
 
 SIM_DLLEXPORT float ikPlugin_getJointPosition(int ikEnv,int jointHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    simReal p;
-    ikGetJointPosition(jointHandle,&p);
+    simReal p=simReal(0.0);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikGetJointPosition(jointHandle,&p);
     return(float(p));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointPosition(int ikEnv,int jointHandle,float position)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetJointPosition(jointHandle,simReal(position));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetJointPosition(jointHandle,simReal(position));
 }
 
 SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandle,float quaternion[4])
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
-    ikGetJointTransformation(jointHandle,&tr);
+    tr.setIdentity();
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikGetJointTransformation(jointHandle,&tr);
     quaternion[0]=float(tr.Q(0));
     quaternion[1]=float(tr.Q(1));
     quaternion[2]=float(tr.Q(2));
@@ -3386,129 +3389,131 @@ SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandl
 SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int ikEnv,int jointHandle,const float* quaternion)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     C4Vector q;
     q(0)=simReal(quaternion[0]);
     q(1)=simReal(quaternion[1]);
     q(2)=simReal(quaternion[2]);
     q(3)=simReal(quaternion[3]);
-    ikSetSphericalJointQuaternion(jointHandle,&q);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetSphericalJointQuaternion(jointHandle,&q);
 }
 
 SIM_DLLEXPORT int ikPlugin_createIkGroup(int ikEnv)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
-    ikCreateIkGroup(nullptr,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikCreateIkGroup(nullptr,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT void ikPlugin_eraseIkGroup(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikEraseIkGroup(ikGroupHandle);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikEraseIkGroup(ikGroupHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkGroupFlags(int ikEnv,int ikGroupHandle,int flags)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkGroupFlags(ikGroupHandle,flags);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkGroupFlags(ikGroupHandle,flags);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,int method,float damping,int maxIterations)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkGroupCalculation(ikGroupHandle,method,simReal(damping),maxIterations);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkGroupCalculation(ikGroupHandle,method,simReal(damping),maxIterations);
 }
 
 SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
-    ikAddIkElement(ikGroupHandle,tipHandle,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikAddIkElement(ikGroupHandle,tipHandle,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT void ikPlugin_eraseIkElement(int ikEnv,int ikGroupHandle,int ikElementHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikEraseIkElement(ikGroupHandle,ikElementHandle);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikEraseIkElement(ikGroupHandle,ikElementHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementFlags(int ikEnv,int ikGroupHandle,int ikElementHandle,int flags)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementBase(int ikEnv,int ikGroupHandle,int ikElementHandle,int baseHandle,int constraintsBaseHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constraintsBaseHandle);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constraintsBaseHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementConstraints(int ikEnv,int ikGroupHandle,int ikElementHandle,int constraints)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearPrecision,float angularPrecision)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,simReal(linearPrecision),simReal(angularPrecision));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,simReal(linearPrecision),simReal(angularPrecision));
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    ikSetIkElementWeights(ikGroupHandle,ikElementHandle,simReal(linearWeight),simReal(angularWeight));
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetIkElementWeights(ikGroupHandle,ikElementHandle,simReal(linearWeight),simReal(angularWeight));
 }
 
 SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     int retVal=-1;
-    ikHandleIkGroup(ikGroupHandle,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikHandleIkGroup(ikGroupHandle,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT bool ikPlugin_computeJacobian(int ikEnv,int ikGroupHandle,int options)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     bool retVal=false;
-    ikComputeJacobian(ikGroupHandle,options,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikComputeJacobian(ikGroupHandle,options,&retVal);
     return(retVal);
 }
 
 SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matrixSize)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     float* retVal=nullptr;
-    size_t ms[2];
-    simReal* m=ikGetJacobian(ikGroupHandle,ms);
-    if (m!=nullptr)
+    if (ikSwitchEnvironment(ikEnv,true))
     {
-        matrixSize[0]=int(ms[0]);
-        matrixSize[1]=int(ms[1]);
-        retVal=reinterpret_cast<float*>(simCreateBuffer(int(sizeof(float)*ms[0]*ms[1])));
-        for (size_t i=0;i<ms[0]*ms[1];i++)
-            retVal[i]=float(m[i]);
-        ikReleaseBuffer(m);
+        size_t ms[2];
+        simReal* m=ikGetJacobian(ikGroupHandle,ms);
+        if (m!=nullptr)
+        {
+            matrixSize[0]=int(ms[0]);
+            matrixSize[1]=int(ms[1]);
+            retVal=reinterpret_cast<float*>(simCreateBuffer(int(sizeof(float)*ms[0]*ms[1])));
+            for (size_t i=0;i<ms[0]*ms[1];i++)
+                retVal[i]=float(m[i]);
+            ikReleaseBuffer(m);
+        }
     }
     return(retVal);
 }
@@ -3516,18 +3521,19 @@ SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matri
 SIM_DLLEXPORT float ikPlugin_getManipulability(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     simReal retVal=simReal(0.0);
-    ikGetManipulability(ikGroupHandle,&retVal);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikGetManipulability(ikGroupHandle,&retVal);
     return(float(retVal));
 }
 
 SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHandle,float* pos,float* quat)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
-    ikGetObjectTransformation(objectHandle,ik_handle_parent,&tr);
+    tr.setIdentity();
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikGetObjectTransformation(objectHandle,ik_handle_parent,&tr);
     pos[0]=float(tr.X(0));
     pos[1]=float(tr.X(1));
     pos[2]=float(tr.X(2));
@@ -3540,7 +3546,6 @@ SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHan
 SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHandle,const float* pos,const float* quat)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
     C7Vector tr;
     tr.X(0)=simReal(pos[0]);
     tr.X(1)=simReal(pos[1]);
@@ -3549,7 +3554,8 @@ SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHan
     tr.Q(1)=simReal(quat[1]);
     tr.Q(2)=simReal(quat[2]);
     tr.Q(3)=simReal(quat[3]);
-    ikSetObjectTransformation(objectHandle,ik_handle_parent,&tr);
+    if (ikSwitchEnvironment(ikEnv,true))
+        ikSetObjectTransformation(objectHandle,ik_handle_parent,&tr);
 }
 
 static size_t _validationCallback_jointCnt;
@@ -3566,57 +3572,59 @@ bool _validationCallback(simReal* conf)
 SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int jointCnt,const int* jointHandles,float thresholdDist,int maxIterations,int* result,float* retConfig,const float* metric,bool(*validationCallback)(float*),const int* jointOptions,const float* lowLimits,const float* ranges)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    ikSwitchEnvironment(ikEnv,true);
-    std::vector<simReal> _retConfig;
-    _retConfig.resize(size_t(jointCnt));
-    simReal* _metric=nullptr;
-    simReal __metric[4];
-    if (metric!=nullptr)
-    {
-        __metric[0]=simReal(metric[0]);
-        __metric[1]=simReal(metric[1]);
-        __metric[2]=simReal(metric[2]);
-        __metric[3]=simReal(metric[3]);
-        _metric=__metric;
-    }
-    simReal* _lowLimits=nullptr;
-    std::vector<simReal> __lowLimits;
-    if (lowLimits!=nullptr)
-    {
-        for (size_t i=0;i<size_t(jointCnt);i++)
-            __lowLimits.push_back(simReal(lowLimits[i]));
-        _lowLimits=&__lowLimits[0];
-    }
-    simReal* _ranges=nullptr;
-    std::vector<simReal> __ranges;
-    if (ranges!=nullptr)
-    {
-        for (size_t i=0;i<size_t(jointCnt);i++)
-            __ranges.push_back(simReal(ranges[i]));
-        _ranges=&__ranges[0];
-    }
-    _validationCallback_jointCnt=size_t(jointCnt);
-    std::vector<float> __valCb_j;
-    __valCb_j.resize(size_t(jointCnt));
-    _validationCallback_config=&__valCb_j[0];
-    __validationCallback=validationCallback;
-    bool(*_validationCb)(simReal*)=nullptr;
-    if (validationCallback!=nullptr)
-        _validationCb=_validationCallback;
-    result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,simReal(thresholdDist),maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
-    if (result[0]>0)
-    {
-        for (size_t i=0;i<_retConfig.size();i++)
-            retConfig[i]=float(_retConfig[i]);
-    }
     char* retVal=nullptr;
-    if (result[0]<0)
+    if (ikSwitchEnvironment(ikEnv,true))
     {
-        std::string err(ikGetLastError());
-        retVal=simCreateBuffer(int(err.size()+1));
-        for (size_t i=0;i<err.size();i++)
-            retVal[i]=err[i];
-        retVal[err.size()]=0;
+        std::vector<simReal> _retConfig;
+        _retConfig.resize(size_t(jointCnt));
+        simReal* _metric=nullptr;
+        simReal __metric[4];
+        if (metric!=nullptr)
+        {
+            __metric[0]=simReal(metric[0]);
+            __metric[1]=simReal(metric[1]);
+            __metric[2]=simReal(metric[2]);
+            __metric[3]=simReal(metric[3]);
+            _metric=__metric;
+        }
+        simReal* _lowLimits=nullptr;
+        std::vector<simReal> __lowLimits;
+        if (lowLimits!=nullptr)
+        {
+            for (size_t i=0;i<size_t(jointCnt);i++)
+                __lowLimits.push_back(simReal(lowLimits[i]));
+            _lowLimits=&__lowLimits[0];
+        }
+        simReal* _ranges=nullptr;
+        std::vector<simReal> __ranges;
+        if (ranges!=nullptr)
+        {
+            for (size_t i=0;i<size_t(jointCnt);i++)
+                __ranges.push_back(simReal(ranges[i]));
+            _ranges=&__ranges[0];
+        }
+        _validationCallback_jointCnt=size_t(jointCnt);
+        std::vector<float> __valCb_j;
+        __valCb_j.resize(size_t(jointCnt));
+        _validationCallback_config=&__valCb_j[0];
+        __validationCallback=validationCallback;
+        bool(*_validationCb)(simReal*)=nullptr;
+        if (validationCallback!=nullptr)
+            _validationCb=_validationCallback;
+        result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,simReal(thresholdDist),maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
+        if (result[0]>0)
+        {
+            for (size_t i=0;i<_retConfig.size();i++)
+                retConfig[i]=float(_retConfig[i]);
+        }
+        if (result[0]<0)
+        {
+            std::string err(ikGetLastError());
+            retVal=simCreateBuffer(int(err.size()+1));
+            for (size_t i=0;i<err.size();i++)
+                retVal[i]=err[i];
+            retVal[err.size()]=0;
+        }
     }
     return(retVal);
 }
