@@ -4,6 +4,9 @@ project(simExtIK)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MACOSX_RPATH 1)
 
+# XXX: without -O2, IK plugin is broken (at least on macOS):
+set(CMAKE_CXX_FLAGS "-O2")
+
 find_package(Boost REQUIRED)
 
 if(NOT LIBPLUGIN_DIR)
