@@ -41,6 +41,7 @@
         "getObjectHandle": "simIK.htm#simIK.getObjectHandle",
         "getObjectMatrix": "simIK.htm#simIK.getObjectMatrix",
         "getObjectParent": "simIK.htm#simIK.getObjectParent",
+        "getObjectPose": "simIK.htm#simIK.getObjectPose",
         "getObjectTransformation": "simIK.htm#simIK.getObjectTransformation",
         "getObjects": "simIK.htm#simIK.getObjects",
         "handleIkGroup": "simIK.htm#simIK.handleIkGroup",
@@ -63,6 +64,7 @@
         "setLinkedDummy": "simIK.htm#simIK.setLinkedDummy",
         "setObjectMatrix": "simIK.htm#simIK.setObjectMatrix",
         "setObjectParent": "simIK.htm#simIK.setObjectParent",
+        "setObjectPose": "simIK.htm#simIK.setObjectPose",
         "setObjectTransformation": "simIK.htm#simIK.setObjectTransformation",
         "setSphericalJointMatrix": "simIK.htm#simIK.setSphericalJointMatrix",
         "setSphericalJointRotation": "simIK.htm#simIK.setSphericalJointRotation"
