@@ -313,6 +313,7 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.getConfigForTipPose(...)
+    -- deprecated
     local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
     local dof=#joints
 
@@ -347,6 +348,28 @@ function simIK.getConfigForTipPose(...)
         retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
     end
     simIK.eraseEnvironment(env)
+    sim.setThreadAutomaticSwitch(lb)
+    return retVal
+end
+
+function simIK.findConfig(...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
+    local dof=#joints
+    local lb=sim.setThreadAutomaticSwitch(false)
+
+    --local env=simIK.duplicateEnvironment(ikEnv)
+    local env=ikEnv
+    if metric==nil then metric={1,1,1,0.1} end
+    function __cb(config)
+        return callback(config,auxData)
+    end
+    local funcNm,t
+    if callback then
+        funcNm='__cb'
+        t=sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)
+    end
+    local retVal=simIK._findConfig(env,ikGroup,joints,thresholdDist,maxTime*1000,metric,funcNm,t)
+    --simIK.eraseEnvironment(env)
     sim.setThreadAutomaticSwitch(lb)
     return retVal
 end
@@ -418,7 +441,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(int environmentHandle,int ikGroup)')
     sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
-    sim.registerScriptFunction('simIK.getConfigForTipPose@simIK','table jointPositions=simIK.getConfigForTipPose(int environmentHandle,\nint ikGroupHandle,table jointHandles,float thresholdDist=0.1,\nfloat maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,\nauxData=nil,table jointOptions={},table lowLimits={},table ranges={})')
+    sim.registerScriptFunction('simIK.findConfig@simIK','table jointPositions=simIK.findConfig(int environmentHandle,\nint ikGroupHandle,table jointHandles,float thresholdDist=0.1,\nfloat maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,auxData=nil)')
     sim.registerScriptFunction('simIK.generatePath@simIK','table path=simIK.generatePath(int environmentHandle,\nint ikGroupHandle,table jointHandles,int tipHandle,\nint pathPointCount,function validationCallback=nil,auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','table_7 pose=simIK.getObjectPose(int environmentHandle,\nint objectHandle,int relativeToObjectHandle)')
     sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,\nint objectHandle,int relativeToObjectHandle,table_7 pose)')

@@ -2597,7 +2597,7 @@ bool validationCallback(simReal* conf)
 }
 
 // --------------------------------------------------------------------------------------
-// simIK.getConfigForTipPose
+// simIK.getConfigForTipPose // deprecated
 // --------------------------------------------------------------------------------------
 #define LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN "simIK._getConfigForTipPose@IK"
 #define LUA_GETCONFIGFORTIPPOSE_COMMAND "simIK._getConfigForTipPose"
@@ -2679,6 +2679,89 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
         }
         if (err.size()>0)
             simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,err.c_str());
+    }
+    if (calcResult==1)
+    {
+        std::vector<simReal> v(retConfig,retConfig+jointCnt);
+        D.pushOutData(CScriptFunctionDataItem(v));
+        D.writeDataToStack(p->stackID);
+    }
+    if (retConfig!=nullptr)
+        delete[] retConfig;
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.findConfig
+// --------------------------------------------------------------------------------------
+#define LUA_FINDCONFIG_COMMAND_PLUGIN "simIK._findConfig@IK"
+#define LUA_FINDCONFIG_COMMAND "simIK._findConfig"
+
+const int inArgs_FINDCONFIG[]={
+    8,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32|sim_script_arg_table,0,
+    sim_script_arg_real|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // cb func name
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // script handle of cb
+};
+
+void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    int calcResult=-1;
+    simReal* retConfig=nullptr;
+    size_t jointCnt=0;
+    if (D.readDataFromStack(p->stackID,inArgs_FINDCONFIG,inArgs_FINDCONFIG[0]-5,LUA_FINDCONFIG_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int ikGroupHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                jointCnt=inData->at(2).int32Data.size();
+                if (jointCnt>0)
+                {
+                    retConfig=new simReal[jointCnt];
+                    simReal thresholdDist=simReal(0.1);
+                    int timeInMs=100;
+                    simReal* metric=nullptr;
+                    bool(*cb)(simReal*)=nullptr;
+                    int scriptType=sim_scripttype_childscript;
+                    if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
+                        timeInMs=inData->at(4).int32Data[0];
+                    if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
+                        scriptType=inData->at(7).int32Data[0];
+                    if ( (inData->size()>6)&&(inData->at(6).stringData.size()==1)&&(inData->at(6).stringData[0].size()>0) )
+                    {
+                        validationCallback_funcNameAtScriptName=inData->at(6).stringData[0];
+                        validationCallback_scriptType=scriptType;
+                        validationCallback_jointCnt=jointCnt;
+                        validationCallback_envId=envId;
+                        cb=validationCallback;
+                    }
+                    if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
+                        thresholdDist=inData->at(3).realData[0];
+                    if ( (inData->size()>5)&&(inData->at(5).realData.size()>=4) )
+                        metric=&inData->at(5).realData[0];
+                    calcResult=ikFindConfig(ikGroupHandle,jointCnt,&inData->at(2).int32Data[0],thresholdDist,timeInMs,retConfig,metric,cb);
+                    if (calcResult==-1)
+                         err=ikGetLastError();
+                }
+                else
+                    err="invalid joint handles";
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_FINDCONFIG_COMMAND,err.c_str());
     }
     if (calcResult==1)
     {
@@ -3152,6 +3235,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(number environmentHandle,\nnumber ikGroupHandle,number elementHandle,table_2 weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,strConCat("number result=",LUA_HANDLEIKGROUP_COMMAND,"(number environmentHandle,number ikGroupHandle=simIK.handle_all)"),LUA_HANDLEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_FINDCONFIG_COMMAND_PLUGIN,nullptr,LUA_FINDCONFIG_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("table_3 position,table_4 quaternion,table_3 euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(\nnumber environmentHandle,number objectHandle,number relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(number environmentHandle,number objectHandle,\nnumber relativeToObjectHandle,table_3 position,table eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("table_12 matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(number environmentHandle,\nnumber objectHandle,number relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
