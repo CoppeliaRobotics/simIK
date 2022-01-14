@@ -649,7 +649,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Synopsis</td>
-<td class="apiTableRightLSyn">table jointPositions=simIK.findConfig(number environmentHandle,number ikGroupHandle,table jointHandles,number thresholdDist=0.1,number maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,auxData=nil)</td>
+<td class="apiTableRightLSyn">table jointPositions=simIK.findConfig(number environmentHandle,number ikGroupHandle,table jointHandles,number thresholdDist=0.1,number maxTime=0.5,table_4 metric={1,1,1,0.1},function/string validationCallback=nil,auxData=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Arguments</td>
@@ -660,7 +660,7 @@ td.section { margin: 0; padding: 0; }
 <div><strong>thresholdDist</strong>: a distance indicating when IK should be computed in order to try to bring the tip onto the target: since the search algorithm proceeds by generating random configurations, many of them produce a tip pose that is too far from the target pose to run IK successfully. Choosing a large value will result in slow calculations, choosing a small value might produce a smaller subset of solutions. Distance between two poses is calculated using a metric (see metric argument below).</div>
 <div><strong>maxTime</strong>: the upper time limit, in seconds, after which the function returns.</div>
 <div><strong>metric</strong>: a table to 4 values indicating a metric used to compute pose-pose distances: distance=sqrt((dx*metric[1])^2+(dy*metric[2])^2+(dz*metric[3])^2+(angle*metric[4])^2).</div>
-<div><strong>validationCallback</strong>: an optional callback function. The callback function takes as input arguments the proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
+<div><strong>validationCallback</strong>: an optional callback function expressed as a function or a string. The callback function takes as input arguments the proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
 <div><strong>auxData</strong>: auxiliary data that will be handed to the validation callback.</div>
 </td>
 </tr>
@@ -687,7 +687,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Synopsis</td>
-<td class="apiTableRightLSyn">table configurationList=simIK.generatePath(number environmentHandle,table ikGroupHandle,table jointHandles,number tipHandle,number pathPointCount,function validationCallback=nil,auxData=nil</td>
+<td class="apiTableRightLSyn">table configurationList=simIK.generatePath(number environmentHandle,table ikGroupHandle,table jointHandles,number tipHandle,number pathPointCount,function/string validationCallback=nil,auxData=nil</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Arguments</td>
@@ -697,7 +697,7 @@ td.section { margin: 0; padding: 0; }
 <div><strong>jointHandles</strong>: a table that specifies the joint handles for the joints we wish to retrieve the values calculated by the IK.</div>
 <div><strong>tipHandle</strong>: the handle of the tip object.</div>
 <div><strong>pathPointCount</strong>: the desired number of path points. Each path point contains a joint configuration. A minimum of two path points is required.</div>
-<div><strong>validationCallback</strong>: an optional callback function. The callback function takes as input arguments proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
+<div><strong>validationCallback</strong>: an optional callback function, expressed as a function or string. The callback function takes as input arguments proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
 <div><strong>auxData</strong>: auxiliary data that will be handed to the validation callback.</div>
 </td>
 </tr>

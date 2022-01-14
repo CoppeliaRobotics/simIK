@@ -314,7 +314,7 @@ end
 
 function simIK.getConfigForTipPose(...)
     -- deprecated
-    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
     local dof=#joints
 
     if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
@@ -353,7 +353,7 @@ function simIK.getConfigForTipPose(...)
 end
 
 function simIK.findConfig(...)
-    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
     local dof=#joints
     local lb=sim.setThreadAutomaticSwitch(false)
 
@@ -361,7 +361,11 @@ function simIK.findConfig(...)
     local env=ikEnv
     if metric==nil then metric={1,1,1,0.1} end
     function __cb(config)
-        return callback(config,auxData)
+        if type(callback)=='string' then
+            return _G[callback](config,auxData)
+        else
+            return callback(config,auxData)
+        end
     end
     local funcNm,t
     if callback then
@@ -375,7 +379,7 @@ function simIK.findConfig(...)
 end
 
 function simIK.generatePath(...)
-    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
+    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{type='int'},{type='any',default=NIL,nullable=true},{type='any',default=NIL}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
 
@@ -389,7 +393,11 @@ function simIK.generatePath(...)
     end
     local success=true
     if callback then
-        success=callback(retPath[1])
+        if type(callback)=='string' then
+            success=_G[callback](retPath[1])
+        else
+            success=callback(retPath[1])
+        end
     end
     if success then
         for j=1,ptCnt-1,1 do
@@ -405,7 +413,11 @@ function simIK.generatePath(...)
                 retPath[j+1][i]=simIK.getJointPosition(env,ikJoints[i])
             end
             if callback then
-                success=callback(retPath[j+1])
+                if type(callback)=='string' then
+                    success=_G[callback](retPath[j+1])
+                else
+                    success=callback(retPath[j+1])
+                end
             end
             if not success then
                 break
