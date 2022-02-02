@@ -448,15 +448,15 @@ end
 
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
-    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(int environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
-    sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','int ikElement,table simToIkObjectMap=simIK.addIkElementFromScene(int environmentHandle\n,int ikGroup,int baseHandle,int tipHandle,\nint targetHandle,int constraints)')
+    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','float[] configs=simIK.getAlternateConfigs(int environmentHandle,int[] jointHandles,float[] lowLimits=nil,float[] ranges=nil)')
+    sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','int ikElement,map simToIkObjectMap=simIK.addIkElementFromScene(int environmentHandle,int ikGroup,int baseHandle,int tipHandle,int targetHandle,int constraints)')
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(int environmentHandle,int ikGroup)')
     sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
-    sim.registerScriptFunction('simIK.findConfig@simIK','table jointPositions=simIK.findConfig(int environmentHandle,\nint ikGroupHandle,table jointHandles,float thresholdDist=0.1,\nfloat maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,auxData=nil)')
-    sim.registerScriptFunction('simIK.generatePath@simIK','table path=simIK.generatePath(int environmentHandle,\nint ikGroupHandle,table jointHandles,int tipHandle,\nint pathPointCount,function validationCallback=nil,auxData=nil)')
-    sim.registerScriptFunction('simIK.getObjectPose@simIK','table_7 pose=simIK.getObjectPose(int environmentHandle,\nint objectHandle,int relativeToObjectHandle)')
-    sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,\nint objectHandle,int relativeToObjectHandle,table_7 pose)')
+    sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},function validationCallback=nil,auxData=nil)')
+    sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,function validationCallback=nil,auxData=nil)')
+    sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
+    sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[7] pose)')
     simIK.init=nil
 end
 
