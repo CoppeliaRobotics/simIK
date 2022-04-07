@@ -3183,7 +3183,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(int environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(int environmentHandle,string data)"),LUA_LOAD_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SAVE_COMMAND_PLUGIN,strConCat("string data",LUA_SAVE_COMMAND,"(int environmentHandle)"),LUA_SAVE_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SAVE_COMMAND_PLUGIN,strConCat("string data=",LUA_SAVE_COMMAND,"(int environmentHandle)"),LUA_SAVE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTS_COMMAND_PLUGIN,strConCat("int objectHandle,string objectName,bool isJoint,int jointType=",LUA_GETOBJECTS_COMMAND,"(int environmentHandle,int index)"),LUA_GETOBJECTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTHANDLE_COMMAND_PLUGIN,strConCat("int objectHandle=",LUA_GETOBJECTHANDLE_COMMAND,"(int environmentHandle,string objectName)"),LUA_GETOBJECTHANDLE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DOESOBJECTEXIST_COMMAND_PLUGIN,strConCat("bool result=",LUA_DOESOBJECTEXIST_COMMAND,"(int environmentHandle,string objectName)"),LUA_DOESOBJECTEXIST_CALLBACK);
