@@ -3256,6 +3256,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.jointtype_spherical@simExtIK",std::to_string(ik_jointtype_spherical).c_str(),0);
     simRegisterScriptVariable("simIK.handle_all@simExtIK",std::to_string(ik_handle_all).c_str(),0);
     simRegisterScriptVariable("simIK.handle_parent@simExtIK",std::to_string(ik_handle_parent).c_str(),0);
+    simRegisterScriptVariable("simIK.handle_world@simExtIK",std::to_string(ik_handle_world).c_str(),0);
     simRegisterScriptVariable("simIK.constraint_x@simExtIK",std::to_string(ik_constraint_x).c_str(),0);
     simRegisterScriptVariable("simIK.constraint_y@simExtIK",std::to_string(ik_constraint_y).c_str(),0);
     simRegisterScriptVariable("simIK.constraint_z@simExtIK",std::to_string(ik_constraint_z).c_str(),0);
