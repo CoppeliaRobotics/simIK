@@ -1,4 +1,5 @@
 #include "envCont.h"
+#include <stddef.h>
 
 CEnvCont::CEnvCont()
 {
