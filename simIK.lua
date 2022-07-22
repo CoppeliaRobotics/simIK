@@ -175,7 +175,7 @@ function simIK.applyIkEnvironmentToScene(...)
         for k,v in pairs(groupData.joints) do
             if not groupData.passiveJoints[k] then
                 if sim.getJointType(k)==sim.joint_spherical_subtype then
-                    if sim.getJointMode(k)~=sim.jointmode_force then
+                    if sim.getJointMode(k)~=sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
                         sim.setSphericalJointMatrix(k,simIK.getJointMatrix(ikEnv,v))
                     end
                 else
