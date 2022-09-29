@@ -51,6 +51,7 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getIkGroupCalculation">simIK.getIkGroupCalculation</a>
 <a href="?#simIK.getIkGroupFlags">simIK.getIkGroupFlags</a>
 <a href="?#simIK.getIkGroupHandle">simIK.getIkGroupHandle</a>
+<a href="?#simIK.getIkGroupJointLimitHits">simIK.getIkGroupJointLimitHits</a>
 <a href="?#simIK.getJacobian">simIK.getJacobian</a>
 <a href="?#simIK.getJointDependency">simIK.getJointDependency</a>
 <a href="?#simIK.getJointIkWeight">simIK.getJointIkWeight</a>
@@ -169,6 +170,7 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.doesIkGroupExist">simIK.doesIkGroupExist</a>
 <a href="?#simIK.getIkGroupFlags">simIK.getIkGroupFlags</a>
 <a href="?#simIK.setIkGroupFlags">simIK.setIkGroupFlags</a>
+<a href="?#simIK.getIkGroupJointLimitHits">simIK.getIkGroupJointLimitHits</a>
 <a href="?#simIK.getIkGroupCalculation">simIK.getIkGroupCalculation</a>
 <a href="?#simIK.setIkGroupCalculation">simIK.setIkGroupCalculation</a>
 </pre>
@@ -1195,6 +1197,44 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
 <td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.doesIkGroupExist">simIK.doesIkGroupExist</a>, <a href="#simIK.createIkGroup">simIK.createIkGroup</a></td>
+</tr>
+</table>
+<br>
+
+<p class="subsectionBar">
+<a name="simIK.getIkGroupJointLimitHits" id="simIK.getIkGroupJointLimitHits"></a>simIK.getIkGroupJointLimitHits</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Checks which joints of an IK group hit a limit last time that IK group was handled</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">int[] jointHandles,float[] underOrOvershots=simIK.getIkGroupJointLimitHits(int environmentHandle,int ikGroupHandle)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>jointHandles</strong>: the joint handles that that had joint limits under- or overshot</div>
+<div><strong>underOrOvershots</strong>: the corresponding under- or overshots, for each of the jointHandles</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">list jointHandles,list underOrOvershots=simIK.getIkGroupJointLimitHits(int environmentHandle,int ikGroupHandle)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.setIkGroupFlags">simIK.setIkGroupFlags</a></td>
 </tr>
 </table>
 <br>

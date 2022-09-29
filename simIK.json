@@ -26,6 +26,7 @@
         "getIkGroupCalculation": "simIK.htm#simIK.getIkGroupCalculation",
         "getIkGroupFlags": "simIK.htm#simIK.getIkGroupFlags",
         "getIkGroupHandle": "simIK.htm#simIK.getIkGroupHandle",
+        "getIkGroupJointLimitHits": "simIK.htm#simIK.getIkGroupJointLimitHits",
         "getJacobian": "simIK.htm#simIK.getJacobian",
         "getJointDependency": "simIK.htm#simIK.getJointDependency",
         "getJointIkWeight": "simIK.htm#simIK.getJointIkWeight",

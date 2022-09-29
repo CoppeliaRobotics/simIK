@@ -1846,6 +1846,53 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.getIkGroupJointLimitHits
+// --------------------------------------------------------------------------------------
+#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN "simIK.getIkGroupJointLimitHits@IK"
+#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND "simIK.getIkGroupJointLimitHits"
+
+const int inArgs_GETIKGROUPJOINTLIMITHITS[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    std::vector<int> handles;
+    std::vector<simReal> overshots;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPJOINTLIMITHITS,inArgs_GETIKGROUPJOINTLIMITHITS[0],LUA_GETIKGROUPJOINTLIMITHITS_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int ikGroupHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetIkGroupJointLimitHits(ikGroupHandle,&handles,&overshots);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(handles));
+        D.pushOutData(CScriptFunctionDataItem(overshots));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getIkGroupCalculation
 // --------------------------------------------------------------------------------------
 #define LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.getIkGroupCalculation@IK"
@@ -3218,6 +3265,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_CREATEIKGROUP_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_CREATEIKGROUP_COMMAND,"(int environmentHandle,string ikGroupName='')"),LUA_CREATEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPFLAGS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int flags)"),LUA_SETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,float[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("int method,float damping,int maxIterations=",LUA_GETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPCALCULATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle,int method,float damping,int maxIterations)"),LUA_SETIKGROUPCALCULATION_CALLBACK);
 //    simRegisterScriptCallbackFunction(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND_PLUGIN,strConCat("float[2] thresholds=",LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPLIMITTHRESHOLDS_CALLBACK);
