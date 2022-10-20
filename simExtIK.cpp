@@ -2574,15 +2574,84 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+static std::string jacobianCallback_funcName;
+static int jacobianCallback_scriptHandle;
+static int jacobianCallback_envId;
+
+int jacobianCallback(const int jacobianSize[2],simReal* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,simReal* errorVector,simReal* qVector)
+{
+    unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
+    int retVal=0; // 0=jacobian didn't change, 1=jacobian and/or error vector changed, 2=jointValues were computed
+    int stack=simCreateStack();
+    simPushInt32TableOntoStack(stack,rowConstraints,jacobianSize[0]);
+    simPushInt32TableOntoStack(stack,rowIkElements,jacobianSize[0]);
+    simPushInt32TableOntoStack(stack,colHandles,jacobianSize[1]);
+    simPushInt32TableOntoStack(stack,colStages,jacobianSize[1]);
+#ifdef SIM_MATH_DOUBLE
+    simPushDoubleTableOntoStack(stack,jacobian,jacobianSize[0]*jacobianSize[1]);
+    simPushDoubleTableOntoStack(stack,errorVector,jacobianSize[0]);
+#else
+    simPushFloatTableOntoStack(stack,jacobian,jacobianSize[0]*jacobianSize[1]);
+    simPushFloatTableOntoStack(stack,errorVector,jacobianSize[0]);
+#endif
+    if (simCallScriptFunctionEx(jacobianCallback_scriptHandle,jacobianCallback_funcName.c_str(),stack)!=-1)
+    {
+        if (simGetStackSize(stack)==1)
+        {
+            int s=simGetStackTableInfo(stack,0);
+            if (s==jacobianSize[1])
+            { // we receive the joint values (the solution)
+                retVal=2;
+#ifdef SIM_MATH_DOUBLE
+                simGetStackDoubleTable(stack,qVector,s);
+#else
+                simGetStackFloatTable(stack,qVector,s);
+#endif
+            }
+        }
+        if (simGetStackSize(stack)==2)
+        {
+            // First the error vector:
+            int s=simGetStackTableInfo(stack,0);
+            if (s==jacobianSize[0])
+            { // we receive the updated error vector
+#ifdef SIM_MATH_DOUBLE
+                simGetStackDoubleTable(stack,errorVector,s);
+#else
+                simGetStackFloatTable(stack,errorVector,s);
+#endif
+                simPopStackItem(stack,1);
+                // Now the Jacobian:
+                s=simGetStackTableInfo(stack,0);
+                if (s==jacobianSize[0]*jacobianSize[1])
+                { // we receive the updated Jacobian
+                    retVal=1;
+#ifdef SIM_MATH_DOUBLE
+                    simGetStackDoubleTable(stack,jacobian,s);
+#else
+                    simGetStackFloatTable(stack,jacobian,s);
+#endif
+                }
+            }
+        }
+    }
+    simReleaseStack(stack);
+    lockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
+    ikSwitchEnvironment(jacobianCallback_envId); // actually required to correctly support CoppeliaSim's old GUI-based IK
+    return(retVal);
+}
+// --------------------------------------------------------------------------------------
 // simIK.handleIkGroup
 // --------------------------------------------------------------------------------------
-#define LUA_HANDLEIKGROUP_COMMAND_PLUGIN "simIK.handleIkGroup@IK"
-#define LUA_HANDLEIKGROUP_COMMAND "simIK.handleIkGroup"
+#define LUA_HANDLEIKGROUP_COMMAND_PLUGIN "simIK._handleIkGroup@IK"
+#define LUA_HANDLEIKGROUP_COMMAND "simIK._handleIkGroup"
 
 const int inArgs_HANDLEIKGROUP[]={
-    2,
+    4,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // cb func name
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // script handle of cb
 };
 
 void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
@@ -2590,7 +2659,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int ikRes=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUP,inArgs_HANDLEIKGROUP[0]-1,LUA_HANDLEIKGROUP_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUP,inArgs_HANDLEIKGROUP[0]-3,LUA_HANDLEIKGROUP_COMMAND))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2600,9 +2669,17 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
+                int(*cb)(const simInt*,simReal*,const simInt*,const simInt*,const simInt*,const simInt*,simReal*,simReal*)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
                     ikGroupHandle=inData->at(1).int32Data[0];
-                result=ikHandleIkGroup(ikGroupHandle,&ikRes);
+                if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
+                {
+                    jacobianCallback_funcName=inData->at(2).stringData[0];
+                    jacobianCallback_scriptHandle=inData->at(3).int32Data[0];
+                    jacobianCallback_envId=envId;
+                    cb=jacobianCallback;
+                }
+                result=ikHandleIkGroup(ikGroupHandle,&ikRes,cb);
                 if (!result)
                     err=ikGetLastError();
             }
@@ -3123,7 +3200,7 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
+            simSetLastError(LUA_GETJACOBIAN_COMMAND,err.c_str());
     }
     if (matr!=nullptr)
     {
@@ -3174,7 +3251,7 @@ void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
+            simSetLastError(LUA_GETMANIPULABILITY_COMMAND,err.c_str());
     }
     if (success)
     {
@@ -3281,7 +3358,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] precision)"),LUA_SETIKELEMENTPRECISION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("float[2] weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,strConCat("int result=",LUA_HANDLEIKGROUP_COMMAND,"(int environmentHandle,int ikGroupHandle=simIK.handle_all)"),LUA_HANDLEIKGROUP_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,nullptr,LUA_HANDLEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_FINDCONFIG_COMMAND_PLUGIN,nullptr,LUA_FINDCONFIG_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);

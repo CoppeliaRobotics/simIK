@@ -343,7 +343,7 @@ function simIK.getConfigForTipPose(...)
         local funcNm,t
         if callback then
             funcNm='__cb'
-            t=sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)
+            t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
         end
         retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
     end
@@ -370,10 +370,41 @@ function simIK.findConfig(...)
     local funcNm,t
     if callback then
         funcNm='__cb'
-        t=sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)
+        t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
     end
     local retVal=simIK._findConfig(env,ikGroup,joints,thresholdDist,maxTime*1000,metric,funcNm,t)
     --simIK.eraseEnvironment(env)
+    sim.setThreadAutomaticSwitch(lb)
+    return retVal
+end
+
+function simIK.handleIkGroup(...)
+    local ikEnv,ikGroup,callback,auxData=checkargs({{type='int'},{type='int'},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect)
+        local data={}
+        data.jacobian={matrix=jacobian,size={#rows_constr,#cols_handles}}
+        data.rows={}
+        data.cols={}
+        data.errorVector=errorVect
+        for i=1,#rows_constr,1 do
+            data.rows[i]={constraint=rows_constr[i],element=rows_ikEl[i]}
+        end
+        for i=1,#cols_handles,1 do
+            data.cols[i]={joint=cols_handles[i],dofIndex=cols_dofIndex[i]}
+        end
+        if type(callback)=='string' then
+            return _G[callback](data,auxData)
+        else
+            return callback(data,auxData)
+        end
+    end
+    local funcNm,t
+    if callback then
+        funcNm='__cb'
+        t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
+    end
+    local retVal=simIK._handleIkGroup(ikEnv,ikGroup,funcNm,t)
     sim.setThreadAutomaticSwitch(lb)
     return retVal
 end
@@ -454,6 +485,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
+    sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
     sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[7] pose)')
