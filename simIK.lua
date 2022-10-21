@@ -383,10 +383,10 @@ function simIK.handleIkGroup(...)
     local lb=sim.setThreadAutomaticSwitch(false)
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect)
         local data={}
-        data.jacobian={matrix=jacobian,size={#rows_constr,#cols_handles}}
+        data.jacobian={data=jacobian,dims={#rows_constr,#cols_handles}}
         data.rows={}
         data.cols={}
-        data.errorVector=errorVect
+        data.errorVector={data=errorVect,dims={#rows_constr,1}}
         for i=1,#rows_constr,1 do
             data.rows[i]={constraint=rows_constr[i],element=rows_ikEl[i]}
         end
