@@ -28,7 +28,6 @@ coppeliasim_add_plugin(
     ../coppeliaKinematicsRoutines/ik.cpp
     ../coppeliaKinematicsRoutines/environment.cpp
     ../coppeliaKinematicsRoutines/serialization.cpp
-    ../coppeliaKinematicsRoutines/ikRoutines.cpp
     ../coppeliaKinematicsRoutines/ikGroupContainer.cpp
     ../coppeliaKinematicsRoutines/ikGroup.cpp
     ../coppeliaKinematicsRoutines/ikElement.cpp

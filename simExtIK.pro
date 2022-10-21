@@ -60,7 +60,6 @@ HEADERS += simExtIK.h \
     ../coppeliaKinematicsRoutines/ik.h \
     ../coppeliaKinematicsRoutines/environment.h \
     ../coppeliaKinematicsRoutines/serialization.h \
-    ../coppeliaKinematicsRoutines/ikRoutines.h \
     ../coppeliaKinematicsRoutines/ikGroupContainer.h \
     ../coppeliaKinematicsRoutines/ikGroup.h \
     ../coppeliaKinematicsRoutines/ikElement.h \
@@ -87,7 +86,6 @@ SOURCES += simExtIK.cpp \
     ../coppeliaKinematicsRoutines/ik.cpp \
     ../coppeliaKinematicsRoutines/environment.cpp \
     ../coppeliaKinematicsRoutines/serialization.cpp \
-    ../coppeliaKinematicsRoutines/ikRoutines.cpp \
     ../coppeliaKinematicsRoutines/ikGroupContainer.cpp \
     ../coppeliaKinematicsRoutines/ikGroup.cpp \
     ../coppeliaKinematicsRoutines/ikElement.cpp \
