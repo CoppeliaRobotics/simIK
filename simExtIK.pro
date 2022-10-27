@@ -72,10 +72,8 @@ HEADERS += simExtIK.h \
     ../simMath/3Vector.h \
     ../simMath/4Vector.h \
     ../simMath/7Vector.h \
-    ../simMath/Vector.h \
     ../simMath/3X3Matrix.h \
     ../simMath/4X4Matrix.h \
-    ../simMath/4X4FullMatrix.h \
     ../simMath/MMatrix.h \
 
 SOURCES += simExtIK.cpp \
@@ -97,10 +95,8 @@ SOURCES += simExtIK.cpp \
     ../simMath/3Vector.cpp \
     ../simMath/4Vector.cpp \
     ../simMath/7Vector.cpp \
-    ../simMath/Vector.cpp \
     ../simMath/3X3Matrix.cpp \
     ../simMath/4X4Matrix.cpp \
-    ../simMath/4X4FullMatrix.cpp \
     ../simMath/MMatrix.cpp \
 
 unix:!symbian {
