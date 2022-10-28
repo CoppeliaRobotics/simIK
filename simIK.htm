@@ -52,7 +52,6 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getIkGroupFlags">simIK.getIkGroupFlags</a>
 <a href="?#simIK.getIkGroupHandle">simIK.getIkGroupHandle</a>
 <a href="?#simIK.getIkGroupJointLimitHits">simIK.getIkGroupJointLimitHits</a>
-<a href="?#simIK.getJacobian">simIK.getJacobian</a>
 <a href="?#simIK.getJointDependency">simIK.getJointDependency</a>
 <a href="?#simIK.getJointIkWeight">simIK.getJointIkWeight</a>
 <a href="?#simIK.getJointInterval">simIK.getJointInterval</a>
@@ -64,7 +63,6 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getJointTransformation">simIK.getJointTransformation</a>
 <a href="?#simIK.getJointType">simIK.getJointType</a>
 <a href="?#simIK.getLinkedDummy">simIK.getLinkedDummy</a>
-<a href="?#simIK.getManipulability">simIK.getManipulability</a>
 <a href="?#simIK.getObjectHandle">simIK.getObjectHandle</a>
 <a href="?#simIK.getObjectMatrix">simIK.getObjectMatrix</a>
 <a href="?#simIK.getObjectParent">simIK.getObjectParent</a>
@@ -200,8 +198,6 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.findConfig">simIK.findConfig</a>
 <a href="?#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>
 <a href="?#simIK.computeJacobian">simIK.computeJacobian</a>
-<a href="?#simIK.getJacobian">simIK.getJacobian</a>
-<a href="?#simIK.getManipulability">simIK.getManipulability</a>
 <a href="?#simIK.generatePath">simIK.generatePath</a>
 </pre>
 </td></tr>
@@ -364,35 +360,40 @@ td.section { margin: 0; padding: 0; }
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Computes the Jacobian for an IK group.</td>
+<td class="apiTableRightDescr">Computes the Jacobian and error vector for a kinematic chain</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">bool success=simIK.computeJacobian(int environmentHandle,int ikGroupHandle,int options)</td>
+<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeJacobian(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,int altBase=-1)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-<div><strong>options</strong>: options flag, bit-coded. bit0 set (i.e. 1): takes joint weights into account.</div>
+<div><strong>baseObject</strong>: the handle of the base of the kinematic chain, or -1 for the world</div>
+<div><strong>lastJoint</strong>: the handle of the last joint in the kinematic chain, when going from base to tip</div>
+<div><strong>constraints</strong>: a combination of following is possible: simIK.constraint_x, simIK.constraint_y, simIK.constraint_z, simIK.constraint_alpha_beta, simIK.constraint_gamma. For convenience we also have simIK.constraint_position=simIK.constraint_x|simIK.constraint_y|simIK.constraint_z, simIK.constraint_orientation=simIK.constraint_alpha_beta|simIK.constraint_gamma, and simIK.constraint_pose=simIK.constraint_position|simIK.constraint_orientation</div>
+<div><strong>tipMatrix</strong>: the transformation matrix of the tip object, relative to the world</div>
+<div><strong>targetMatrix</strong>: the transformation matrix of the target object, relative to the world. Can be nil, in which case the targetPose is the same as the tipPose</div>
+<div><strong>altBase</strong>: the handle of an object, that should serve as the reference frame, or -1 to use baseHandle as reference frame</div>
 </td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>success</strong>: whether the Jacobian could successfully be computed.</div>
+<div><strong>jacobian</strong>: the jacobian (row major order). Each row corresponds to one constraint in following order: x, y, z, alpha, beta, gamma. Each column corresponds to one joint, from base to tip</div>
+<div><strong>errorVector</strong>: the error vector between the target and the tip</div>
 </td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">bool success=simIK.computeJacobian(int environmentHandle,int ikGroupHandle,int options)</td>
+<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeJacobian(<span class="apiTableRightLSyn">int environmentHandle,int baseObject,int lastJoint,int constraints,list tipMatrix,list targetMatrix=nil,int altBase=-1)</span></td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJacobian">simIK.getJacobian</a>, <a href="#simIK.getManipulability">simIK.getManipulability</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleIkGroup">simIK.handleIkGroup</a></td>
 </tr>
 </table>
 <br>
@@ -764,7 +765,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.duplicateEnvironment">simIK.duplicateEnvironment</a>, <a href="#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.getJacobian">simIK.getJacobian</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.duplicateEnvironment">simIK.duplicateEnvironment</a>, <a href="#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
 </tr>
 </table>
 <br>
@@ -892,7 +893,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.duplicateEnvironment">simIK.duplicateEnvironment</a>, <a href="#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.getJacobian">simIK.getJacobian</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.duplicateEnvironment">simIK.duplicateEnvironment</a>, <a href="#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
 </tr>
 </table>
 <br>
@@ -1235,44 +1236,6 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
 <td class="apiTableRightDescr"><a href="#simIK.setIkGroupFlags">simIK.setIkGroupFlags</a></td>
-</tr>
-</table>
-<br>
-
-<p class="subsectionBar">
-<a name="simIK.getJacobian" id="simIK.getJacobian"></a>simIK.getJacobian</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the Jacobian previously computed via <a href="#simIK.computeJacobian">simIK.computeJacobian</a>.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jacobian,int[2] matrixSize=simIK.getJacobian(int environmentHandle,int ikGroupHandle)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>jacobian</strong>: a table with the jacobian values.</div>
-<div><strong>matrixSize</strong>: a table containing the sizes (row count (i.e. number of DoFs) and column count) of the Jacobian matrix.</div>
-</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jacobian,list matrixSize=simIK.getJacobian(int environmentHandle,int ikGroupHandle)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.getManipulability">simIK.getManipulability</a></td>
 </tr>
 </table>
 <br>
@@ -1690,43 +1653,6 @@ td.section { margin: 0; padding: 0; }
 <br>
 
 <p class="subsectionBar">
-<a name="simIK.getManipulability" id="simIK.getManipulability"></a>simIK.getManipulability</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the manipulability value ( sqrt(det(J*JT)) ) of the Jacobian previously computed via <a href="#simIK.computeJacobian">simIK.computeJacobian</a>.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float manipulability=simIK.getManipulability(int environmentHandle,int ikGroupHandle)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>manipulability</strong>: the manipulability value.</div>
-</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">float manipulability=simIK.getManipulability(int environmentHandle,int ikGroupHandle)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.getJacobian">simIK.getJacobian</a></td>
-</tr>
-</table>
-<br>
-
-<p class="subsectionBar">
 <a name="simIK.getObjectHandle" id="simIK.getObjectHandle"></a>simIK.getObjectHandle</p>
 <table class="apiTable">
 <tr class="apiTableTr">
@@ -1969,13 +1895,18 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle)</td>
+<td class="apiTableRightLSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func callback=nil,any auxData=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>ikGroupHandle</strong>: the handle of the IK group, or simIK.handle_all to handle all IK groups.</div>
+<div><strong>callback</strong>: an optional callback that allows to inspect and manipulate the generated Jacobians and error vectors:</div>
+<div>callbackFunction(data,auxData), with data containing the Jacobian and error vector</div>
+<div></div>
+<div>If the callback doesn't return a value, then the original Jacobian and error vector are used for computation. If the callback returns one table, then the table is interpreted as the computed joint errors. If the callback returns two tables, the first is interpreted as the modified Jacobian, the second is interpreted as the modified error vector</div>
+
 </td>
 </tr>
 <tr class="apiTableTr">

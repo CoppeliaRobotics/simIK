@@ -2578,10 +2578,10 @@ static std::string jacobianCallback_funcName;
 static int jacobianCallback_scriptHandle;
 static int jacobianCallback_envId;
 
-int jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,std::vector<simReal>* errorVector,simReal* qVector)
+bool jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,std::vector<simReal>* errorVector,simReal* qVector)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
-    int retVal=0; // 0=jacobian didn't change, 1=jacobian and/or error vector changed, 2=jointValues were computed
+    bool retVal=false; // if true jointValues were computed
     int stack=simCreateStack();
     int cols=jacobianSize[1];
     simPushInt32TableOntoStack(stack,rowConstraints,jacobianSize[0]);
@@ -2602,7 +2602,7 @@ int jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,co
             int s=simGetStackTableInfo(stack,0);
             if (s==jacobianSize[1])
             { // we receive the joint values (the solution)
-                retVal=2;
+                retVal=true;
 #ifdef SIM_MATH_DOUBLE
                 simGetStackDoubleTable(stack,qVector,s);
 #else
@@ -2629,7 +2629,6 @@ int jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,co
                 if (r==rows*cols)
                 { // we receive the updated Jacobian
                     jacobian->resize(r);
-                    retVal=1;
 #ifdef SIM_MATH_DOUBLE
                     simGetStackDoubleTable(stack,jacobian->data(),r);
 #else
@@ -2673,7 +2672,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                int(*cb)(const simInt*,std::vector<simReal>*,const simInt*,const simInt*,const simInt*,const simInt*,std::vector<simReal>*,simReal*)=nullptr;
+                bool(*cb)(const simInt*,std::vector<simReal>*,const simInt*,const simInt*,const simInt*,const simInt*,std::vector<simReal>*,simReal*)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
                     ikGroupHandle=inData->at(1).int32Data[0];
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
@@ -3437,7 +3436,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[3] position,float[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int[3] objectHandles,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,int altBase=-1)"),LUA_COMPUTEJACOBIAN_CALLBACK);
 
     simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
     simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);
