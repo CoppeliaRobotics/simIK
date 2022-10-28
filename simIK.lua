@@ -173,17 +173,15 @@ function simIK.applyIkEnvironmentToScene(...)
     local res=simIK.handleIkGroup(ikEnv,ikGroup)
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         for k,v in pairs(groupData.joints) do
-            if not groupData.passiveJoints[k] then
-                if sim.getJointType(k)==sim.joint_spherical_subtype then
-                    if sim.getJointMode(k)~=sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
-                        sim.setSphericalJointMatrix(k,simIK.getJointMatrix(ikEnv,v))
-                    end
-                else
-                    if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
-                        sim.setJointTargetPosition(k,simIK.getJointPosition(ikEnv,v))
-                    else    
-                        sim.setJointPosition(k,simIK.getJointPosition(ikEnv,v))
-                    end
+            if sim.getJointType(k)==sim.joint_spherical_subtype then
+                if sim.getJointMode(k)~=sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
+                    sim.setSphericalJointMatrix(k,simIK.getJointMatrix(ikEnv,v))
+                end
+            else
+                if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
+                    sim.setJointTargetPosition(k,simIK.getJointPosition(ikEnv,v))
+                else    
+                    sim.setJointPosition(k,simIK.getJointPosition(ikEnv,v))
                 end
             end
         end
@@ -213,7 +211,6 @@ function simIK.addIkElementFromScene(...)
     local allObjects=_S.ikEnvs[ikEnv].allObjects
     if not groupData then
         groupData={}
-        groupData.passiveJoints={}
         groupData.joints={}
         groupData.bases={}
         groupData.targets={}
@@ -225,7 +222,7 @@ function simIK.addIkElementFromScene(...)
     if simBase~=-1 then
         ikBase=allObjects[simBase] -- maybe already there
         if not ikBase then
-            ikBase=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simBase,3))
+            ikBase=simIK.createDummy(ikEnv)
             simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
             allObjects[simBase]=ikBase
         end
@@ -234,14 +231,14 @@ function simIK.addIkElementFromScene(...)
     
     local ikTip=allObjects[simTip] -- maybe already there
     if not ikTip then
-        ikTip=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simTip,3))
+        ikTip=simIK.createDummy(ikEnv)
         simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
         allObjects[simTip]=ikTip
     end
 
     local ikTarget=allObjects[simTarget] -- maybe already there
     if not ikTarget then
-        ikTarget=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simTarget,3))
+        ikTarget=simIK.createDummy(ikEnv)
         simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
         allObjects[simTarget]=ikTarget
     end
@@ -254,16 +251,18 @@ function simIK.addIkElementFromScene(...)
     local simIterator=sim.getObjectParent(simPrevIterator)
     local ikPrevIterator=ikTip
     local ikIterator=-1
+    local allDependentSimJoints={}
+    local allSimJoints={}
     while simIterator~=simBase do
         if allObjects[simIterator] then
             -- object already added, and parenting to child done
             ikIterator=allObjects[simIterator]
         else
             if sim.getObjectType(simIterator)~=sim.object_joint_type then
-                ikIterator=simIK.createDummy(ikEnv) --name not really needed in this context-- ,sim.getObjectAlias(simIterator,3))
+                ikIterator=simIK.createDummy(ikEnv)
             else
                 local t=sim.getJointType(simIterator)
-                ikIterator=simIK.createJoint(ikEnv,t) --name not really needed in this context-- ,sim.getObjectAlias(simIterator,3))
+                ikIterator=simIK.createJoint(ikEnv,t)
                 local c,interv=sim.getJointInterval(simIterator)
                 simIK.setJointInterval(ikEnv,ikIterator,c,interv)
                 local sp=sim.getObjectFloatParam(simIterator,sim.jointfloatparam_screw_pitch)
@@ -277,6 +276,13 @@ function simIK.addIkElementFromScene(...)
                 else
                     simIK.setJointPosition(ikEnv,ikIterator,sim.getJointPosition(simIterator))
                 end
+                if sim.getJointMode(simIterator)==sim.jointmode_dependent then
+                    local dep,off,mult=sim.getJointDependency(simIterator)
+                    if dep~=-1 then
+                        allDependentSimJoints[#allDependentSimJoints+1]={simIterator,dep,off,mult,ikIterator}
+                    end
+                end
+                allSimJoints[simIterator]=ikIterator
             end
             allObjects[simIterator]=ikIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
@@ -290,6 +296,13 @@ function simIK.addIkElementFromScene(...)
         simIterator=sim.getObjectParent(simIterator)
         ikIterator=simIK.getObjectParent(ikEnv,ikIterator)
     end
+    
+    for i=1,#allDependentSimJoints,1 do
+        if allSimJoints[allDependentSimJoints[i][2]] then
+            simIK.setJointDependency(ikEnv,allDependentSimJoints[i][5],allSimJoints[allDependentSimJoints[i][2]],allDependentSimJoints[i][3],allDependentSimJoints[i][4])
+        end
+    end
+    
     simIK.setObjectParent(ikEnv,ikPrevIterator,ikBase)
     simIK.setObjectParent(ikEnv,ikTarget,ikBase)
 

@@ -3443,8 +3443,6 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.objecttype_dummy@simExtIK",std::to_string(ik_objecttype_dummy).c_str(),0);
     simRegisterScriptVariable("simIK.jointmode_passive@simExtIK",std::to_string(ik_jointmode_passive).c_str(),0);
     simRegisterScriptVariable("simIK.jointmode_ik@simExtIK",std::to_string(ik_jointmode_ik).c_str(),0);
-    simRegisterScriptVariable("simIK.jointmode_dependent@simExtIK",std::to_string(ik_jointmode_dependent).c_str(),0);
-    simRegisterScriptVariable("simIK.jointmode_force@simExtIK",std::to_string(ik_jointmode_force).c_str(),0);
     simRegisterScriptVariable("simIK.jointtype_revolute@simExtIK",std::to_string(ik_jointtype_revolute).c_str(),0);
     simRegisterScriptVariable("simIK.jointtype_prismatic@simExtIK",std::to_string(ik_jointtype_prismatic).c_str(),0);
     simRegisterScriptVariable("simIK.jointtype_spherical@simExtIK",std::to_string(ik_jointtype_spherical).c_str(),0);
