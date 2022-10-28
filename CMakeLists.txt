@@ -39,10 +39,8 @@ coppeliasim_add_plugin(
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/3Vector.cpp
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/4Vector.cpp
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/7Vector.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/Vector.cpp
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/3X3Matrix.cpp
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/4X4Matrix.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/4X4FullMatrix.cpp
     ${COPPELIASIM_ROOT_DIR}/programming/simMath/MMatrix.cpp
     ${COPPELIASIM_COMMON_DIR}/scriptFunctionData.cpp
     ${COPPELIASIM_COMMON_DIR}/scriptFunctionDataItem.cpp
