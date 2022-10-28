@@ -3129,68 +3129,87 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 #define LUA_COMPUTEJACOBIAN_COMMAND "simIK.computeJacobian"
 
 const int inArgs_COMPUTEJACOBIAN[]={
-    5,
+    7,
     sim_script_arg_int32,0, // Ik env
-    sim_script_arg_int32|sim_script_arg_table,3, // tip joint, base & constr. base (prev. ik group handle)
-    sim_script_arg_int32,0, // constraints (prev. options)
+    sim_script_arg_int32,0, // base handle (prev. ik group handle)
+    sim_script_arg_int32,0, // last joint handle (prev. options)
+    sim_script_arg_int32,0, // constraints
     sim_script_arg_real|sim_script_arg_table,12, // tip pose
-    sim_script_arg_real|sim_script_arg_table,12, // target pose
+    sim_script_arg_real|sim_script_arg_table,12, // target pose, optional
+    sim_script_arg_int32,0, // alt base handle, optional
 };
 
 void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-2,LUA_COMPUTEJACOBIAN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-4,LUA_COMPUTEJACOBIAN_COMMAND))
     {
         std::string err;
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         if (inData->size()>=4)
         {
-            if (inData->at(3).doubleData.size()>=7)
+            int baseHandle=inData->at(1).int32Data[0];
+            int jointHandle=inData->at(2).int32Data[0];
+            int altBaseHandle=-1;
+            if ( (inData->size()>=5)&&(inData->at(3).int32Data.size()==1)&&(inData->at(4).doubleData.size()>=7) )
             {
-                int handles[3];
-                for (size_t i=0;i<3;i++)
-                    handles[i]=inData->at(1).int32Data[i];
-                int constr=inData->at(2).int32Data[0];
+                int constraints=inData->at(3).int32Data[0];
                 C7Vector tipPose;
-                if (inData->at(3).doubleData.size()<12)
-                    tipPose.setData(inData->at(3).doubleData.data(),true);
+                if (inData->at(4).doubleData.size()<12)
+                    tipPose.setData(inData->at(4).doubleData.data(),true);
                 else
                 {
                     C4X4Matrix m;
-                    m.setData(inData->at(3).doubleData.data());
+                    m.setData(inData->at(4).doubleData.data());
                     tipPose=m.getTransformation();
                 }
-
                 C7Vector targetPose(tipPose);
-                if ( (inData->size()>=5)&&(inData->at(4).doubleData.size()>=7) )
+                bool ok=true;
+                if (inData->size()>=6)
                 {
-                    if (inData->at(4).doubleData.size()<12)
-                        targetPose.setData(inData->at(4).doubleData.data(),true);
-                    else
+                    if (inData->at(5).doubleData.size()>=7)
                     {
-                        C4X4Matrix m;
-                        m.setData(inData->at(4).doubleData.data());
-                        targetPose=m.getTransformation();
+                        if (inData->at(5).doubleData.size()<12)
+                            targetPose.setData(inData->at(5).doubleData.data(),true);
+                        else
+                        {
+                            C4X4Matrix m;
+                            m.setData(inData->at(5).doubleData.data());
+                            targetPose=m.getTransformation();
+                        }
+                        if (inData->size()>=7)
+                        {
+                            if (inData->at(3).int32Data.size()==1)
+                                altBaseHandle=inData->at(3).int32Data[0];
+                            else
+                                ok=false;
+                        }
                     }
+                    else
+                        ok=false;
                 }
-                std::vector<simReal> jacobian;
-                std::vector<simReal> errorVect;
-                CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-                if (ikSwitchEnvironment(envId))
+                if (ok)
                 {
-                    if (ikComputeJacobian(handles,constr,&tipPose,&targetPose,&jacobian,&errorVect))
+                    std::vector<simReal> jacobian;
+                    std::vector<simReal> errorVect;
+                    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+                    if (ikSwitchEnvironment(envId))
                     {
-                        D.pushOutData(CScriptFunctionDataItem(jacobian));
-                        D.pushOutData(CScriptFunctionDataItem(errorVect));
-                        D.writeDataToStack(p->stackID);
+                        if (ikComputeJacobian(baseHandle,altBaseHandle,jointHandle,constraints,&tipPose,&targetPose,&jacobian,&errorVect))
+                        {
+                            D.pushOutData(CScriptFunctionDataItem(jacobian));
+                            D.pushOutData(CScriptFunctionDataItem(errorVect));
+                            D.writeDataToStack(p->stackID);
+                        }
+                        else
+                            err=ikGetLastError();
                     }
                     else
                         err=ikGetLastError();
                 }
                 else
-                    err=ikGetLastError();
+                    err="invalid arguments";
             }
             else
                 err="invalid arguments";
