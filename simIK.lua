@@ -132,23 +132,6 @@ function simIK.applySceneToIkEnvironment(...)
     local lb=sim.setThreadAutomaticSwitch(false)
     
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    if groupData.notYetApplied then
-        -- Joint dependencies can go across IK elements. So apply them the first time here:
-        for k,v in pairs(groupData.joints) do
-            if sim.getJointMode(k)==sim.jointmode_dependent and sim.getJointType(k)~=sim.joint_spherical_subtype then
-                local m,o,f=sim.getJointDependency(k)
-                if m~=-1 then
-                    if groupData.joints[m] then
-                        simIK.setJointMode(ikEnv,v,simIK.jointmode_dependent)
-                        simIK.setJointDependency(ikEnv,v,groupData.joints[m],o,f)
-                    else
-                        simIK.setJointMode(ikEnv,v,simIK.jointmode_passive)
-                    end
-                end
-            end
-        end
-        groupData.notYetApplied=nil
-    end
     for k,v in pairs(groupData.joints) do
         if sim.getJointType(k)==sim.joint_spherical_subtype then
             simIK.setSphericalJointMatrix(ikEnv,v,sim.getJointMatrix(k))
@@ -215,7 +198,6 @@ function simIK.addIkElementFromScene(...)
         groupData.bases={}
         groupData.targets={}
         groupData.targetTipBaseTriplets={}
-        groupData.notYetApplied=true
         _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
     local ikBase=-1

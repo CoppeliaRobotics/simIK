@@ -29,14 +29,6 @@
 #define CONCAT(x,y,z) x y z
 #define strConCat(x,y,z)    CONCAT(x,y,z)
 
-#ifdef SIM_MATH_DOUBLE
-    #define realData doubleData
-    #define sim_script_arg_real sim_script_arg_double
-#else
-    #define realData floatData
-    #define sim_script_arg_real sim_script_arg_float
-#endif
-
 static LIBRARY simLib;
 static WMutex _simpleMutex;
 static CEnvCont* _allEnvironments;
@@ -903,7 +895,7 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     bool cyclic=true;
-    simReal interv[2];
+    double interv[2];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTINTERVAL,inArgs_GETJOINTINTERVAL[0],LUA_GETJOINTINTERVAL_COMMAND))
     {
@@ -928,7 +920,7 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
     if (result)
     {
         D.pushOutData(CScriptFunctionDataItem(cyclic));
-        std::vector<simReal> iv(interv,interv+2);
+        std::vector<double> iv(interv,interv+2);
         D.pushOutData(iv);
         D.writeDataToStack(p->stackID);
     }
@@ -946,7 +938,7 @@ const int inArgs_SETJOINTINTERVAL[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_bool,0,
-    sim_script_arg_real|sim_script_arg_table,2,
+    sim_script_arg_double|sim_script_arg_table,2,
 };
 
 void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
@@ -963,9 +955,9 @@ void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                simReal* interv=nullptr;
-                if ( (inData->size()>3)&&(inData->at(3).realData.size()>=2) )
-                    interv=&inData->at(3).realData[0];
+                double* interv=nullptr;
+                if ( (inData->size()>3)&&(inData->at(3).doubleData.size()>=2) )
+                    interv=&inData->at(3).doubleData[0];
 
                 bool result=ikSetJointInterval(jointHandle,cyclic,interv);
                 if (!result)
@@ -995,7 +987,7 @@ const int inArgs_GETJOINTSCREWPITCH[]={
 void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal pitch=0.0;
+    double pitch=0.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWPITCH,inArgs_GETJOINTSCREWPITCH[0],LUA_GETJOINTSCREWPITCH_COMMAND))
     {
@@ -1035,7 +1027,7 @@ const int inArgs_SETJOINTSCREWPITCH[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
 };
 
 void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
@@ -1046,7 +1038,7 @@ void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal pitch=inData->at(2).realData[0];
+        double pitch=inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1080,7 +1072,7 @@ const int inArgs_GETJOINTIKWEIGHT[]={
 void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal weight=1.0;
+    double weight=1.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTIKWEIGHT,inArgs_GETJOINTIKWEIGHT[0],LUA_GETJOINTIKWEIGHT_COMMAND))
     {
@@ -1120,7 +1112,7 @@ const int inArgs_SETJOINTIKWEIGHT[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
 };
 
 void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
@@ -1131,7 +1123,7 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal weight=inData->at(2).realData[0];
+        double weight=inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1151,6 +1143,91 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.getJointLimitMargin
+// --------------------------------------------------------------------------------------
+#define LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN "simIK.getJointLimitMargin@IK"
+#define LUA_GETJOINTLIMITMARGIN_COMMAND "simIK.getJointLimitMargin"
+
+const int inArgs_GETJOINTLIMITMARGIN[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    double weight=1.0;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTLIMITMARGIN,inArgs_GETJOINTLIMITMARGIN[0],LUA_GETJOINTLIMITMARGIN_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointLimitMargin(jointHandle,&weight);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTLIMITMARGIN_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(weight));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.setJointLimitMargin
+// --------------------------------------------------------------------------------------
+#define LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN "simIK.setJointLimitMargin@IK"
+#define LUA_SETJOINTLIMITMARGIN_COMMAND "simIK.setJointLimitMargin"
+
+const int inArgs_SETJOINTLIMITMARGIN[]={
+    3,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+    sim_script_arg_double,0,
+};
+
+void LUA_SETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTLIMITMARGIN,inArgs_SETJOINTLIMITMARGIN[0],LUA_SETJOINTLIMITMARGIN_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        double weight=inData->at(2).doubleData[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointLimitMargin(jointHandle,weight);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTLIMITMARGIN_COMMAND,err.c_str());
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getJointMaxStepSize
 // --------------------------------------------------------------------------------------
 #define LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN "simIK.getJointMaxStepSize@IK"
@@ -1165,7 +1242,7 @@ const int inArgs_GETJOINTMAXSTEPSIZE[]={
 void LUA_GETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal stepSize=0.0;
+    double stepSize=0.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMAXSTEPSIZE,inArgs_GETJOINTMAXSTEPSIZE[0],LUA_GETJOINTMAXSTEPSIZE_COMMAND))
     {
@@ -1205,7 +1282,7 @@ const int inArgs_SETJOINTMAXSTEPSIZE[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
 };
 
 void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
@@ -1216,7 +1293,7 @@ void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal stepSize=inData->at(2).realData[0];
+        double stepSize=inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1251,8 +1328,8 @@ void LUA_GETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     int depJoint=-1;
-    simReal offset=0.0;
-    simReal mult=1.0;
+    double offset=0.0;
+    double mult=1.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTDEPENDENCY,inArgs_GETJOINTDEPENDENCY[0],LUA_GETJOINTDEPENDENCY_COMMAND))
     {
@@ -1298,8 +1375,8 @@ const int inArgs_SETJOINTDEPENDENCY[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
+    sim_script_arg_double,0,
 };
 
 void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
@@ -1311,12 +1388,12 @@ void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
         int depJointHandle=inData->at(2).int32Data[0];
-        simReal off=0.0;
-        simReal mult=1.0;
-        if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
-            off=inData->at(3).realData[0];
-        if ( (inData->size()>4)&&(inData->at(4).realData.size()==1) )
-            mult=inData->at(4).realData[0];
+        double off=0.0;
+        double mult=1.0;
+        if ( (inData->size()>3)&&(inData->at(3).doubleData.size()==1) )
+            off=inData->at(3).doubleData[0];
+        if ( (inData->size()>4)&&(inData->at(4).doubleData.size()==1) )
+            mult=inData->at(4).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1350,7 +1427,7 @@ const int inArgs_GETJOINTPOSITION[]={
 void LUA_GETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal pos=0.0;
+    double pos=0.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTPOSITION,inArgs_GETJOINTPOSITION[0],LUA_GETJOINTPOSITION_COMMAND))
     {
@@ -1390,7 +1467,7 @@ const int inArgs_SETJOINTPOSITION[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
 };
 
 void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
@@ -1401,7 +1478,7 @@ void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal pos=inData->at(2).realData[0];
+        double pos=inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1435,7 +1512,7 @@ const int inArgs_GETJOINTMATRIX[]={
 void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal matrix[12];
+    double matrix[12];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMATRIX,inArgs_GETJOINTMATRIX[0],LUA_GETJOINTMATRIX_COMMAND))
     {
@@ -1462,7 +1539,7 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> m(matrix,matrix+12);
+        std::vector<double> m(matrix,matrix+12);
         D.pushOutData(CScriptFunctionDataItem(m));
         D.writeDataToStack(p->stackID);
     }
@@ -1479,7 +1556,7 @@ const int inArgs_SETSPHERICALJOINTMATRIX[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,12,
+    sim_script_arg_double|sim_script_arg_table,12,
 };
 
 void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
@@ -1490,7 +1567,7 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal* m=&inData->at(2).realData[0];
+        double* m=&inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1527,9 +1604,9 @@ const int inArgs_GETJOINTTRANSFORMATION[]={
 void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal pos[3];
-    simReal quat[4];
-    simReal e[3];
+    double pos[3];
+    double quat[4];
+    double e[3];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTRANSFORMATION,inArgs_GETJOINTTRANSFORMATION[0],LUA_GETJOINTTRANSFORMATION_COMMAND))
     {
@@ -1564,11 +1641,11 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> _p(pos,pos+3);
+        std::vector<double> _p(pos,pos+3);
         D.pushOutData(CScriptFunctionDataItem(_p));
-        std::vector<simReal> _q(quat,quat+4);
+        std::vector<double> _q(quat,quat+4);
         D.pushOutData(CScriptFunctionDataItem(_q));
-        std::vector<simReal> _e(e,e+3);
+        std::vector<double> _e(e,e+3);
         D.pushOutData(CScriptFunctionDataItem(_e));
         D.writeDataToStack(p->stackID);
     }
@@ -1585,7 +1662,7 @@ const int inArgs_SETSPHERICALJOINTROTATION[]={
     3,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,3,
+    sim_script_arg_double|sim_script_arg_table,3,
 };
 
 void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
@@ -1596,12 +1673,12 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int jointHandle=inData->at(1).int32Data[0];
-        simReal* quat=nullptr;
-        simReal* euler=nullptr;
-        if (inData->at(2).realData.size()==3)
-            euler=&inData->at(2).realData[0];
+        double* quat=nullptr;
+        double* euler=nullptr;
+        if (inData->at(2).doubleData.size()==3)
+            euler=&inData->at(2).doubleData[0];
         else
-            quat=&inData->at(2).realData[0];
+            quat=&inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -1861,7 +1938,7 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     std::vector<int> handles;
-    std::vector<simReal> overshots;
+    std::vector<double> overshots;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPJOINTLIMITHITS,inArgs_GETIKGROUPJOINTLIMITHITS[0],LUA_GETIKGROUPJOINTLIMITHITS_COMMAND))
     {
@@ -1909,7 +1986,7 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int method=-1;
     int iterations=0;
-    simReal damping=0.0;
+    double damping=0.0;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPCALCULATION,inArgs_GETIKGROUPCALCULATION[0],LUA_GETIKGROUPCALCULATION_COMMAND))
     {
@@ -1952,7 +2029,7 @@ const int inArgs_SETIKGROUPCALCULATION[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real,0,
+    sim_script_arg_double,0,
     sim_script_arg_int32,0,
 };
 
@@ -1965,7 +2042,7 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int method=inData->at(2).int32Data[0];
-        simReal damping=inData->at(3).realData[0];
+        double damping=inData->at(3).doubleData[0];
         int iterations=inData->at(4).int32Data[0];
         std::string err;
         {
@@ -1985,93 +2062,6 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 }
 // --------------------------------------------------------------------------------------
 
-/*
-// --------------------------------------------------------------------------------------
-// simIK.getIkGroupLimitThresholds
-// --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND_PLUGIN "simIK.getIkGroupLimitThresholds@IK"
-#define LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND "simIK.getIkGroupLimitThresholds"
-
-const int inArgs_GETIKGROUPLIMITTHRESHOLDS[]={
-    2,
-    sim_script_arg_int32,0,
-    sim_script_arg_int32,0,
-};
-
-void LUA_GETIKGROUPLIMITTHRESHOLDS_CALLBACK(SScriptCallBack* p)
-{
-    CScriptFunctionData D;
-    simReal thresholds[2];
-    bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPLIMITTHRESHOLDS,inArgs_GETIKGROUPLIMITTHRESHOLDS[0],LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND))
-    {
-        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
-        int envId=inData->at(0).int32Data[0];
-        int ikGroupHandle=inData->at(1).int32Data[0];
-        std::string err;
-        {
-            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-            if (ikSwitchEnvironment(envId))
-            {
-                result=ikGetIkGroupLimitThresholds(ikGroupHandle,thresholds);
-                if (!result)
-                     err=ikGetLastError();
-            }
-            else
-                 err=ikGetLastError();
-        }
-        if (err.size()>0)
-            simSetLastError(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,err.c_str());
-    }
-    if (result)
-    {
-        std::vector<simReal> v(thresholds,thresholds+2);
-        D.pushOutData(CScriptFunctionDataItem(v));
-        D.writeDataToStack(p->stackID);
-    }
-}
-// --------------------------------------------------------------------------------------
-
-// --------------------------------------------------------------------------------------
-// simIK.setIkGroupLimitThresholds
-// --------------------------------------------------------------------------------------
-#define LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND_PLUGIN "simIK.setIkGroupLimitThresholds@IK"
-#define LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND "simIK.setIkGroupLimitThresholds"
-
-const int inArgs_SETIKGROUPLIMITTHRESHOLDS[]={
-    3,
-    sim_script_arg_int32,0,
-    sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,2,
-};
-
-void LUA_SETIKGROUPLIMITTHRESHOLDS_CALLBACK(SScriptCallBack* p)
-{
-    CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKGROUPLIMITTHRESHOLDS,inArgs_SETIKGROUPLIMITTHRESHOLDS[0],LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND))
-    {
-        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
-        int envId=inData->at(0).int32Data[0];
-        int ikGroupHandle=inData->at(1).int32Data[0];
-        simReal* thresholds=&inData->at(2).realData[0];
-        std::string err;
-        {
-            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-            if (ikSwitchEnvironment(envId))
-            {
-                bool result=ikSetIkGroupLimitThresholds(ikGroupHandle,thresholds);
-                if (!result)
-                     err=ikGetLastError();
-            }
-            else
-                 err=ikGetLastError();
-        }
-        if (err.size()>0)
-            simSetLastError(LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND,err.c_str());
-    }
-}
-// --------------------------------------------------------------------------------------
-*/
 
 // --------------------------------------------------------------------------------------
 // simIK.addIkElement
@@ -2409,7 +2399,7 @@ const int inArgs_GETIKELEMENTPRECISION[]={
 void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal precision[2];
+    double precision[2];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTPRECISION,inArgs_GETIKELEMENTPRECISION[0],LUA_GETIKELEMENTPRECISION_COMMAND))
     {
@@ -2434,7 +2424,7 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> v(precision,precision+2);
+        std::vector<double> v(precision,precision+2);
         D.pushOutData(CScriptFunctionDataItem(v));
         D.writeDataToStack(p->stackID);
     }
@@ -2452,7 +2442,7 @@ const int inArgs_SETIKELEMENTPRECISION[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,2,
+    sim_script_arg_double|sim_script_arg_table,2,
 };
 
 void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
@@ -2464,7 +2454,7 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        simReal* precision=&inData->at(3).realData[0];
+        double* precision=&inData->at(3).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -2499,7 +2489,7 @@ const int inArgs_GETIKELEMENTWEIGHTS[]={
 void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal weights[2];
+    double weights[2];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTWEIGHTS,inArgs_GETIKELEMENTWEIGHTS[0],LUA_GETIKELEMENTWEIGHTS_COMMAND))
     {
@@ -2524,7 +2514,7 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> v(weights,weights+2);
+        std::vector<double> v(weights,weights+2);
         D.pushOutData(CScriptFunctionDataItem(v));
         D.writeDataToStack(p->stackID);
     }
@@ -2542,7 +2532,7 @@ const int inArgs_SETIKELEMENTWEIGHTS[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,2,
+    sim_script_arg_double|sim_script_arg_table,2,
 };
 
 void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
@@ -2554,7 +2544,7 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        simReal* weights=&inData->at(3).realData[0];
+        double* weights=&inData->at(3).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -2578,7 +2568,7 @@ static std::string jacobianCallback_funcName;
 static int jacobianCallback_scriptHandle;
 static int jacobianCallback_envId;
 
-bool jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,std::vector<simReal>* errorVector,simReal* qVector)
+bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,std::vector<double>* errorVector,double* qVector)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     bool retVal=false; // if true jointValues were computed
@@ -2588,13 +2578,8 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,c
     simPushInt32TableOntoStack(stack,rowIkElements,jacobianSize[0]);
     simPushInt32TableOntoStack(stack,colHandles,cols);
     simPushInt32TableOntoStack(stack,colStages,cols);
-#ifdef SIM_MATH_DOUBLE
     simPushDoubleTableOntoStack(stack,jacobian->data(),jacobianSize[0]*jacobianSize[1]);
     simPushDoubleTableOntoStack(stack,errorVector->data(),jacobianSize[0]);
-#else
-    simPushFloatTableOntoStack(stack,jacobian->data(),jacobianSize[0]*jacobianSize[1]);
-    simPushFloatTableOntoStack(stack,errorVector->data(),jacobianSize[0]);
-#endif
     if (simCallScriptFunctionEx(jacobianCallback_scriptHandle,jacobianCallback_funcName.c_str(),stack)!=-1)
     {
         if (simGetStackSize(stack)==1)
@@ -2603,11 +2588,7 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,c
             if (s==jacobianSize[1])
             { // we receive the joint values (the solution)
                 retVal=true;
-#ifdef SIM_MATH_DOUBLE
                 simGetStackDoubleTable(stack,qVector,s);
-#else
-                simGetStackFloatTable(stack,qVector,s);
-#endif
             }
         }
         if (simGetStackSize(stack)==2)
@@ -2618,22 +2599,14 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<simReal>* jacobian,c
             if (rows==jacobianSize[0])
             { // we receive the updated error vector
                 errorVector->resize(rows*cols);
-#ifdef SIM_MATH_DOUBLE
                 simGetStackDoubleTable(stack,errorVector->data(),rows);
-#else
-                simGetStackFloatTable(stack,errorVector->data(),rows);
-#endif
                 simPopStackItem(stack,1);
                 // Now the Jacobian:
                 int r=simGetStackTableInfo(stack,0);
                 if (r==rows*cols)
                 { // we receive the updated Jacobian
                     jacobian->resize(r);
-#ifdef SIM_MATH_DOUBLE
                     simGetStackDoubleTable(stack,jacobian->data(),r);
-#else
-                    simGetStackFloatTable(stack,jacobian->data(),r);
-#endif
                 }
             }
         }
@@ -2672,7 +2645,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool(*cb)(const simInt*,std::vector<simReal>*,const simInt*,const simInt*,const simInt*,const simInt*,std::vector<simReal>*,simReal*)=nullptr;
+                bool(*cb)(const simInt*,std::vector<double>*,const simInt*,const simInt*,const simInt*,const simInt*,std::vector<double>*,double*)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
                     ikGroupHandle=inData->at(1).int32Data[0];
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
@@ -2705,16 +2678,12 @@ static int validationCallback_scriptType;
 static int validationCallback_envId;
 static size_t validationCallback_jointCnt;
 
-bool validationCallback(simReal* conf)
+bool validationCallback(double* conf)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     simBool retVal=1;
     int stack=simCreateStack();
-#ifdef SIM_MATH_DOUBLE
     simPushDoubleTableOntoStack(stack,conf,int(validationCallback_jointCnt));
-#else
-    simPushFloatTableOntoStack(stack,conf,int(validationCallback_jointCnt));
-#endif
     if (simCallScriptFunctionEx(validationCallback_scriptType,validationCallback_funcNameAtScriptName.c_str(),stack)!=-1)
         simGetStackBoolValue(stack,&retVal);
     simReleaseStack(stack);
@@ -2734,21 +2703,21 @@ const int inArgs_GETCONFIGFORTIPPOSE[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32|sim_script_arg_table,0,
-    sim_script_arg_real|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_double|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
     sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
-    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
     sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
     sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
     sim_script_arg_int32|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
-    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
-    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
 };
 
 void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     int calcResult=-1;
-    simReal* retConfig=nullptr;
+    double* retConfig=nullptr;
     size_t jointCnt=0;
     if (D.readDataFromStack(p->stackID,inArgs_GETCONFIGFORTIPPOSE,inArgs_GETCONFIGFORTIPPOSE[0]-8,LUA_GETCONFIGFORTIPPOSE_COMMAND))
     {
@@ -2763,14 +2732,14 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
                 jointCnt=inData->at(2).int32Data.size();
                 if (jointCnt>0)
                 {
-                    retConfig=new simReal[jointCnt];
-                    simReal thresholdDist=simReal(0.1);
+                    retConfig=new double[jointCnt];
+                    double thresholdDist=double(0.1);
                     int iterations=1000;
-                    simReal* metric=nullptr;
+                    double* metric=nullptr;
                     int* jointOptions=nullptr;
-                    simReal* lowLimits=nullptr;
-                    simReal* ranges=nullptr;
-                    bool(*cb)(simReal*)=nullptr;
+                    double* lowLimits=nullptr;
+                    double* ranges=nullptr;
+                    bool(*cb)(double*)=nullptr;
                     int scriptType=sim_scripttype_childscript;
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         iterations=inData->at(4).int32Data[0];
@@ -2786,14 +2755,14 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
                         validationCallback_envId=envId;
                         cb=validationCallback;
                     }
-                    if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
-                        thresholdDist=inData->at(3).realData[0];
-                    if ( (inData->size()>5)&&(inData->at(5).realData.size()>=4) )
-                        metric=&inData->at(5).realData[0];
-                    if ( (inData->size()>9)&&(inData->at(9).realData.size()>=jointCnt) )
-                        lowLimits=&inData->at(9).realData[0];
-                    if ( (inData->size()>10)&&(inData->at(10).realData.size()>=jointCnt) )
-                        ranges=&inData->at(10).realData[0];
+                    if ( (inData->size()>3)&&(inData->at(3).doubleData.size()==1) )
+                        thresholdDist=inData->at(3).doubleData[0];
+                    if ( (inData->size()>5)&&(inData->at(5).doubleData.size()>=4) )
+                        metric=&inData->at(5).doubleData[0];
+                    if ( (inData->size()>9)&&(inData->at(9).doubleData.size()>=jointCnt) )
+                        lowLimits=&inData->at(9).doubleData[0];
+                    if ( (inData->size()>10)&&(inData->at(10).doubleData.size()>=jointCnt) )
+                        ranges=&inData->at(10).doubleData[0];
                     calcResult=ikGetConfigForTipPose(ikGroupHandle,jointCnt,&inData->at(2).int32Data[0],thresholdDist,iterations,retConfig,metric,cb,jointOptions,lowLimits,ranges);
                     if (calcResult==-1)
                          err=ikGetLastError();
@@ -2809,7 +2778,7 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
     }
     if (calcResult==1)
     {
-        std::vector<simReal> v(retConfig,retConfig+jointCnt);
+        std::vector<double> v(retConfig,retConfig+jointCnt);
         D.pushOutData(CScriptFunctionDataItem(v));
         D.writeDataToStack(p->stackID);
     }
@@ -2829,9 +2798,9 @@ const int inArgs_FINDCONFIG[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32|sim_script_arg_table,0,
-    sim_script_arg_real|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
+    sim_script_arg_double|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
     sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0,
-    sim_script_arg_real|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,4,
     sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // cb func name
     sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // script handle of cb
 };
@@ -2840,7 +2809,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     int calcResult=-1;
-    simReal* retConfig=nullptr;
+    double* retConfig=nullptr;
     size_t jointCnt=0;
     if (D.readDataFromStack(p->stackID,inArgs_FINDCONFIG,inArgs_FINDCONFIG[0]-5,LUA_FINDCONFIG_COMMAND))
     {
@@ -2855,11 +2824,11 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
                 jointCnt=inData->at(2).int32Data.size();
                 if (jointCnt>0)
                 {
-                    retConfig=new simReal[jointCnt];
-                    simReal thresholdDist=simReal(0.1);
+                    retConfig=new double[jointCnt];
+                    double thresholdDist=double(0.1);
                     int timeInMs=100;
-                    simReal* metric=nullptr;
-                    bool(*cb)(simReal*)=nullptr;
+                    double* metric=nullptr;
+                    bool(*cb)(double*)=nullptr;
                     int scriptType=sim_scripttype_childscript;
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         timeInMs=inData->at(4).int32Data[0];
@@ -2873,10 +2842,10 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
                         validationCallback_envId=envId;
                         cb=validationCallback;
                     }
-                    if ( (inData->size()>3)&&(inData->at(3).realData.size()==1) )
-                        thresholdDist=inData->at(3).realData[0];
-                    if ( (inData->size()>5)&&(inData->at(5).realData.size()>=4) )
-                        metric=&inData->at(5).realData[0];
+                    if ( (inData->size()>3)&&(inData->at(3).doubleData.size()==1) )
+                        thresholdDist=inData->at(3).doubleData[0];
+                    if ( (inData->size()>5)&&(inData->at(5).doubleData.size()>=4) )
+                        metric=&inData->at(5).doubleData[0];
                     calcResult=ikFindConfig(ikGroupHandle,jointCnt,&inData->at(2).int32Data[0],thresholdDist,timeInMs,retConfig,metric,cb);
                     if (calcResult==-1)
                          err=ikGetLastError();
@@ -2892,7 +2861,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
     }
     if (calcResult==1)
     {
-        std::vector<simReal> v(retConfig,retConfig+jointCnt);
+        std::vector<double> v(retConfig,retConfig+jointCnt);
         D.pushOutData(CScriptFunctionDataItem(v));
         D.writeDataToStack(p->stackID);
     }
@@ -2917,9 +2886,9 @@ const int inArgs_GETOBJECTTRANSFORMATION[]={
 void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal pos[3];
-    simReal q[4];
-    simReal e[3];
+    double pos[3];
+    double q[4];
+    double e[3];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTRANSFORMATION,inArgs_GETOBJECTTRANSFORMATION[0],LUA_GETOBJECTTRANSFORMATION_COMMAND))
     {
@@ -2955,11 +2924,11 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> _pos(pos,pos+3);
+        std::vector<double> _pos(pos,pos+3);
         D.pushOutData(CScriptFunctionDataItem(_pos));
-        std::vector<simReal> _q(q,q+4);
+        std::vector<double> _q(q,q+4);
         D.pushOutData(CScriptFunctionDataItem(_q));
-        std::vector<simReal> _e(e,e+3);
+        std::vector<double> _e(e,e+3);
         D.pushOutData(CScriptFunctionDataItem(_e));
         D.writeDataToStack(p->stackID);
     }
@@ -2977,8 +2946,8 @@ const int inArgs_SETOBJECTTRANSFORMATION[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,3,
-    sim_script_arg_real|sim_script_arg_table,3,
+    sim_script_arg_double|sim_script_arg_table,3,
+    sim_script_arg_double|sim_script_arg_table,3,
 };
 
 void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
@@ -2990,13 +2959,13 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
         int relHandle=inData->at(2).int32Data[0];
-        simReal* quat=nullptr;
-        simReal* euler=nullptr;
-        simReal* pos=&inData->at(3).realData[0];
-        if (inData->at(4).realData.size()==3)
-            euler=&inData->at(4).realData[0];
+        double* quat=nullptr;
+        double* euler=nullptr;
+        double* pos=&inData->at(3).doubleData[0];
+        if (inData->at(4).doubleData.size()==3)
+            euler=&inData->at(4).doubleData[0];
         else
-            quat=&inData->at(4).realData[0];
+            quat=&inData->at(4).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -3038,7 +3007,7 @@ const int inArgs_GETOBJECTMATRIX[]={
 void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal matr[12];
+    double matr[12];
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTMATRIX,inArgs_GETOBJECTMATRIX[0],LUA_GETOBJECTMATRIX_COMMAND))
     {
@@ -3069,7 +3038,7 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
-        std::vector<simReal> _matr(matr,matr+12);
+        std::vector<double> _matr(matr,matr+12);
         D.pushOutData(CScriptFunctionDataItem(_matr));
         D.writeDataToStack(p->stackID);
     }
@@ -3087,7 +3056,7 @@ const int inArgs_SETOBJECTMATRIX[]={
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_real|sim_script_arg_table,12,
+    sim_script_arg_double|sim_script_arg_table,12,
 };
 
 void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
@@ -3099,7 +3068,7 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
         int relHandle=inData->at(2).int32Data[0];
-        simReal* m=&inData->at(3).realData[0];
+        double* m=&inData->at(3).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -3133,8 +3102,8 @@ const int inArgs_COMPUTEJACOBIAN[]={
     sim_script_arg_int32,0, // base handle (prev. ik group handle)
     sim_script_arg_int32,0, // last joint handle (prev. options)
     sim_script_arg_int32,0, // constraints
-    sim_script_arg_real|sim_script_arg_table,12, // tip pose
-    sim_script_arg_real|sim_script_arg_table,12, // target pose, optional
+    sim_script_arg_double|sim_script_arg_table,12, // tip pose
+    sim_script_arg_double|sim_script_arg_table,12, // target pose, optional
     sim_script_arg_int32,0, // alt base handle, optional
 };
 
@@ -3190,8 +3159,8 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                 }
                 if (ok)
                 {
-                    std::vector<simReal> jacobian;
-                    std::vector<simReal> errorVect;
+                    std::vector<double> jacobian;
+                    std::vector<double> errorVect;
                     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
                     if (ikSwitchEnvironment(envId))
                     {
@@ -3255,7 +3224,7 @@ const int inArgs_GETJACOBIAN[]={
 void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
 { // deprecated on 25.10.2022
     CScriptFunctionData D;
-    simReal* matr=nullptr;
+    double* matr=nullptr;
     size_t matrSize[2];
     if (D.readDataFromStack(p->stackID,inArgs_GETJACOBIAN,inArgs_GETJACOBIAN[0],LUA_GETJACOBIAN_COMMAND))
     {
@@ -3275,7 +3244,7 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
     }
     if (matr!=nullptr)
     {
-        std::vector<simReal> v1(matr,matr+matrSize[0]*matrSize[1]);
+        std::vector<double> v1(matr,matr+matrSize[0]*matrSize[1]);
         D.pushOutData(CScriptFunctionDataItem(v1));
         std::vector<int> v2;
         v2.push_back(int(matrSize[0]));
@@ -3302,7 +3271,7 @@ const int inArgs_GETMANIPULABILITY[]={
 void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    simReal retVal=0.0;
+    double retVal=0.0;
     bool success=false;
     if (D.readDataFromStack(p->stackID,inArgs_GETMANIPULABILITY,inArgs_GETMANIPULABILITY[0],LUA_GETMANIPULABILITY_COMMAND))
     {
@@ -3398,6 +3367,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle,float pitch)"),LUA_SETJOINTSCREWPITCH_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("float weight=",LUA_GETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTIKWEIGHT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle,float weight)"),LUA_SETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("float margin=",LUA_GETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTLIMITMARGIN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle,float margin)"),LUA_SETJOINTLIMITMARGIN_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("float stepSize=",LUA_GETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle,float stepSize)"),LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("int depJointHandle,float offset,float mult=",LUA_GETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTDEPENDENCY_CALLBACK);
@@ -3606,7 +3577,7 @@ SIM_DLLEXPORT void ikPlugin_setJointInterval(int ikEnv,int jointHandle,bool cycl
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
     {
-        simReal v[2]={simReal(intervalMinAndRange[0]),simReal(intervalMinAndRange[1])};
+        double v[2]={double(intervalMinAndRange[0]),double(intervalMinAndRange[1])};
         ikSetJointInterval(jointHandle,cyclic,v);
     }
 }
@@ -3615,34 +3586,34 @@ SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int ikEnv,int jointHandle,float p
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointScrewPitch(jointHandle,simReal(pitch));
+        ikSetJointScrewPitch(jointHandle,double(pitch));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,float ikWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointIkWeight(jointHandle,simReal(ikWeight));
+        ikSetJointIkWeight(jointHandle,double(ikWeight));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,float maxStepSize)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointMaxStepSize(jointHandle,simReal(maxStepSize));
+        ikSetJointMaxStepSize(jointHandle,double(maxStepSize));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointDependency(int ikEnv,int jointHandle,int dependencyJointHandle,float offset,float mult)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointDependency(jointHandle,dependencyJointHandle,simReal(offset),simReal(mult));
+        ikSetJointDependency(jointHandle,dependencyJointHandle,double(offset),double(mult));
 }
 
 SIM_DLLEXPORT float ikPlugin_getJointPosition(int ikEnv,int jointHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    simReal p=simReal(0.0);
+    double p=double(0.0);
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetJointPosition(jointHandle,&p);
     return(float(p));
@@ -3652,7 +3623,7 @@ SIM_DLLEXPORT void ikPlugin_setJointPosition(int ikEnv,int jointHandle,float pos
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointPosition(jointHandle,simReal(position));
+        ikSetJointPosition(jointHandle,double(position));
 }
 
 SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandle,float quaternion[4])
@@ -3672,10 +3643,10 @@ SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int ikEnv,int jointHandl
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C4Vector q;
-    q(0)=simReal(quaternion[0]);
-    q(1)=simReal(quaternion[1]);
-    q(2)=simReal(quaternion[2]);
-    q(3)=simReal(quaternion[3]);
+    q(0)=double(quaternion[0]);
+    q(1)=double(quaternion[1]);
+    q(2)=double(quaternion[2]);
+    q(3)=double(quaternion[3]);
     if (ikSwitchEnvironment(ikEnv,true))
         ikSetSphericalJointQuaternion(jointHandle,&q);
 }
@@ -3707,7 +3678,7 @@ SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,in
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkGroupCalculation(ikGroupHandle,method,simReal(damping),maxIterations);
+        ikSetIkGroupCalculation(ikGroupHandle,method,double(damping),maxIterations);
 }
 
 SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandle)
@@ -3751,14 +3722,14 @@ SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,in
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,simReal(linearPrecision),simReal(angularPrecision));
+        ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,double(linearPrecision),double(angularPrecision));
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementWeights(ikGroupHandle,ikElementHandle,simReal(linearWeight),simReal(angularWeight));
+        ikSetIkElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight));
 }
 
 SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
@@ -3786,7 +3757,7 @@ SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matri
     if (ikSwitchEnvironment(ikEnv,true))
     {
         size_t ms[2];
-        simReal* m=ikGetJacobian_old(ikGroupHandle,ms);
+        double* m=ikGetJacobian_old(ikGroupHandle,ms);
         if (m!=nullptr)
         {
             matrixSize[0]=int(ms[0]);
@@ -3803,7 +3774,7 @@ SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matri
 SIM_DLLEXPORT float ikPlugin_getManipulability(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    simReal retVal=simReal(0.0);
+    double retVal=double(0.0);
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetManipulability_old(ikGroupHandle,&retVal);
     return(float(retVal));
@@ -3829,13 +3800,13 @@ SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHan
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C7Vector tr;
-    tr.X(0)=simReal(pos[0]);
-    tr.X(1)=simReal(pos[1]);
-    tr.X(2)=simReal(pos[2]);
-    tr.Q(0)=simReal(quat[0]);
-    tr.Q(1)=simReal(quat[1]);
-    tr.Q(2)=simReal(quat[2]);
-    tr.Q(3)=simReal(quat[3]);
+    tr.X(0)=double(pos[0]);
+    tr.X(1)=double(pos[1]);
+    tr.X(2)=double(pos[2]);
+    tr.Q(0)=double(quat[0]);
+    tr.Q(1)=double(quat[1]);
+    tr.Q(2)=double(quat[2]);
+    tr.Q(3)=double(quat[3]);
     if (ikSwitchEnvironment(ikEnv,true))
         ikSetObjectTransformation(objectHandle,ik_handle_parent,&tr);
 }
@@ -3844,7 +3815,7 @@ static size_t _validationCallback_jointCnt;
 static bool(*__validationCallback)(float*);
 static float* _validationCallback_config;
 
-bool _validationCallback(simReal* conf)
+bool _validationCallback(double* conf)
 {
     for (size_t i=0;i<_validationCallback_jointCnt;i++)
         _validationCallback_config[i]=float(conf[i]);
@@ -3857,32 +3828,32 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
     char* retVal=nullptr;
     if (ikSwitchEnvironment(ikEnv,true))
     {
-        std::vector<simReal> _retConfig;
+        std::vector<double> _retConfig;
         _retConfig.resize(size_t(jointCnt));
-        simReal* _metric=nullptr;
-        simReal __metric[4];
+        double* _metric=nullptr;
+        double __metric[4];
         if (metric!=nullptr)
         {
-            __metric[0]=simReal(metric[0]);
-            __metric[1]=simReal(metric[1]);
-            __metric[2]=simReal(metric[2]);
-            __metric[3]=simReal(metric[3]);
+            __metric[0]=double(metric[0]);
+            __metric[1]=double(metric[1]);
+            __metric[2]=double(metric[2]);
+            __metric[3]=double(metric[3]);
             _metric=__metric;
         }
-        simReal* _lowLimits=nullptr;
-        std::vector<simReal> __lowLimits;
+        double* _lowLimits=nullptr;
+        std::vector<double> __lowLimits;
         if (lowLimits!=nullptr)
         {
             for (size_t i=0;i<size_t(jointCnt);i++)
-                __lowLimits.push_back(simReal(lowLimits[i]));
+                __lowLimits.push_back(double(lowLimits[i]));
             _lowLimits=&__lowLimits[0];
         }
-        simReal* _ranges=nullptr;
-        std::vector<simReal> __ranges;
+        double* _ranges=nullptr;
+        std::vector<double> __ranges;
         if (ranges!=nullptr)
         {
             for (size_t i=0;i<size_t(jointCnt);i++)
-                __ranges.push_back(simReal(ranges[i]));
+                __ranges.push_back(double(ranges[i]));
             _ranges=&__ranges[0];
         }
         _validationCallback_jointCnt=size_t(jointCnt);
@@ -3890,10 +3861,10 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
         __valCb_j.resize(size_t(jointCnt));
         _validationCallback_config=&__valCb_j[0];
         __validationCallback=validationCallback;
-        bool(*_validationCb)(simReal*)=nullptr;
+        bool(*_validationCb)(double*)=nullptr;
         if (validationCallback!=nullptr)
             _validationCb=_validationCallback;
-        result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,simReal(thresholdDist),maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
+        result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,double(thresholdDist),maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
         if (result[0]>0)
         {
             for (size_t i=0;i<_retConfig.size();i++)

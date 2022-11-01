@@ -5,7 +5,7 @@ CONFIG += shared plugin
 CONFIG -= core
 CONFIG -= gui
 
-DEFINES += SIM_MATH_DOUBLE # for double-precision
+DEFINES += SIM_MATH_DOUBLE
 
 *-msvc* {
     QMAKE_CFLAGS += -O2

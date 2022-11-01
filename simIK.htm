@@ -55,6 +55,7 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getJointDependency">simIK.getJointDependency</a>
 <a href="?#simIK.getJointIkWeight">simIK.getJointIkWeight</a>
 <a href="?#simIK.getJointInterval">simIK.getJointInterval</a>
+<a href="?#simIK.getJointLimitMargin">simIK.getJointLimitMargin</a>
 <a href="?#simIK.getJointMatrix">simIK.getJointMatrix</a>
 <a href="?#simIK.getJointMaxStepSize">simIK.getJointMaxStepSize</a>
 <a href="?#simIK.getJointMode">simIK.getJointMode</a>
@@ -82,6 +83,7 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.setJointDependency">simIK.setJointDependency</a>
 <a href="?#simIK.setJointIkWeight">simIK.setJointIkWeight</a>
 <a href="?#simIK.setJointInterval">simIK.setJointInterval</a>
+<a href="?#simIK.setJointLimitMargin">simIK.setJointLimitMargin</a>
 <a href="?#simIK.setJointMaxStepSize">simIK.setJointMaxStepSize</a>
 <a href="?#simIK.setJointMode">simIK.setJointMode</a>
 <a href="?#simIK.setJointPosition">simIK.setJointPosition</a>
@@ -149,6 +151,8 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.setJointDependency">simIK.setJointDependency</a>
 <a href="?#simIK.getJointIkWeight">simIK.getJointIkWeight</a>
 <a href="?#simIK.setJointIkWeight">simIK.setJointIkWeight</a>
+<a href="?#simIK.getJointLimitMargin">simIK.getJointLimitMargin</a>
+<a href="?#simIK.setJointLimitMargin">simIK.setJointLimitMargin</a>
 <a href="?#simIK.getJointMaxStepSize">simIK.getJointMaxStepSize</a>
 <a href="?#simIK.setJointMaxStepSize">simIK.setJointMaxStepSize</a>
 <a href="?#simIK.getJointScrewPitch">simIK.getJointScrewPitch</a>
@@ -1149,7 +1153,7 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>flags</strong>: the flags of the IK group. bit0 set (i.e. 1)=group is enabled, bit1 set (i.e. 2)=max. step sizes are ignored, bit2 set (i.e. 4)=restore joints if target position not reached, bit3 set (i.e. 8)=restore joints if target orientation not reached.</div>
+<div><strong>flags</strong>: the flags of the IK group. bit0 set (i.e. 1)=group is enabled, bit1 set (i.e. 2)=max. step sizes are ignored, bit2 set (i.e. 4)=restore joints if target position not reached, bit3 set (i.e. 8)=restore joints if target orientation not reached, bit6 set (i.e. 64)=ignore joint dependencies, bit7 set (i.e. 128)=counteract on a joint when its limits are hit.</div>
 </td>
 </tr>
 
@@ -1350,6 +1354,43 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
 <td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setJointInterval">simIK.setJointInterval</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+<p class="subsectionBar">
+<a name="simIK.getJointLimitMargin" id="simIK.getJointLimitMargin"></a>simIK.getJointLimitMargin</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Retrieves the limit margin of a joint, i.e. the threshold that will be used to counteract on joint limit violation during IK resolution, if the appropriate IK group flag was set</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">float margin=simIK.getJointLimitMargin(int environmentHandle,int jointHandle)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>jointHandle</strong>: the handle of the joint.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>margin</strong>: the margin</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">float margin=simIK.getJointLimitMargin(int environmentHandle,int jointHandle)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setJointLimitMargin">simIK.setJointLimitMargin</a>, <a href="#simIK.getIkGroupFlags">simIK.getIkGroupFlags</a></td>
 </tr>
 </table>
 <br>
@@ -2246,7 +2287,7 @@ td.section { margin: 0; padding: 0; }
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-<div><strong>flags</strong>: the flags of the IK group. bit0 set (i.e. 1)=group is enabled, bit1 set (i.e. 2)=max. step sizes are ignored, bit2 set (i.e. 4)=restore joints if target position not reached, bit3 set (i.e. 8)=restore joints if target orientation not reached.</div>
+<div><strong>flags</strong>: the flags of the IK group. bit0 set (i.e. 1)=group is enabled, bit1 set (i.e. 2)=max. step sizes are ignored, bit2 set (i.e. 4)=restore joints if target position not reached, bit3 set (i.e. 8)=restore joints if target orientation not reached, bit6 set (i.e. 64)=ignore joint dependencies, bit7 set (i.e. 128)=counteract on a joint when its limits are hit</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -2339,6 +2380,43 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
 <td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointIkWeight">simIK.getJointIkWeight</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+<p class="subsectionBar">
+<a name="simIK.setJointLimitMargin" id="simIK.setJointLimitMargin"></a>simIK.setJointLimitMargin</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Sets the limit margin of a joint, i.e. the threshold that will be used to counteract on joint limit violation during IK resolution, if the appropriate IK group flag was set</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">simIK.setJointLimitMargin(int environmentHandle,int jointHandle,float margin)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>jointHandle</strong>: the handle of the joint.</div>
+<div><strong>margin</strong>: the margin</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">simIK.setJointLimitMargin(int environmentHandle,int jointHandle,float margin)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointLimitMargin">simIK.getJointLimitMargin</a>, <a href="#simIK.getIkGroupFlags">simIK.getIkGroupFlags</a></td>
 </tr>
 </table>
 <br>
