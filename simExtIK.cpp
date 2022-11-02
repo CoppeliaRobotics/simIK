@@ -2595,19 +2595,16 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,co
         { // we received the Jacobian and the error vector
             // First the error vector:
             int rows=simGetStackTableInfo(stack,0);
-
-            if (rows==jacobianSize[0])
-            { // we receive the updated error vector
-                errorVector->resize(rows*cols);
-                simGetStackDoubleTable(stack,errorVector->data(),rows);
-                simPopStackItem(stack,1);
-                // Now the Jacobian:
-                int r=simGetStackTableInfo(stack,0);
-                if (r==rows*cols)
-                { // we receive the updated Jacobian
-                    jacobian->resize(r);
-                    simGetStackDoubleTable(stack,jacobian->data(),r);
-                }
+            // we receive the updated error vector
+            errorVector->resize(rows);
+            simGetStackDoubleTable(stack,errorVector->data(),rows);
+            simPopStackItem(stack,1);
+            // Now the Jacobian:
+            int r=simGetStackTableInfo(stack,0);
+            if (r==rows*cols)
+            { // we receive the updated Jacobian
+                jacobian->resize(r);
+                simGetStackDoubleTable(stack,jacobian->data(),r);
             }
         }
     }
