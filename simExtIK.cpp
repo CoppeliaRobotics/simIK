@@ -3102,9 +3102,9 @@ const int inArgs_COMPUTEJACOBIAN[]={
     sim_script_arg_int32,0, // base handle (prev. ik group handle)
     sim_script_arg_int32,0, // last joint handle (prev. options)
     sim_script_arg_int32,0, // constraints
-    sim_script_arg_double|sim_script_arg_table,12, // tip pose
-    sim_script_arg_double|sim_script_arg_table,12, // target pose, optional
-    sim_script_arg_double|sim_script_arg_table,12, // altBase pose, optional
+    sim_script_arg_double|sim_script_arg_table,7, // tip pose
+    sim_script_arg_double|sim_script_arg_table,7, // target pose, optional
+    sim_script_arg_double|sim_script_arg_table,7, // altBase pose, optional
 };
 
 void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
@@ -3419,7 +3419,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[3] position,float[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,float[12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
 
     simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
     simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);

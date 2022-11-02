@@ -294,7 +294,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false)</td>
+<td class="apiTableRightLSyn">int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false,func callback=nil,any auxData=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -302,6 +302,10 @@ td.section { margin: 0; padding: 0; }
 <div><strong>environmentHandle</strong>: the handle of the IK environment.</div>
 <div><strong>ikGroup</strong>: the handle of the IK group.</div>
 <div><strong>applyOnlyWhenSuccessful</strong>: whether computed values should only be applied if computation result is simIK.ikresult_success.</div>
+<div><strong>callback</strong>: an optional callback that allows to inspect and manipulate the generated Jacobians and error vectors:</div>
+<div>callbackFunction(data,auxData), with data containing the Jacobian and error vector</div>
+<div></div>
+<div>If the callback doesn't return a value, then the original Jacobian and error vector are used for computation. If the callback returns one table, then the table is interpreted as the computed joint errors. If the callback returns two tables, the first is interpreted as the modified Jacobian, the second is interpreted as the modified error vector</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -313,7 +317,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=False)</td>
+<td class="apiTableRightPSyn">int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=False,string callback=None,any auxData=None)</td>
 </tr>
 
 <tr class="apiTableTr">
@@ -368,7 +372,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeJacobian(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,float[12] constrBaseMatrix=nil)</td>
+<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeJacobian(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -377,9 +381,9 @@ td.section { margin: 0; padding: 0; }
 <div><strong>baseObject</strong>: the handle of the base of the kinematic chain, or -1 for the world</div>
 <div><strong>lastJoint</strong>: the handle of the last joint in the kinematic chain, when going from base to tip</div>
 <div><strong>constraints</strong>: a combination of following is possible: simIK.constraint_x, simIK.constraint_y, simIK.constraint_z, simIK.constraint_alpha_beta, simIK.constraint_gamma. For convenience we also have simIK.constraint_position=simIK.constraint_x|simIK.constraint_y|simIK.constraint_z, simIK.constraint_orientation=simIK.constraint_alpha_beta|simIK.constraint_gamma, and simIK.constraint_pose=simIK.constraint_position|simIK.constraint_orientation</div>
-<div><strong>tipMatrix</strong>: the transformation matrix of the tip object, relative to the world</div>
-<div><strong>targetMatrix</strong>: the transformation matrix of the target object, relative to the world. Can be nil, in which case the targetPose is the same as the tipPose</div>
-<div><strong>constrbaseMatrix</strong>: the transformation matrix that should serve as the reference frame for constraints, or nil to use baseHandle as reference frame</div>
+<div><strong>tipMatrix</strong>: the transformation matrix or pose of the tip object, relative to the world</div>
+<div><strong>targetMatrix</strong>: the transformation matrix or pose of the target object, relative to the world. Can be nil, in which case the targetPose is the same as the tipPose</div>
+<div><strong>constrMaseMatrix</strong>: the transformation matrix or pose that should serve as the reference frame for constraints, or nil to use baseHandle as reference frame</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -392,7 +396,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeJacobian(<span class="apiTableRightLSyn">int environmentHandle,int baseObject,int lastJoint,int constraints,list tipMatrix,list targetMatrix=nil,int altBase=-1)</span></td>
+<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeJacobian(<span class="apiTableRightLSyn">int environmentHandle,int baseObject,int lastJoint,int constraints,list tipMatrix,list targetMatrix=None,list constrBaseMatrix=None)</span></td>
 </tr>
 
 <tr class="apiTableTr">

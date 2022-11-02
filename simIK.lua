@@ -147,13 +147,13 @@ function simIK.applySceneToIkEnvironment(...)
 end
 
 function simIK.applyIkEnvironmentToScene(...)
-    local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
+    local ikEnv,ikGroup,applyOnlyWhenSuccessful,cb,auxData=checkargs({{type='int'},{type='int'},{type='bool',default=false},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     
     simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    local res=simIK.handleIkGroup(ikEnv,ikGroup)
+    local res=simIK.handleIkGroup(ikEnv,ikGroup,cb,auxData)
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         for k,v in pairs(groupData.joints) do
             if sim.getJointType(k)==sim.joint_spherical_subtype then
