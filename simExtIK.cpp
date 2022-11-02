@@ -3104,7 +3104,7 @@ const int inArgs_COMPUTEJACOBIAN[]={
     sim_script_arg_int32,0, // constraints
     sim_script_arg_double|sim_script_arg_table,12, // tip pose
     sim_script_arg_double|sim_script_arg_table,12, // target pose, optional
-    sim_script_arg_int32,0, // alt base handle, optional
+    sim_script_arg_double|sim_script_arg_table,12, // altBase pose, optional
 };
 
 void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
@@ -3119,7 +3119,6 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
         {
             int baseHandle=inData->at(1).int32Data[0];
             int jointHandle=inData->at(2).int32Data[0];
-            int altBaseHandle=-1;
             if ( (inData->size()>=5)&&(inData->at(3).int32Data.size()==1)&&(inData->at(4).doubleData.size()>=7) )
             {
                 int constraints=inData->at(3).int32Data[0];
@@ -3133,6 +3132,8 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                     tipPose=m.getTransformation();
                 }
                 C7Vector targetPose(tipPose);
+                C7Vector altBase;
+                C7Vector* _altBase=nullptr;
                 bool ok=true;
                 if (inData->size()>=6)
                 {
@@ -3148,8 +3149,19 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                         }
                         if (inData->size()>=7)
                         {
-                            if (inData->at(3).int32Data.size()==1)
-                                altBaseHandle=inData->at(3).int32Data[0];
+
+                            if (inData->at(6).doubleData.size()>=7)
+                            {
+                                if (inData->at(6).doubleData.size()<12)
+                                    altBase.setData(inData->at(6).doubleData.data(),true);
+                                else
+                                {
+                                    C4X4Matrix m;
+                                    m.setData(inData->at(6).doubleData.data());
+                                    altBase=m.getTransformation();
+                                }
+                                _altBase=&altBase;
+                            }
                             else
                                 ok=false;
                         }
@@ -3164,7 +3176,7 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
                     if (ikSwitchEnvironment(envId))
                     {
-                        if (ikComputeJacobian(baseHandle,altBaseHandle,jointHandle,constraints,&tipPose,&targetPose,&jacobian,&errorVect))
+                        if (ikComputeJacobian(baseHandle,jointHandle,constraints,&tipPose,&targetPose,_altBase,&jacobian,&errorVect))
                         {
                             D.pushOutData(CScriptFunctionDataItem(jacobian));
                             D.pushOutData(CScriptFunctionDataItem(errorVect));
@@ -3407,7 +3419,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[3] position,float[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,int altBase=-1)"),LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[12] tipMatrix,float[12] targetMatrix=nil,float[12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
 
     simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
     simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);
