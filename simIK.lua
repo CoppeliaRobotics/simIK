@@ -132,6 +132,7 @@ function simIK.applySceneToIkEnvironment(...)
     local lb=sim.setThreadAutomaticSwitch(false)
     
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+    
     for k,v in pairs(groupData.joints) do
         if sim.getJointType(k)==sim.joint_spherical_subtype then
             simIK.setSphericalJointMatrix(ikEnv,v,sim.getJointMatrix(k))
@@ -187,11 +188,13 @@ function simIK.addIkElementFromScene(...)
     if not _S.ikEnvs[ikEnv].ikGroups then
         _S.ikEnvs[ikEnv].ikGroups={}
         _S.ikEnvs[ikEnv].allObjects={}
+        _S.ikEnvs[ikEnv].allUnconnectedMasterJoints={}
     end
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
     -- allObjects, i.e. the mapping, need to be scoped by ik env, and not ik group,
     -- otherwise we may have duplicates:
     local allObjects=_S.ikEnvs[ikEnv].allObjects
+    local allUnconnectedMasterJoints=_S.ikEnvs[ikEnv].allUnconnectedMasterJoints
     if not groupData then
         groupData={}
         groupData.joints={}
@@ -233,8 +236,6 @@ function simIK.addIkElementFromScene(...)
     local simIterator=sim.getObjectParent(simPrevIterator)
     local ikPrevIterator=ikTip
     local ikIterator=-1
-    local allDependentSimJoints={}
-    local allSimJoints={}
     while simIterator~=simBase do
         if allObjects[simIterator] then
             -- object already added, and parenting to child done
@@ -258,13 +259,31 @@ function simIK.addIkElementFromScene(...)
                 else
                     simIK.setJointPosition(ikEnv,ikIterator,sim.getJointPosition(simIterator))
                 end
+                
+                -- check if this joint is a slave in a dependency relationship:
                 if sim.getJointMode(simIterator)==sim.jointmode_dependent then
                     local dep,off,mult=sim.getJointDependency(simIterator)
                     if dep~=-1 then
-                        allDependentSimJoints[#allDependentSimJoints+1]={simIterator,dep,off,mult,ikIterator}
+                        -- yes. Is the master already there?
+                        if allObjects[dep] then
+                            -- master is already there
+                            simIK.setJointDependency(ikEnv,ikIterator,allObjects[dep],off,mult) 
+                            allUnconnectedMasterJoints[dep]=nil                            
+                        else
+                            -- master is not yet there
+                            allUnconnectedMasterJoints[dep]={slaveJoint=ikIterator,off=off,mult=mult}
+                        end
                     end
                 end
-                allSimJoints[simIterator]=ikIterator
+                
+                -- check if this joint is a master in a dependency relationship (it could also be a slave at the same time, see above!):
+                local master=allUnconnectedMasterJoints[simIterator]
+                if master then
+                    -- yes. Connect the slave:
+                    simIK.setJointDependency(ikEnv,master.slaveJoint,ikIterator,master.off,master.mult) 
+                    allUnconnectedMasterJoints[simIterator]=nil
+                end
+                
             end
             allObjects[simIterator]=ikIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
@@ -278,13 +297,6 @@ function simIK.addIkElementFromScene(...)
         simIterator=sim.getObjectParent(simIterator)
         ikIterator=simIK.getObjectParent(ikEnv,ikIterator)
     end
-    
-    for i=1,#allDependentSimJoints,1 do
-        if allSimJoints[allDependentSimJoints[i][2]] then
-            simIK.setJointDependency(ikEnv,allDependentSimJoints[i][5],allSimJoints[allDependentSimJoints[i][2]],allDependentSimJoints[i][3],allDependentSimJoints[i][4])
-        end
-    end
-    
     simIK.setObjectParent(ikEnv,ikPrevIterator,ikBase)
     simIK.setObjectParent(ikEnv,ikTarget,ikBase)
 
