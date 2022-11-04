@@ -416,6 +416,24 @@ function simIK.handleIkGroup(...)
     return retVal
 end
 
+function simIK.setJointDependency(...)
+    local ikEnv,slaveJoint,masterJoint,offset,mult,callback=checkargs({{type='int'},{type='int'},{type='int'},{type='float',default=0.0},{type='float',default=1.0},{type='any',default=NIL,nullable=true}},...)
+    function __depcb(ikEnv,slaveJoint,masterPos)
+        if type(callback)=='string' then
+            return _G[callback](ikEnv,slaveJoint,masterPos)
+        else
+            return callback(ikEnv,slaveJoint,masterPos)
+        end
+    end
+    local funcNm,t
+    if callback then
+        funcNm='__depcb'
+        t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
+    end
+    simIK._setJointDependency(ikEnv,slaveJoint,masterJoint,offset,mult,funcNm,t)
+    return retVal
+end
+
 function simIK.generatePath(...)
     local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{type='int'},{type='any',default=NIL,nullable=true},{type='any',default=NIL}},...)
 
@@ -493,6 +511,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
+    sim.registerScriptFunction('simIK.setJointDependency@simIK','simIK.setJointDependency(int environmentHandle,int jointHandle,int masterJointHandle,float offset=0.0,float mult=1.0,func callback=nil)')
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
     sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[7] pose)')

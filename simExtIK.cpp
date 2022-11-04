@@ -96,6 +96,31 @@ bool _logCallback(int verbosity,const char* funcName,const char* msg)
     return(retVal);
 }
 
+struct SJointDependCB
+{
+    int ikEnv;
+    int ikSlave;
+    std::string cbString;
+    int scriptHandle;
+};
+
+static std::vector<SJointDependCB> jointDependInfo;
+
+void _removeJointDependencyCallback(int envId,int slaveJoint)
+{
+    for (int i=0;i<int(jointDependInfo.size());i++)
+    {
+        if (jointDependInfo[i].ikEnv==envId)
+        {
+            if ( (jointDependInfo[i].ikSlave==slaveJoint)||(slaveJoint==-1) )
+            {
+                jointDependInfo.erase(jointDependInfo.begin()+i);
+                i--;
+            }
+        }
+    }
+}
+
 // --------------------------------------------------------------------------------------
 // simIK.createEnvironment
 // --------------------------------------------------------------------------------------
@@ -156,6 +181,7 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
+                _removeJointDependencyCallback(envId,-1);
                 if (ikEraseEnvironment())
                     _allEnvironments->removeFromEnvHandle(envId);
                 else
@@ -416,6 +442,7 @@ void LUA_ERASEOBJECT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
+                _removeJointDependencyCallback(envId,objectHandle);
                 if (!ikEraseObject(objectHandle))
                      err=ikGetLastError();
             }
@@ -1364,25 +1391,57 @@ void LUA_GETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
 }
 // --------------------------------------------------------------------------------------
 
+double jointDependencyCallback(int ikEnv,int slaveJoint,double masterPos)
+{
+    double retVal=0.0;
+    int ind=-1;
+    for (size_t i=0;i<jointDependInfo.size();i++)
+    {
+        if ( (jointDependInfo[i].ikEnv==ikEnv)&&(jointDependInfo[i].ikSlave==slaveJoint) )
+        {
+            ind=i;
+            break;
+        }
+    }
+    if (ind!=-1)
+    {
+        int stack=simCreateStack();
+        simPushInt32OntoStack(stack,ikEnv);
+        simPushInt32OntoStack(stack,slaveJoint);
+        simPushDoubleOntoStack(stack,masterPos);
+        if (simCallScriptFunctionEx(jointDependInfo[ind].scriptHandle,jointDependInfo[ind].cbString.c_str(),stack)!=-1)
+        {
+            while (simGetStackSize(stack)>1)
+                simPopStackItem(stack,1);
+            if (simGetStackSize(stack)==1)
+                simGetStackDoubleValue(stack,&retVal);
+        }
+        simReleaseStack(stack);
+    }
+    return(retVal);
+}
+
 // --------------------------------------------------------------------------------------
 // simIK.setJointDependency
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN "simIK.setJointDependency@IK"
-#define LUA_SETJOINTDEPENDENCY_COMMAND "simIK.setJointDependency"
+#define LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN "simIK._setJointDependency@IK"
+#define LUA_SETJOINTDEPENDENCY_COMMAND "simIK._setJointDependency"
 
 const int inArgs_SETJOINTDEPENDENCY[]={
-    5,
+    7,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
     sim_script_arg_double,0,
     sim_script_arg_double,0,
+    sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // cb func name
+    sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // script handle of cb
 };
 
 void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTDEPENDENCY,inArgs_SETJOINTDEPENDENCY[0]-2,LUA_SETJOINTDEPENDENCY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTDEPENDENCY,inArgs_SETJOINTDEPENDENCY[0]-4,LUA_SETJOINTDEPENDENCY_COMMAND))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1394,12 +1453,30 @@ void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
             off=inData->at(3).doubleData[0];
         if ( (inData->size()>4)&&(inData->at(4).doubleData.size()==1) )
             mult=inData->at(4).doubleData[0];
+        std::string cbString;
+        if ( (inData->size()>5)&&(inData->at(5).stringData.size()==1) )
+            cbString=inData->at(5).stringData[0];
+        int cbScriptHandle=-1;
+        if ( (inData->size()>6)&&(inData->at(6).int32Data.size()==1) )
+            cbScriptHandle=inData->at(6).int32Data[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetJointDependency(jointHandle,depJointHandle,off,mult);
+                _removeJointDependencyCallback(envId,jointHandle);
+                double(*cb)(int ikEnv,int slaveJoint,double masterPos)=nullptr;
+                if ( (cbScriptHandle!=-1)&&(cbString.size()>0) )
+                {
+                    SJointDependCB a;
+                    a.ikEnv=envId;
+                    a.ikSlave=jointHandle;
+                    a.cbString=cbString;
+                    a.scriptHandle=cbScriptHandle;
+                    jointDependInfo.push_back(a);
+                    cb=jointDependencyCallback;
+                }
+                bool result=ikSetJointDependency(jointHandle,depJointHandle,off,mult,cb);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -3381,7 +3458,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("float stepSize=",LUA_GETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle,float stepSize)"),LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("int depJointHandle,float offset,float mult=",LUA_GETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTDEPENDENCY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle,int depJointHandle,float offset=0,float mult=1)"),LUA_SETJOINTDEPENDENCY_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN,nullptr,LUA_SETJOINTDEPENDENCY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTPOSITION_COMMAND_PLUGIN,strConCat("float position=",LUA_GETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTPOSITION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTPOSITION_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle,float position)"),LUA_SETJOINTPOSITION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMATRIX_CALLBACK);

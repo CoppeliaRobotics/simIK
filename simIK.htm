@@ -1963,7 +1963,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle)</td>
+<td class="apiTableRightPSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,string callback=None any auxData=None)</td>
 </tr>
 
 <tr class="apiTableTr">
@@ -2321,7 +2321,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setJointDependency(int environmentHandle,int jointHandle,int depJointHandle,float offset=0,float mult=1)</td>
+<td class="apiTableRightLSyn">simIK.setJointDependency(int environmentHandle,int jointHandle,int depJointHandle,float offset=0,float mult=1,func callback=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -2331,6 +2331,8 @@ td.section { margin: 0; padding: 0; }
 <div><strong>depJointHandle</strong>: the handle of the joint, this joint is dependent of. -1 to disable.</div>
 <div><strong>offset</strong>: the offset. We have linear/angular joint position = dependency linear/angular joint position * mult + offset</div>
 <div><strong>mult</strong>: the multiplication factor. We have linear/angular joint position = dependency linear/angular joint position * mult + offset</div>
+<div><strong>callback</strong>: an optional callback that allows to provide a custom dependency function:</div>
+<div>float result=callbackFunction(int ikEnv,int slaveJointHandle,float masterJointPosition)</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -2341,7 +2343,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setJointDependency(int environmentHandle,int jointHandle,int depJointHandle,float offset=0,float mult=1)</td>
+<td class="apiTableRightPSyn">simIK.setJointDependency(int environmentHandle,int jointHandle,int depJointHandle,float offset=0,float mult=1,string callback=None)</td>
 </tr>
 
 <tr class="apiTableTr">
