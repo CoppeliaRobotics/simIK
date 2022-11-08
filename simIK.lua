@@ -505,6 +505,112 @@ function simIK.setObjectPose(...)
     simIK.setObjectTransformation(ikEnv,obj,relObj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]})
 end
 
+function simIK.solveIkPath(...)
+    -- undocumented (for now) function
+    -- simPath can be a Path object handle, or the path data itself
+    -- ikPath a dummy with a pose and parent consistent with simPath
+    local ikEnv,ikGroup,ikJoints,simJoints,ikPath,simPath,collisionPairs,opts=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{union={{type='handle'},{type='table'}}},{type='table'},{type='table',default={}}},...)
+
+    collisionPairs=collisionPairs or {}
+    local delta=opts.delta or 0.005
+    local errorCallback=opts.errorCallback or function(e) end
+
+    local function reportError(...)
+        local msg=string.format(...)
+        errorCallback(msg)
+    end
+
+    local pathData=simPath
+    if math.type(simPath)=='integer' and sim.isHandle(simPath) then
+        -- read path data inside path object:
+        pathData=sim.readCustomDataBlock(simPath,'PATH')
+        assert(pathData~=nil,'object does not contain PATH data')
+        pathData=sim.unpackDoubleTable(pathData)
+    end
+    local m=Matrix(#pathData//7,7,pathData)
+    local pathPositions=m:slice(1,1,m:rows(),3):data()
+    local pathQuaternions=m:slice(1,4,m:rows(),7):data()
+    local pathLengths,totalLength=sim.getPathLengths(pathPositions,3)
+
+    local moveIkTarget=opts.moveIkTarget or function(posAlongPath)
+        local pose=sim.getPathInterpolatedConfig(pathData,pathLengths,posAlongPath,nil,{0,0,0,2,2,2,2})
+        -- re-fetch path pose, should path be part of the IK chain:
+        if ikPath~=-1 then
+            pathPose=simIK.getObjectPose(ikEnv,ikPath,-1)
+            pose=sim.multiplyPoses(pathPose,pose)
+        end
+        simIK.setObjectPose(ikEnv,ikTarget,-1,pose)
+    end
+    local getConfig=opts.getConfig or function() return map(sim.getJointPosition,simJoints) end
+    local setConfig=opts.setConfig or function(cfg) foreach(sim.setJointPosition,simJoints,cfg) end
+    local getIkConfig=opts.getIkConfig or function() return map(partial(simIK.getJointPosition,ikEnv),ikJoints) end
+    local setIkConfig=opts.setIkConfig or function(cfg) foreach(partial(simIK.setJointPosition,ikEnv),ikJoints,cfg) end
+
+    -- save current robot config:
+    local origIkCfg=getIkConfig()
+
+    local cfgs={}
+    local posAlongPath=0
+    local finished=false
+
+    -- find initial config:
+    moveIkTarget(0)
+    local cfg=simIK.findConfig(ikEnv,ikGroup,ikJoints)
+    if not cfg then
+        reportError('Failed to find initial config')
+        goto fail
+    end
+
+    -- apply config in ik world:
+    setIkConfig(cfg)
+
+    -- follow path via IK solver:
+    while not finished do
+        if math.abs(posAlongPath-totalLength)<1e-6 then finished=true end
+        -- move target to next position:
+        moveIkTarget(posAlongPath)
+        -- if IK failed, return failure:
+        if simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)==simIK.result_fail then
+            reportError('Failed to perform IK step at t=%.2f',posAlongPath/totalLength)
+            goto fail
+        end
+        -- if collidableHandle given, and there is a collision, return failure:
+        if #collisionPairs>0 then
+            local origSimCfg=getConfig()
+            setConfig(getIkConfig())
+            for i=1,#collisionPairs,2 do
+                if sim.checkCollision(collisionPairs[i],collisionPairs[i+1])~=0 then
+                    local function getObjectAlias(h)
+                        if h==sim.handle_all then return '[[all]]' end
+                        local r,a=pcall(sim.getObjectAlias,h)
+                        return r and a or h
+                    end
+                    reportError('Failed due to collision %s/%s at t=%.2f',getObjectAlias(collisionPairs[i]),getObjectAlias(collisionPairs[i+1]),posAlongPath/totalLength)
+                    setConfig(origSimCfg)
+                    goto fail
+                end
+            end
+            setConfig(origSimCfg)
+        end
+        -- otherwise store config and continue:
+        local cfg={}
+        for i,h in ipairs(ikJoints) do
+            table.insert(cfg,simIK.getJointPosition(ikEnv,h))
+        end
+        table.insert(cfgs,cfg)
+        -- move position on path forward:
+        posAlongPath=math.min(posAlongPath+delta,totalLength)
+    end
+
+    if cfgs then
+        setIkConfig(origIkCfg)
+        return cfgs
+    end
+
+    ::fail::
+    setIkConfig(origIkCfg)
+end
+
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
     sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','float[] configs=simIK.getAlternateConfigs(int environmentHandle,int[] jointHandles,float[] lowLimits=nil,float[] ranges=nil)')
