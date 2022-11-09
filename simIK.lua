@@ -539,10 +539,10 @@ function simIK.solveIkPath(...)
         end
         simIK.setObjectPose(ikEnv,ikTarget,-1,pose)
     end
-    local getConfig=opts.getConfig or function() return map(sim.getJointPosition,simJoints) end
-    local setConfig=opts.setConfig or function(cfg) foreach(sim.setJointPosition,simJoints,cfg) end
-    local getIkConfig=opts.getIkConfig or function() return map(partial(simIK.getJointPosition,ikEnv),ikJoints) end
-    local setIkConfig=opts.setIkConfig or function(cfg) foreach(partial(simIK.setJointPosition,ikEnv),ikJoints,cfg) end
+    local getConfig=opts.getConfig or partial(map,sim.getJointPosition,simJoints)
+    local setConfig=opts.setConfig or partial(foreach,sim.setJointPosition,simJoints)
+    local getIkConfig=opts.getIkConfig or partial(map,partial(simIK.getJointPosition,ikEnv),ikJoints)
+    local setIkConfig=opts.setIkConfig or partial(foreach,partial(simIK.setJointPosition,ikEnv),ikJoints)
 
     -- save current robot config:
     local origIkCfg=getIkConfig()
@@ -564,7 +564,6 @@ function simIK.solveIkPath(...)
 
     -- follow path via IK solver:
     while not finished do
-        callStepCb(false)
         if math.abs(posAlongPath-totalLength)<1e-6 then finished=true end
         -- move target to next position:
         moveIkTarget(posAlongPath)
@@ -591,6 +590,7 @@ function simIK.solveIkPath(...)
             end
             setConfig(origSimCfg)
         end
+        callStepCb(false)
         -- otherwise store config and continue:
         table.insert(cfgs,getIkConfig())
         -- move position on path forward:
