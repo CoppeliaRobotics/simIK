@@ -516,6 +516,8 @@ function simIK.solveIkPath(...)
     local errorCallback=opts.errorCallback or function(e) end
     local function reportError(...) errorCallback(string.format(...)) end
 
+    local function callStepCb(failed) if opts.stepCallback then opts.stepCallback(failed) end end
+
     local pathData=simPath
     if math.type(simPath)=='integer' and sim.isHandle(simPath) then
         -- read path data inside path object:
@@ -562,6 +564,7 @@ function simIK.solveIkPath(...)
 
     -- follow path via IK solver:
     while not finished do
+        callStepCb(false)
         if math.abs(posAlongPath-totalLength)<1e-6 then finished=true end
         -- move target to next position:
         moveIkTarget(posAlongPath)
@@ -600,6 +603,7 @@ function simIK.solveIkPath(...)
     end
 
     ::fail::
+    callStepCb(true)
     setIkConfig(origIkCfg)
 end
 
