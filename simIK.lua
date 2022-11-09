@@ -514,11 +514,7 @@ function simIK.solveIkPath(...)
     collisionPairs=collisionPairs or {}
     local delta=opts.delta or 0.005
     local errorCallback=opts.errorCallback or function(e) end
-
-    local function reportError(...)
-        local msg=string.format(...)
-        errorCallback(msg)
-    end
+    local function reportError(...) errorCallback(string.format(...)) end
 
     local pathData=simPath
     if math.type(simPath)=='integer' and sim.isHandle(simPath) then
