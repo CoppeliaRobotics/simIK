@@ -593,11 +593,7 @@ function simIK.solveIkPath(...)
             setConfig(origSimCfg)
         end
         -- otherwise store config and continue:
-        local cfg={}
-        for i,h in ipairs(ikJoints) do
-            table.insert(cfg,simIK.getJointPosition(ikEnv,h))
-        end
-        table.insert(cfgs,cfg)
+        table.insert(cfgs,getIkConfig())
         -- move position on path forward:
         posAlongPath=math.min(posAlongPath+delta,totalLength)
     end
