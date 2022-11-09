@@ -509,7 +509,7 @@ function simIK.solveIkPath(...)
     -- undocumented (for now) function
     -- simPath can be a Path object handle, or the path data itself
     -- ikPath a dummy with a pose and parent consistent with simPath
-    local ikEnv,ikGroup,ikJoints,simJoints,ikPath,simPath,collisionPairs,opts=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{union={{type='handle'},{type='table'}}},{type='table'},{type='table',default={}}},...)
+    local ikEnv,ikGroup,ikJoints,simJoints,ikPath,simPath,collisionPairs,opts=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{union={{type='handle'},{type='table'}}},{type='table',default={}},{type='table',default={}}},...)
 
     collisionPairs=collisionPairs or {}
     local delta=opts.delta or 0.005
