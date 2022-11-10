@@ -2707,7 +2707,7 @@ const int inArgs_HANDLEIKGROUP[]={
 void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    int ikRes=-1;
+    int ikRes=ik_result_not_performed;
     bool result=false;
     if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUP,inArgs_HANDLEIKGROUP[0]-3,LUA_HANDLEIKGROUP_COMMAND))
     {
@@ -2741,6 +2741,10 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
     }
     if (result)
     {
+        int r=ikRes;
+        if (r>ik_result_success)
+            r=2; // previously ik_result_fail;
+        D.pushOutData(CScriptFunctionDataItem(r));
         D.pushOutData(CScriptFunctionDataItem(ikRes));
         D.writeDataToStack(p->stackID);
     }
@@ -3520,7 +3524,13 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.method_undamped_pseudo_inverse@simExtIK",std::to_string(ik_method_undamped_pseudo_inverse).c_str(),0);
     simRegisterScriptVariable("simIK.result_not_performed@simExtIK",std::to_string(ik_result_not_performed).c_str(),0);
     simRegisterScriptVariable("simIK.result_success@simExtIK",std::to_string(ik_result_success).c_str(),0);
-    simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(ik_result_fail).c_str(),0);
+    simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(2).c_str(),0); // previously ik_result_fail
+    simRegisterScriptVariable("simIK.result_novalidikelement@simExtIK",std::to_string(ik_result_novalidikelement).c_str(),0);
+    simRegisterScriptVariable("simIK.result_notwithintolerance@simExtIK",std::to_string(ik_result_notwithintolerance).c_str(),0);
+    simRegisterScriptVariable("simIK.result_cannotinvert@simExtIK",std::to_string(ik_result_cannotinvert).c_str(),0);
+    simRegisterScriptVariable("simIK.result_jointveltoobig@simExtIK",std::to_string(ik_result_jointveltoobig).c_str(),0);
+    simRegisterScriptVariable("simIK.result_distancingfromtarget@simExtIK",std::to_string(ik_result_distancingfromtarget).c_str(),0);
+    simRegisterScriptVariable("simIK.result_limithit@simExtIK",std::to_string(ik_result_limithit).c_str(),0);
 
     // deprecated:
     simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
@@ -3823,7 +3833,11 @@ SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
+    {
         ikHandleIkGroup(ikGroupHandle,&retVal);
+        if (retVal>ik_result_success)
+            retVal=2; // previously ik_result_fail
+    }
     return(retVal);
 }
 

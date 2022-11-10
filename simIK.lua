@@ -414,9 +414,9 @@ function simIK.handleIkGroup(...)
         funcNm='__cb'
         t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
     end
-    local retVal=simIK._handleIkGroup(ikEnv,ikGroup,funcNm,t)
+    local retVal,reason=simIK._handleIkGroup(ikEnv,ikGroup,funcNm,t)
     sim.setThreadAutomaticSwitch(lb)
-    return retVal
+    return retVal,reason
 end
 
 function simIK.setJointDependency(...)
@@ -622,7 +622,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false,func jacobianCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
-    sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
+    sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result,int reason=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.setJointDependency@simIK','simIK.setJointDependency(int environmentHandle,int jointHandle,int masterJointHandle,float offset=0.0,float mult=1.0,func callback=nil)')
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
