@@ -1940,7 +1940,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func callback=nil,any auxData=nil)</td>
+<td class="apiTableRightLSyn">int result,int reason=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func callback=nil,any auxData=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -1957,13 +1957,14 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>result</strong>: the resolution result, in return. Possible values are simIK.ikresult_not_performed, simIK.ikresult_success, or simIK.ikresult_fail</div>
+<div><strong>result</strong>: simIK.ikresult_success, if successful</div>
+<div><strong>reason</strong>: the reason for failure. One of possible values: simIK.result_not_performed, simIK.result_novalidikelement, simIK.result_notwithintolerance, simIK.result_cannotinvert, simIK.result_jointveltoobig, simIK.result_distancingfromtarget, simIK.result_limithit</div>
 </td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int result=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,string callback=None any auxData=None)</td>
+<td class="apiTableRightPSyn">int result,int reason=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,string callback=None,any auxData=None)</td>
 </tr>
 
 <tr class="apiTableTr">
