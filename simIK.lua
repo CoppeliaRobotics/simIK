@@ -419,6 +419,17 @@ function simIK.handleIkGroup(...)
     return retVal,reason
 end
 
+function simIK.getFailureDescription(reason)
+    return ({
+        [simIK.result_novalidikelement]='No valid IK element',
+        [simIK.result_notwithintolerance]='Not within tolerance',
+        [simIK.result_cannotinvert]='Cannot invert jacobian',
+        [simIK.result_jointveltoobig]='Joint velocity too big',
+        [simIK.result_distancingfromtarget]='Target overshoot',
+        [simIK.result_limithit]='Joint limit hit',
+    })[reason] or string.format('Unknown reason (%d)',reason)
+end
+
 function simIK.setJointDependency(...)
     local ikEnv,slaveJoint,masterJoint,offset,mult,callback=checkargs({{type='int'},{type='int'},{type='int'},{type='float',default=0.0},{type='float',default=1.0},{type='any',default=NIL,nullable=true}},...)
     function __depcb(ikEnv,slaveJoint,masterPos)
@@ -568,15 +579,9 @@ function simIK.solveIkPath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        local ikResult=simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)
+        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)
         if ikResult~=simIK.result_success then
-            local reason=''
-            local jointHandles,underOrOvershots=simIK.getIkGroupJointLimitHits(ikEnv,ikGroup)
-            for jh,x in iter(zip(jointHandles,underOrOvershots)) do
-                reason=reason..(reason=='' and '' or ', ')..string.format('joint %d by %f',jh,x)
-            end
-            if reason~='' then reason=string.format(' (limits: %s)',reason) end
-            reportError('Failed (%d) to perform IK step%s at t=%.2f',ikResult,reason,posAlongPath/totalLength)
+            reportError('Failed to perform IK step at t=%.2f (reason: %s)',posAlongPath/totalLength,simIK.getFailureDescription(failureCode))
             goto fail
         end
         -- if collidableHandle given, and there is a collision, return failure:
@@ -623,6 +628,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result,int reason=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
+    sim.registerScriptFunction('simIK.getFailureDescription@simIK','string description=simIK.getFailureDescription(reason)')
     sim.registerScriptFunction('simIK.setJointDependency@simIK','simIK.setJointDependency(int environmentHandle,int jointHandle,int masterJointHandle,float offset=0.0,float mult=1.0,func callback=nil)')
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
