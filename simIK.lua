@@ -154,7 +154,7 @@ function simIK.applyIkEnvironmentToScene(...)
     
     simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    local res=simIK.handleIkGroup(ikEnv,ikGroup,cb,auxData)
+    local res,reason=simIK.handleIkGroup(ikEnv,ikGroup,cb,auxData)
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         for k,v in pairs(groupData.joints) do
             if sim.getJointType(k)==sim.joint_spherical_subtype then
@@ -171,7 +171,7 @@ function simIK.applyIkEnvironmentToScene(...)
         end
     end
     sim.setThreadAutomaticSwitch(lb)
-    return res
+    return res,reason
 end
 
 function simIK.addIkElementFromScene(...)
@@ -619,7 +619,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','float[] configs=simIK.getAlternateConfigs(int environmentHandle,int[] jointHandles,float[] lowLimits=nil,float[] ranges=nil)')
     sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','int ikElement,map simToIkObjectMap=simIK.addIkElementFromScene(int environmentHandle,int ikGroup,int baseHandle,int tipHandle,int targetHandle,int constraints)')
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(int environmentHandle,int ikGroup)')
-    sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false,func jacobianCallback=nil,any auxData=nil)')
+    sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','int result,int reason=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false,func jacobianCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.handleIkGroup@simIK','int result,int reason=simIK.handleIkGroup(int environmentHandle,int ikGroupHandle,func jacobianCallback=nil,any auxData=nil)')
