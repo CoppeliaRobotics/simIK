@@ -534,7 +534,7 @@ function simIK.solveIkPath(...)
         local pose=sim.getPathInterpolatedConfig(pathData,pathLengths,posAlongPath,nil,{0,0,0,2,2,2,2})
         -- re-fetch path pose, should path be part of the IK chain:
         if ikPath~=-1 then
-            pathPose=simIK.getObjectPose(ikEnv,ikPath,-1)
+            local pathPose=simIK.getObjectPose(ikEnv,ikPath,-1)
             pose=sim.multiplyPoses(pathPose,pose)
         end
         simIK.setObjectPose(ikEnv,ikTarget,-1,pose)
