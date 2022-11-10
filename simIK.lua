@@ -568,14 +568,15 @@ function simIK.solveIkPath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        if simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)==simIK.result_fail then
+        local ikResult=simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)
+        if ikResult~=simIK.result_success then
             local reason=''
             local jointHandles,underOrOvershots=simIK.getIkGroupJointLimitHits(ikEnv,ikGroup)
             for jh,x in iter(zip(jointHandles,underOrOvershots)) do
                 reason=reason..(reason=='' and '' or ', ')..string.format('joint %d by %f',jh,x)
             end
             if reason~='' then reason=string.format(' (limits: %s)',reason) end
-            reportError('Failed to perform IK step%s at t=%.2f',reason,posAlongPath/totalLength)
+            reportError('Failed (%d) to perform IK step%s at t=%.2f',ikResult,reason,posAlongPath/totalLength)
             goto fail
         end
         -- if collidableHandle given, and there is a collision, return failure:
