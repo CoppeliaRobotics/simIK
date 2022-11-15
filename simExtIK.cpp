@@ -2709,6 +2709,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int ikRes=ik_result_not_performed;
     bool result=false;
+    double precision[2]={0.0,0.0};
     if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUP,inArgs_HANDLEIKGROUP[0]-3,LUA_HANDLEIKGROUP_COMMAND))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
@@ -2729,7 +2730,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
                     jacobianCallback_envId=envId;
                     cb=jacobianCallback;
                 }
-                result=ikHandleIkGroup(ikGroupHandle,&ikRes,cb);
+                result=ikHandleIkGroup(ikGroupHandle,&ikRes,precision,cb);
                 if (!result)
                     err=ikGetLastError();
             }
@@ -2742,10 +2743,15 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
     if (result)
     {
         int r=ikRes;
-        if (r>ik_result_success)
-            r=2; // previously ik_result_fail;
+        if ( (r&ik_calc_notperformed)!=0 )
+            r=0; // ik_result_not_performed
+        else if ( (r&(ik_calc_cannotinvert|ik_calc_notwithintolerance))!=0 )
+            r=2; // previously ik_result_fail
+        else r=1; // previously ik_result_success
         D.pushOutData(CScriptFunctionDataItem(r));
         D.pushOutData(CScriptFunctionDataItem(ikRes));
+        std::vector<double> prec(precision,precision+2);
+        D.pushOutData(CScriptFunctionDataItem(prec));
         D.writeDataToStack(p->stackID);
     }
 }
@@ -3522,15 +3528,24 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.method_damped_least_squares@simExtIK",std::to_string(ik_method_damped_least_squares).c_str(),0);
     simRegisterScriptVariable("simIK.method_jacobian_transpose@simExtIK",std::to_string(ik_method_jacobian_transpose).c_str(),0);
     simRegisterScriptVariable("simIK.method_undamped_pseudo_inverse@simExtIK",std::to_string(ik_method_undamped_pseudo_inverse).c_str(),0);
+
     simRegisterScriptVariable("simIK.result_not_performed@simExtIK",std::to_string(ik_result_not_performed).c_str(),0);
     simRegisterScriptVariable("simIK.result_success@simExtIK",std::to_string(ik_result_success).c_str(),0);
-    simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(2).c_str(),0); // previously ik_result_fail
-    simRegisterScriptVariable("simIK.result_novalidikelement@simExtIK",std::to_string(ik_result_novalidikelement).c_str(),0);
-    simRegisterScriptVariable("simIK.result_notwithintolerance@simExtIK",std::to_string(ik_result_notwithintolerance).c_str(),0);
-    simRegisterScriptVariable("simIK.result_cannotinvert@simExtIK",std::to_string(ik_result_cannotinvert).c_str(),0);
-    simRegisterScriptVariable("simIK.result_jointveltoobig@simExtIK",std::to_string(ik_result_jointveltoobig).c_str(),0);
-    simRegisterScriptVariable("simIK.result_distancingfromtarget@simExtIK",std::to_string(ik_result_distancingfromtarget).c_str(),0);
-    simRegisterScriptVariable("simIK.result_limithit@simExtIK",std::to_string(ik_result_limithit).c_str(),0);
+    simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(ik_result_fail).c_str(),0);
+
+    simRegisterScriptVariable("simIK.calc_notperformed@simExtIK",std::to_string(ik_calc_notperformed).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_cannotinvert@simExtIK",std::to_string(ik_calc_cannotinvert).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_notwithintolerance@simExtIK",std::to_string(ik_calc_notwithintolerance).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_stepstoobig@simExtIK",std::to_string(ik_calc_stepstoobig).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_movingaway@simExtIK",std::to_string(ik_calc_movingaway).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_limithit@simExtIK",std::to_string(ik_calc_limithit).c_str(),0);
+
+    simRegisterScriptVariable("simIK.group_enabled@simExtIK",std::to_string(ik_group_enabled).c_str(),0);
+    simRegisterScriptVariable("simIK.group_ignoremaxsteps@simExtIK",std::to_string(ik_group_ignoremaxsteps).c_str(),0);
+    simRegisterScriptVariable("simIK.group_restoreonbadlintol@simExtIK",std::to_string(ik_group_restoreonbadlintol).c_str(),0);
+    simRegisterScriptVariable("simIK.group_restoreonbadangtol@simExtIK",std::to_string(ik_group_restoreonbadangtol).c_str(),0);
+    simRegisterScriptVariable("simIK.group_stoponlimithit@simExtIK",std::to_string(ik_group_stoponlimithit).c_str(),0);
+    simRegisterScriptVariable("simIK.group_avoidlimits@simExtIK",std::to_string(ik_group_avoidlimits).c_str(),0);
 
     // deprecated:
     simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
@@ -3834,9 +3849,12 @@ SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
     {
-        ikHandleIkGroup(ikGroupHandle,&retVal);
-        if (retVal>ik_result_success)
+        ikHandleIkGroup(ikGroupHandle,&retVal,nullptr);
+        if ( (retVal&ik_calc_notperformed)!=0 )
+            retVal=0; // ik_result_not_performed
+        else if ( (retVal&(ik_calc_cannotinvert|ik_calc_notwithintolerance))!=0 )
             retVal=2; // previously ik_result_fail
+        else retVal=1; // previously ik_result_success
     }
     return(retVal);
 }
