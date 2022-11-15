@@ -594,7 +594,7 @@ function simIK.solveIkPath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)
+        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,{callback=opts.jacobianCallback})
         if ikResult~=simIK.result_success then
             reportError('Failed to perform IK step at t=%.2f (reason: %s)',posAlongPath/totalLength,simIK.getFailureDescription(failureCode))
             goto fail
