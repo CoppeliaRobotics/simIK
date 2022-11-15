@@ -435,14 +435,25 @@ function simIK.handleIkGroup(...)
 end
 
 function simIK.getFailureDescription(reason)
-    return ({
-        [simIK.result_novalidikelement]='No valid IK element',
-        [simIK.result_notwithintolerance]='Not within tolerance',
-        [simIK.result_cannotinvert]='Cannot invert jacobian',
-        [simIK.result_jointveltoobig]='Joint velocity too big',
-        [simIK.result_distancingfromtarget]='Target overshoot',
-        [simIK.result_limithit]='Joint limit hit',
-    })[reason] or string.format('Unknown reason (%d)',reason)
+    local d={}
+    for _,k in ipairs{
+        'notperformed',
+        'cannotinvert',
+        'notwithintolerance',
+        'stepstoobig',
+        'movingaway',
+        'limithit',
+    } do
+        local f='calc_'..k
+        if reason&simIK[f]>0 then
+            reason=reason&~simIK[f]
+            table.insert(d,k)
+        end
+    end
+    if reason~=0 then
+        table.insert(d,tostring(reason))
+    end
+    return table.tostring(d)
 end
 
 function simIK.setJointDependency(...)
