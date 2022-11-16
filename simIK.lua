@@ -426,7 +426,7 @@ function simIK.handleIkGroup(...)
     end
     local retVal,reason,prec=simIK._handleIkGroup(ikEnv,ikGroup,funcNm,t)
     if options.syncWorlds then
-        if (reason&simIK.calc_notwithintolerance)==0 then
+        if (reason&simIK.calc_notwithintolerance)==0 or options.allowError then
             simIK.syncFromIkWorld(ikEnv,ikGroup)
         end
     end
@@ -605,7 +605,7 @@ function simIK.solveIkPath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,{callback=opts.jacobianCallback})
+        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,opts.jacobianCallback)
         if ikResult~=simIK.result_success then
             reportError('Failed to perform IK step at t=%.2f (reason: %s)',posAlongPath/totalLength,simIK.getFailureDescription(failureCode))
             goto fail
