@@ -1952,11 +1952,12 @@ td.section { margin: 0; padding: 0; }
 <div><strong>environmentHandle</strong>: the handle of the environment</div>
 <div><strong>ikGroupHandle</strong>: the handle of the IK group</div>
 <div><strong>options</strong>: options:</div>
-<div>options.syncWorlds: if true, then calculation will be preceeded by simIK.syncToIkWorld and followed by simIK.syncFromIkWorld</div>
-<div>options.callback: a callback function that allows to inspect and manipulate the generated Jacobians and error vectors:</div>
-<div>callbackFunction(data), with data containing the Jacobian and error vector</div>
+<div class=tabTab>options.syncWorlds: if true, then calculation will be preceeded by simIK.syncToIkWorld and followed by simIK.syncFromIkWorld</div>
+<div class=tabTab>options.allowError: if true, and options.syncWorlds is true too, then calculation result will be applied to the scene, even if tip/target pairs are not within tolerance</div>
+<div class=tabTab>options.callback: a callback function that allows to inspect and manipulate the generated Jacobians and error vectors:</div>
+<div class=tabTab>callbackFunction(data), with data containing the Jacobian and error vector</div>
 <div></div>
-<div>If the callback doesn't return a value, then the original Jacobian and error vector are used for computation. If the callback returns one table, then the table is interpreted as the computed joint errors. If the callback returns two tables, the first is interpreted as the modified Jacobian, the second is interpreted as the modified error vector</div>
+<div class=tabTab>If the callback doesn't return a value, then the original Jacobian and error vector are used for computation. If the callback returns one table, then the table is interpreted as the computed joint errors. If the callback returns two tables, the first is interpreted as the modified Jacobian, the second is interpreted as the modified error vector</div>
 
 </td>
 </tr>
