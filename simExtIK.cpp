@@ -2645,7 +2645,7 @@ static std::string jacobianCallback_funcName;
 static int jacobianCallback_scriptHandle;
 static int jacobianCallback_envId;
 
-bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,const simInt* rowConstraints,const simInt* rowIkElements,const simInt* colHandles,const simInt* colStages,std::vector<double>* errorVector,double* qVector)
+bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,std::vector<double>* errorVector,double* qVector)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     bool retVal=false; // if true jointValues were computed
@@ -2720,7 +2720,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool(*cb)(const simInt*,std::vector<double>*,const simInt*,const simInt*,const simInt*,const simInt*,std::vector<double>*,double*)=nullptr;
+                bool(*cb)(const int*,std::vector<double>*,const int*,const int*,const int*,const int*,std::vector<double>*,double*)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
                     ikGroupHandle=inData->at(1).int32Data[0];
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
@@ -2765,7 +2765,7 @@ static size_t validationCallback_jointCnt;
 bool validationCallback(double* conf)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
-    simBool retVal=1;
+    bool retVal=1;
     int stack=simCreateStack();
     simPushDoubleTableOntoStack(stack,conf,int(validationCallback_jointCnt));
     if (simCallScriptFunctionEx(validationCallback_scriptType,validationCallback_funcNameAtScriptName.c_str(),stack)!=-1)
@@ -3584,6 +3584,15 @@ SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
             if (ikSwitchEnvironment(env))
                 ikEraseEnvironment();
             env=_allEnvironments->removeOneFromScriptHandle(auxiliaryData[0]);
+
+            for (int i=0;i<int(jointDependInfo.size());i++)
+            {
+                if (jointDependInfo[i].scriptHandle==auxiliaryData[0])
+                {
+                    jointDependInfo.erase(jointDependInfo.begin()+i);
+                    i--;
+                }
+            }
         }
     }
 
