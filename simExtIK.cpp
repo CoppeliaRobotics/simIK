@@ -128,7 +128,8 @@ void _removeJointDependencyCallback(int envId,int slaveJoint)
 #define LUA_CREATEENVIRONMENT_COMMAND "simIK.createEnvironment"
 
 const int inArgs_CREATEENVIRONMENT[]={
-    0,
+    1,
+    sim_script_arg_int32,0,
 };
 
 void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
@@ -136,12 +137,16 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool res=false;
-    if (D.readDataFromStack(p->stackID,inArgs_CREATEENVIRONMENT,inArgs_CREATEENVIRONMENT[0],LUA_CREATEENVIRONMENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_CREATEENVIRONMENT,inArgs_CREATEENVIRONMENT[0]-1,LUA_CREATEENVIRONMENT_COMMAND))
     {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int flags=0;
+        if ( (inData->size()>=1)&&(inData->at(0).int32Data.size()==1) )
+            flags=inData->at(0).int32Data[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-            res=ikCreateEnvironment(&retVal);
+            res=ikCreateEnvironment(&retVal,flags);
             if (res)
                 _allEnvironments->add(retVal,p->scriptID);
             else
@@ -3439,7 +3444,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK","require('simIK')",0);
 
     // Register the new Lua commands:
-    simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"()"),LUA_CREATEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"(int flags=0)"),LUA_CREATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(int environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(int environmentHandle,string data)"),LUA_LOAD_CALLBACK);
@@ -3627,17 +3632,9 @@ SIM_DLLEXPORT int ikPlugin_createEnv()
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1;
-    ikCreateEnvironment(&retVal,true);
+    ikCreateEnvironment(&retVal,1|2); // protected (1) and backward compatible for old GUI-IK(2)
     return(retVal);
 }
-
-/*
-SIM_DLLEXPORT bool ikPlugin_switchEnvironment(int handle)
-{
-    CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    return(ikSwitchEnvironment(handle,true));
-}
-*/
 
 SIM_DLLEXPORT void ikPlugin_eraseEnvironment(int ikEnv)
 {
