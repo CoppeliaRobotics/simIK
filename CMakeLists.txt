@@ -18,6 +18,7 @@ if(NOT LIBPLUGIN_DIR)
 endif()
 list(APPEND CMAKE_MODULE_PATH ${LIBPLUGIN_DIR}/cmake)
 find_package(CoppeliaSim 4.1.0.0 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 coppeliasim_add_plugin(
     simExtIK

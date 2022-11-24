@@ -1,3 +1,5 @@
+include(config.pri)
+
 TARGET = simExtIK
 TEMPLATE = lib
 DEFINES -= UNICODE
@@ -51,6 +53,8 @@ INCLUDEPATH += "../include"
 INCLUDEPATH += "../common"
 INCLUDEPATH += "../simMath"
 INCLUDEPATH += "../coppeliaKinematicsRoutines"
+
+INCLUDEPATH += $$EIGEN_INCLUDEPATH
 
 HEADERS += simExtIK.h \
     envCont.h \
