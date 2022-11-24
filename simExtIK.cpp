@@ -1090,10 +1090,10 @@ void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getJointIkWeight
+// simIK.getJointWeight
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.getJointIkWeight@IK"
-#define LUA_GETJOINTIKWEIGHT_COMMAND "simIK.getJointIkWeight"
+#define LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.getJointWeight@IK"
+#define LUA_GETJOINTIKWEIGHT_COMMAND "simIK.getJointWeight"
 
 const int inArgs_GETJOINTIKWEIGHT[]={
     2,
@@ -1116,7 +1116,7 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetJointIkWeight(jointHandle,&weight);
+                result=ikGetJointWeight(jointHandle,&weight);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -1135,10 +1135,10 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setJointIkWeight
+// simIK.setJointWeight
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.setJointIkWeight@IK"
-#define LUA_SETJOINTIKWEIGHT_COMMAND "simIK.setJointIkWeight"
+#define LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.setJointWeight@IK"
+#define LUA_SETJOINTIKWEIGHT_COMMAND "simIK.setJointWeight"
 
 const int inArgs_SETJOINTIKWEIGHT[]={
     3,
@@ -1161,7 +1161,7 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetJointIkWeight(jointHandle,weight);
+                bool result=ikSetJointWeight(jointHandle,weight);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -1427,7 +1427,7 @@ double jointDependencyCallback(int ikEnv,int slaveJoint,double masterPos)
 }
 
 // --------------------------------------------------------------------------------------
-// simIK.setJointDependency
+// simIK._setJointDependency
 // --------------------------------------------------------------------------------------
 #define LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN "simIK._setJointDependency@IK"
 #define LUA_SETJOINTDEPENDENCY_COMMAND "simIK._setJointDependency"
@@ -1786,10 +1786,10 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkGroupHandle
+// simIK.getGroupHandle
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPHANDLE_COMMAND_PLUGIN "simIK.getIkGroupHandle@IK"
-#define LUA_GETIKGROUPHANDLE_COMMAND "simIK.getIkGroupHandle"
+#define LUA_GETIKGROUPHANDLE_COMMAND_PLUGIN "simIK.getGroupHandle@IK"
+#define LUA_GETIKGROUPHANDLE_COMMAND "simIK.getGroupHandle"
 
 const int inArgs_GETIKGROUPHANDLE[]={
     2,
@@ -1811,7 +1811,7 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkGroupHandle(inData->at(1).stringData[0].c_str(),&retVal);
+                result=ikGetGroupHandle(inData->at(1).stringData[0].c_str(),&retVal);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -1830,10 +1830,10 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.doesIkGroupExist
+// simIK.doesGroupExist
 // --------------------------------------------------------------------------------------
-#define LUA_DOESIKGROUPEXIST_COMMAND_PLUGIN "simIK.doesIkGroupExist@IK"
-#define LUA_DOESIKGROUPEXIST_COMMAND "simIK.doesIkGroupExist"
+#define LUA_DOESIKGROUPEXIST_COMMAND_PLUGIN "simIK.doesGroupExist@IK"
+#define LUA_DOESIKGROUPEXIST_COMMAND "simIK.doesGroupExist"
 
 const int inArgs_DOESIKGROUPEXIST[]={
     2,
@@ -1855,7 +1855,7 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                retVal=ikDoesIkGroupExist(inData->at(1).stringData[0].c_str());
+                retVal=ikDoesGroupExist(inData->at(1).stringData[0].c_str());
                 result=true;
             }
             else
@@ -1873,10 +1873,10 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.createIkGroup
+// simIK.createGroup
 // --------------------------------------------------------------------------------------
-#define LUA_CREATEIKGROUP_COMMAND_PLUGIN "simIK.createIkGroup@IK"
-#define LUA_CREATEIKGROUP_COMMAND "simIK.createIkGroup"
+#define LUA_CREATEIKGROUP_COMMAND_PLUGIN "simIK.createGroup@IK"
+#define LUA_CREATEIKGROUP_COMMAND "simIK.createGroup"
 
 const int inArgs_CREATEIKGROUP[]={
     2,
@@ -1901,7 +1901,7 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
                 const char* nm=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).stringData.size()==1)&&(inData->at(1).stringData[0].size()>0) )
                     nm=inData->at(1).stringData[0].c_str();
-                result=ikCreateIkGroup(nm,&retVal);
+                result=ikCreateGroup(nm,&retVal);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -1920,10 +1920,10 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkGroupFlags
+// simIK.getGroupFlags
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.getIkGroupFlags@IK"
-#define LUA_GETIKGROUPFLAGS_COMMAND "simIK.getIkGroupFlags"
+#define LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.getGroupFlags@IK"
+#define LUA_GETIKGROUPFLAGS_COMMAND "simIK.getGroupFlags"
 
 const int inArgs_GETIKGROUPFLAGS[]={
     2,
@@ -1946,7 +1946,7 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkGroupFlags(ikGroupHandle,&flags);
+                result=ikGetGroupFlags(ikGroupHandle,&flags);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -1965,10 +1965,10 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkGroupFlags
+// simIK.setGroupFlags
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.setIkGroupFlags@IK"
-#define LUA_SETIKGROUPFLAGS_COMMAND "simIK.setIkGroupFlags"
+#define LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.setGroupFlags@IK"
+#define LUA_SETIKGROUPFLAGS_COMMAND "simIK.setGroupFlags"
 
 const int inArgs_SETIKGROUPFLAGS[]={
     3,
@@ -1991,7 +1991,7 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkGroupFlags(ikGroupHandle,flags);
+                bool result=ikSetGroupFlags(ikGroupHandle,flags);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2005,10 +2005,10 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkGroupJointLimitHits
+// simIK.getGroupJointLimitHits
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN "simIK.getIkGroupJointLimitHits@IK"
-#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND "simIK.getIkGroupJointLimitHits"
+#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN "simIK.getGroupJointLimitHits@IK"
+#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND "simIK.getGroupJointLimitHits"
 
 const int inArgs_GETIKGROUPJOINTLIMITHITS[]={
     2,
@@ -2032,7 +2032,7 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkGroupJointLimitHits(ikGroupHandle,&handles,&overshots);
+                result=ikGetGroupJointLimitHits(ikGroupHandle,&handles,&overshots);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2052,10 +2052,55 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkGroupCalculation
+// simIK.getGroupJoints
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.getIkGroupCalculation@IK"
-#define LUA_GETIKGROUPCALCULATION_COMMAND "simIK.getIkGroupCalculation"
+#define LUA_GETGROUPJOINTS_COMMAND_PLUGIN "simIK.getGroupJoints@IK"
+#define LUA_GETGROUPJOINTS_COMMAND "simIK.getGroupJoints"
+
+const int inArgs_GETGROUPJOINTS[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETGROUPJOINTS_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    std::vector<int> handles;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETGROUPJOINTS,inArgs_GETGROUPJOINTS[0],LUA_GETGROUPJOINTS_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int ikGroupHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetGroupJoints(ikGroupHandle,&handles);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETGROUPJOINTS_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(handles));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.getGroupCalculation
+// --------------------------------------------------------------------------------------
+#define LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.getGroupCalculation@IK"
+#define LUA_GETIKGROUPCALCULATION_COMMAND "simIK.getGroupCalculation"
 
 const int inArgs_GETIKGROUPCALCULATION[]={
     2,
@@ -2080,7 +2125,7 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkGroupCalculation(ikGroupHandle,&method,&damping,&iterations);
+                result=ikGetGroupCalculation(ikGroupHandle,&method,&damping,&iterations);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2101,10 +2146,10 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkGroupCalculation
+// simIK.setGroupCalculation
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.setIkGroupCalculation@IK"
-#define LUA_SETIKGROUPCALCULATION_COMMAND "simIK.setIkGroupCalculation"
+#define LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.setGroupCalculation@IK"
+#define LUA_SETIKGROUPCALCULATION_COMMAND "simIK.setGroupCalculation"
 
 const int inArgs_SETIKGROUPCALCULATION[]={
     5,
@@ -2131,7 +2176,7 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkGroupCalculation(ikGroupHandle,method,damping,iterations);
+                bool result=ikSetGroupCalculation(ikGroupHandle,method,damping,iterations);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2146,10 +2191,10 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 
 
 // --------------------------------------------------------------------------------------
-// simIK.addIkElement
+// simIK.addElement
 // --------------------------------------------------------------------------------------
-#define LUA_ADDIKELEMENT_COMMAND_PLUGIN "simIK.addIkElement@IK"
-#define LUA_ADDIKELEMENT_COMMAND "simIK.addIkElement"
+#define LUA_ADDIKELEMENT_COMMAND_PLUGIN "simIK.addElement@IK"
+#define LUA_ADDIKELEMENT_COMMAND "simIK.addElement"
 
 const int inArgs_ADDIKELEMENT[]={
     3,
@@ -2174,7 +2219,7 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikAddIkElement(ikGroupHandle,tipDummyHandle,&elementHandle);
+                result=ikAddElement(ikGroupHandle,tipDummyHandle,&elementHandle);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2193,10 +2238,10 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkElementFlags
+// simIK.getElementFlags
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.getIkElementFlags@IK"
-#define LUA_GETIKELEMENTFLAGS_COMMAND "simIK.getIkElementFlags"
+#define LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.getElementFlags@IK"
+#define LUA_GETIKELEMENTFLAGS_COMMAND "simIK.getElementFlags"
 
 const int inArgs_GETIKELEMENTFLAGS[]={
     3,
@@ -2221,7 +2266,7 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkElementFlags(ikGroupHandle,ikElementHandle,&flags);
+                result=ikGetElementFlags(ikGroupHandle,ikElementHandle,&flags);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2240,10 +2285,10 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkElementFlags
+// simIK.setElementFlags
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.setIkElementFlags@IK"
-#define LUA_SETIKELEMENTFLAGS_COMMAND "simIK.setIkElementFlags"
+#define LUA_SETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.setElementFlags@IK"
+#define LUA_SETIKELEMENTFLAGS_COMMAND "simIK.setElementFlags"
 
 const int inArgs_SETIKELEMENTFLAGS[]={
     4,
@@ -2268,7 +2313,7 @@ void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
+                bool result=ikSetElementFlags(ikGroupHandle,ikElementHandle,flags);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2282,10 +2327,10 @@ void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkElementBase
+// simIK.getElementBase
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTBASE_COMMAND_PLUGIN "simIK.getIkElementBase@IK"
-#define LUA_GETIKELEMENTBASE_COMMAND "simIK.getIkElementBase"
+#define LUA_GETIKELEMENTBASE_COMMAND_PLUGIN "simIK.getElementBase@IK"
+#define LUA_GETIKELEMENTBASE_COMMAND "simIK.getElementBase"
 
 const int inArgs_GETIKELEMENTBASE[]={
     3,
@@ -2311,7 +2356,7 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkElementBase(ikGroupHandle,ikElementHandle,&baseHandle,&constrBaseHandle);
+                result=ikGetElementBase(ikGroupHandle,ikElementHandle,&baseHandle,&constrBaseHandle);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2331,10 +2376,10 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkElementBase
+// simIK.setElementBase
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTBASE_COMMAND_PLUGIN "simIK.setIkElementBase@IK"
-#define LUA_SETIKELEMENTBASE_COMMAND "simIK.setIkElementBase"
+#define LUA_SETIKELEMENTBASE_COMMAND_PLUGIN "simIK.setElementBase@IK"
+#define LUA_SETIKELEMENTBASE_COMMAND "simIK.setElementBase"
 
 const int inArgs_SETIKELEMENTBASE[]={
     5,
@@ -2363,7 +2408,7 @@ void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constrBaseHandle);
+                bool result=ikSetElementBase(ikGroupHandle,ikElementHandle,baseHandle,constrBaseHandle);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2377,10 +2422,10 @@ void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkElementConstraints
+// simIK.getElementConstraints
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.getIkElementConstraints@IK"
-#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND "simIK.getIkElementConstraints"
+#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.getElementConstraints@IK"
+#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND "simIK.getElementConstraints"
 
 const int inArgs_GETIKELEMENTCONSTRAINTS[]={
     3,
@@ -2405,7 +2450,7 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkElementConstraints(ikGroupHandle,ikElementHandle,&constraints);
+                result=ikGetElementConstraints(ikGroupHandle,ikElementHandle,&constraints);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2424,10 +2469,10 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkElementConstraints
+// simIK.setElementConstraints
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.setIkElementConstraints@IK"
-#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND "simIK.setIkElementConstraints"
+#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.setElementConstraints@IK"
+#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND "simIK.setElementConstraints"
 
 const int inArgs_SETIKELEMENTCONSTRAINTS[]={
     4,
@@ -2452,7 +2497,7 @@ void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
+                bool result=ikSetElementConstraints(ikGroupHandle,ikElementHandle,constraints);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2466,10 +2511,10 @@ void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkElementPrecision
+// simIK.getElementPrecision
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.getIkElementPrecision@IK"
-#define LUA_GETIKELEMENTPRECISION_COMMAND "simIK.getIkElementPrecision"
+#define LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.getElementPrecision@IK"
+#define LUA_GETIKELEMENTPRECISION_COMMAND "simIK.getElementPrecision"
 
 const int inArgs_GETIKELEMENTPRECISION[]={
     3,
@@ -2494,7 +2539,7 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkElementPrecision(ikGroupHandle,ikElementHandle,precision+0,precision+1);
+                result=ikGetElementPrecision(ikGroupHandle,ikElementHandle,precision+0,precision+1);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2514,10 +2559,10 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkElementPrecision
+// simIK.setElementPrecision
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.setIkElementPrecision@IK"
-#define LUA_SETIKELEMENTPRECISION_COMMAND "simIK.setIkElementPrecision"
+#define LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.setElementPrecision@IK"
+#define LUA_SETIKELEMENTPRECISION_COMMAND "simIK.setElementPrecision"
 
 const int inArgs_SETIKELEMENTPRECISION[]={
     4,
@@ -2542,7 +2587,7 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,precision[0],precision[1]);
+                bool result=ikSetElementPrecision(ikGroupHandle,ikElementHandle,precision[0],precision[1]);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2556,10 +2601,10 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getIkElementWeights
+// simIK.getElementWeights
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.getIkElementWeights@IK"
-#define LUA_GETIKELEMENTWEIGHTS_COMMAND "simIK.getIkElementWeights"
+#define LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.getElementWeights@IK"
+#define LUA_GETIKELEMENTWEIGHTS_COMMAND "simIK.getElementWeights"
 
 const int inArgs_GETIKELEMENTWEIGHTS[]={
     3,
@@ -2584,7 +2629,7 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                result=ikGetIkElementWeights(ikGroupHandle,ikElementHandle,weights+0,weights+1);
+                result=ikGetElementWeights(ikGroupHandle,ikElementHandle,weights+0,weights+1);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2604,10 +2649,10 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setIkElementWeights
+// simIK.setElementWeights
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.setIkElementWeights@IK"
-#define LUA_SETIKELEMENTWEIGHTS_COMMAND "simIK.setIkElementWeights"
+#define LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.setElementWeights@IK"
+#define LUA_SETIKELEMENTWEIGHTS_COMMAND "simIK.setElementWeights"
 
 const int inArgs_SETIKELEMENTWEIGHTS[]={
     4,
@@ -2632,7 +2677,7 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetIkElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1]);
+                bool result=ikSetElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1]);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -2696,10 +2741,10 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,co
     return(retVal);
 }
 // --------------------------------------------------------------------------------------
-// simIK.handleIkGroup
+// simIK._handleGroup
 // --------------------------------------------------------------------------------------
-#define LUA_HANDLEIKGROUP_COMMAND_PLUGIN "simIK._handleIkGroup@IK"
-#define LUA_HANDLEIKGROUP_COMMAND "simIK._handleIkGroup"
+#define LUA_HANDLEIKGROUP_COMMAND_PLUGIN "simIK._handleGroup@IK"
+#define LUA_HANDLEIKGROUP_COMMAND "simIK._handleGroup"
 
 const int inArgs_HANDLEIKGROUP[]={
     4,
@@ -2735,7 +2780,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
                     jacobianCallback_envId=envId;
                     cb=jacobianCallback;
                 }
-                result=ikHandleIkGroup(ikGroupHandle,&ikRes,precision,cb);
+                result=ikHandleGroup(ikGroupHandle,&ikRes,precision,cb);
                 if (!result)
                     err=ikGetLastError();
             }
@@ -2782,7 +2827,7 @@ bool validationCallback(double* conf)
 }
 
 // --------------------------------------------------------------------------------------
-// simIK.getConfigForTipPose // deprecated
+// simIK._getConfigForTipPose // deprecated
 // --------------------------------------------------------------------------------------
 #define LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN "simIK._getConfigForTipPose@IK"
 #define LUA_GETCONFIGFORTIPPOSE_COMMAND "simIK._getConfigForTipPose"
@@ -2877,7 +2922,7 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.findConfig
+// simIK._findConfig
 // --------------------------------------------------------------------------------------
 #define LUA_FINDCONFIG_COMMAND_PLUGIN "simIK._findConfig@IK"
 #define LUA_FINDCONFIG_COMMAND "simIK._findConfig"
@@ -3485,11 +3530,10 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_CREATEIKGROUP_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_CREATEIKGROUP_COMMAND,"(int environmentHandle,string ikGroupName='')"),LUA_CREATEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPFLAGS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int flags)"),LUA_SETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,float[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("int method,float damping,int maxIterations=",LUA_GETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPCALCULATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle,int method,float damping,int maxIterations)"),LUA_SETIKGROUPCALCULATION_CALLBACK);
-//    simRegisterScriptCallbackFunction(LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND_PLUGIN,strConCat("float[2] thresholds=",LUA_GETIKGROUPLIMITTHRESHOLDS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPLIMITTHRESHOLDS_CALLBACK);
-//    simRegisterScriptCallbackFunction(LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPLIMITTHRESHOLDS_COMMAND,"(int environmentHandle,int ikGroupHandle,float[2] thresholds)"),LUA_SETIKGROUPLIMITTHRESHOLDS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,float[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETGROUPJOINTS_COMMAND_PLUGIN,strConCat("int[] jointHandles=",LUA_GETGROUPJOINTS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETGROUPJOINTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_ADDIKELEMENT_COMMAND_PLUGIN,strConCat("int elementHandle=",LUA_ADDIKELEMENT_COMMAND,"(int environmentHandle,int ikGroupHandle,int tipDummyHandle)"),LUA_ADDIKELEMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKELEMENTFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTFLAGS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int flags)"),LUA_SETIKELEMENTFLAGS_CALLBACK);
@@ -3555,6 +3599,27 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     // deprecated:
     simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETMANIPULABILITY_COMMAND_PLUGIN,nullptr,LUA_GETMANIPULABILITY_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getJointIkWeight@IK",nullptr,LUA_GETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setJointIkWeight@IK",nullptr,LUA_SETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkGroupHandle@IK",nullptr,LUA_GETIKGROUPHANDLE_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.doesIkGroupExist@IK",nullptr,LUA_DOESIKGROUPEXIST_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.createIkGroup@IK",nullptr,LUA_CREATEIKGROUP_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkGroupFlags@IK",nullptr,LUA_GETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkGroupFlags@IK",nullptr,LUA_SETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkGroupCalculation@IK",nullptr,LUA_GETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkGroupCalculation@IK",nullptr,LUA_SETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkGroupJointLimitHits@IK",nullptr,LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.addIkElement@IK",nullptr,LUA_ADDIKELEMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkElementFlags@IK",nullptr,LUA_GETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkElementFlags@IK",nullptr,LUA_SETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkElementBase@IK",nullptr,LUA_GETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkElementBase@IK",nullptr,LUA_SETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkElementConstraints@IK",nullptr,LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkElementConstraints@IK",nullptr,LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkElementPrecision@IK",nullptr,LUA_GETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkElementPrecision@IK",nullptr,LUA_SETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.getIkElementWeights@IK",nullptr,LUA_GETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction("simIK.setIkElementWeights@IK",nullptr,LUA_SETIKELEMENTWEIGHTS_CALLBACK);
 
     ikSetLogCallback(_logCallback);
 
@@ -3710,7 +3775,7 @@ SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,float ikW
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointIkWeight(jointHandle,double(ikWeight));
+        ikSetJointWeight(jointHandle,double(ikWeight));
 }
 
 SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,float maxStepSize)
@@ -3773,7 +3838,7 @@ SIM_DLLEXPORT int ikPlugin_createIkGroup(int ikEnv)
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
-        ikCreateIkGroup(nullptr,&retVal);
+        ikCreateGroup(nullptr,&retVal);
     return(retVal);
 }
 
@@ -3781,21 +3846,21 @@ SIM_DLLEXPORT void ikPlugin_eraseIkGroup(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikEraseIkGroup(ikGroupHandle);
+        ikEraseGroup(ikGroupHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkGroupFlags(int ikEnv,int ikGroupHandle,int flags)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkGroupFlags(ikGroupHandle,flags);
+        ikSetGroupFlags(ikGroupHandle,flags);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,int method,float damping,int maxIterations)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkGroupCalculation(ikGroupHandle,method,double(damping),maxIterations);
+        ikSetGroupCalculation(ikGroupHandle,method,double(damping),maxIterations);
 }
 
 SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandle)
@@ -3803,7 +3868,7 @@ SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandl
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
-        ikAddIkElement(ikGroupHandle,tipHandle,&retVal);
+        ikAddElement(ikGroupHandle,tipHandle,&retVal);
     return(retVal);
 }
 
@@ -3811,42 +3876,42 @@ SIM_DLLEXPORT void ikPlugin_eraseIkElement(int ikEnv,int ikGroupHandle,int ikEle
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikEraseIkElement(ikGroupHandle,ikElementHandle);
+        ikEraseElement(ikGroupHandle,ikElementHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementFlags(int ikEnv,int ikGroupHandle,int ikElementHandle,int flags)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementFlags(ikGroupHandle,ikElementHandle,flags);
+        ikSetElementFlags(ikGroupHandle,ikElementHandle,flags);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementBase(int ikEnv,int ikGroupHandle,int ikElementHandle,int baseHandle,int constraintsBaseHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementBase(ikGroupHandle,ikElementHandle,baseHandle,constraintsBaseHandle);
+        ikSetElementBase(ikGroupHandle,ikElementHandle,baseHandle,constraintsBaseHandle);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementConstraints(int ikEnv,int ikGroupHandle,int ikElementHandle,int constraints)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementConstraints(ikGroupHandle,ikElementHandle,constraints);
+        ikSetElementConstraints(ikGroupHandle,ikElementHandle,constraints);
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearPrecision,float angularPrecision)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementPrecision(ikGroupHandle,ikElementHandle,double(linearPrecision),double(angularPrecision));
+        ikSetElementPrecision(ikGroupHandle,ikElementHandle,double(linearPrecision),double(angularPrecision));
 }
 
 SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetIkElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight));
+        ikSetElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight));
 }
 
 SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
@@ -3855,7 +3920,7 @@ SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
     {
-        ikHandleIkGroup(ikGroupHandle,&retVal,nullptr);
+        ikHandleGroup(ikGroupHandle,&retVal,nullptr);
         if ( (retVal&ik_calc_notperformed)!=0 )
             retVal=0; // ik_result_not_performed
         else if ( (retVal&(ik_calc_cannotinvert|ik_calc_notwithintolerance))!=0 )

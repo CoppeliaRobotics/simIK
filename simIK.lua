@@ -143,11 +143,6 @@ function simIK.syncToIkWorld(ikEnv,ikGroup)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.applySceneToIkEnvironment(...)
-    local ikEnv,ikGroup=checkargs({{type='int'},{type='int'}},...)
-    return simIK.syncToIkWorld(ikEnv,ikGroup)
-end
-
 function simIK.syncFromIkWorld(ikEnv,ikGroup)
     local lb=sim.setThreadAutomaticSwitch(false)
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
@@ -167,21 +162,7 @@ function simIK.syncFromIkWorld(ikEnv,ikGroup)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.applyIkEnvironmentToScene(...)
-    local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
-    local lb=sim.setThreadAutomaticSwitch(false)
-    
-    simIK.syncToIkWorld(ikEnv,ikGroup)
-    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    local res,reason,prec=simIK.handleIkGroup(ikEnv,ikGroup)
-    if res==simIK.result_success or not applyOnlyWhenSuccessful then
-        simIK.syncFromIkWorld(ikEnv,ikGroup)
-    end
-    sim.setThreadAutomaticSwitch(lb)
-    return res,reason,prec
-end
-
-function simIK.addIkElementFromScene(...)
+function simIK.addElementFromScene(...)
     local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -194,12 +175,14 @@ function simIK.addIkElementFromScene(...)
     end
     if not _S.ikEnvs[ikEnv].ikGroups then
         _S.ikEnvs[ikEnv].ikGroups={}
-        _S.ikEnvs[ikEnv].allObjects={}
+        _S.ikEnvs[ikEnv].simToIkMap={}
+        _S.ikEnvs[ikEnv].ikToSimMap={}
     end
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    -- allObjects, i.e. the mapping, need to be scoped by ik env, and not ik group,
+    -- simToIkMap and ikToSimMap, need to be scoped by ik env, and not ik group,
     -- otherwise we may have duplicates:
-    local allObjects=_S.ikEnvs[ikEnv].allObjects
+    local simToIkMap=_S.ikEnvs[ikEnv].simToIkMap
+    local ikToSimMap=_S.ikEnvs[ikEnv].ikToSimMap
     if not groupData then
         groupData={}
         groupData.joints={}
@@ -210,27 +193,30 @@ function simIK.addIkElementFromScene(...)
     end
     local ikBase=-1
     if simBase~=-1 then
-        ikBase=allObjects[simBase] -- maybe already there
+        ikBase=simToIkMap[simBase] -- maybe already there
         if not ikBase then
             ikBase=simIK.createDummy(ikEnv)
             simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
-            allObjects[simBase]=ikBase
+            simToIkMap[simBase]=ikBase
+            ikToSimMap[ikBase]=simBase
         end
         groupData.bases[simBase]=ikBase
     end
     
-    local ikTip=allObjects[simTip] -- maybe already there
+    local ikTip=simToIkMap[simTip] -- maybe already there
     if not ikTip then
         ikTip=simIK.createDummy(ikEnv)
         simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
-        allObjects[simTip]=ikTip
+        simToIkMap[simTip]=ikTip
+        ikToSimMap[ikTip]=simTip
     end
 
-    local ikTarget=allObjects[simTarget] -- maybe already there
+    local ikTarget=simToIkMap[simTarget] -- maybe already there
     if not ikTarget then
         ikTarget=simIK.createDummy(ikEnv)
         simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
-        allObjects[simTarget]=ikTarget
+        simToIkMap[simTarget]=ikTarget
+        ikToSimMap[ikTarget]=simTarget
     end
     groupData.targets[simTarget]=ikTarget
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
@@ -242,9 +228,9 @@ function simIK.addIkElementFromScene(...)
     local ikPrevIterator=ikTip
     local ikIterator=-1
     while simIterator~=simBase do
-        if allObjects[simIterator] then
+        if simToIkMap[simIterator] then
             -- object already added (but maybe parenting not done yet, e.g. with master joints in dependency relationship)
-            ikIterator=allObjects[simIterator]
+            ikIterator=simToIkMap[simIterator]
         else
             if sim.getObjectType(simIterator)~=sim.object_joint_type then
                 ikIterator=simIK.createDummy(ikEnv)
@@ -259,7 +245,7 @@ function simIK.addIkElementFromScene(...)
                     local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_step_size)
                     simIK.setJointMaxStepSize(ikEnv,ikJoint,sp)
                     local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_ik_weight)
-                    simIK.setJointIkWeight(ikEnv,ikJoint,sp)
+                    simIK.setJointWeight(ikEnv,ikJoint,sp)
                     if t==sim.joint_spherical_subtype then
                         simIK.setSphericalJointMatrix(ikEnv,ikJoint,sim.getJointMatrix(simJoint))
                     else
@@ -273,16 +259,17 @@ function simIK.addIkElementFromScene(...)
                     local dep,off,mult=sim.getJointDependency(simIterator)
                     if dep~=-1 then
                         -- yes. Is the master already there?
-                        if allObjects[dep] then
+                        if simToIkMap[dep] then
                             -- master is already there
-                            simIK.setJointDependency(ikEnv,ikIterator,allObjects[dep],off,mult) 
+                            simIK.setJointDependency(ikEnv,ikIterator,simToIkMap[dep],off,mult) 
                         else
                             -- master is not yet there
                             local ikSlave=ikIterator
                             while dep~=-1 do
                                 local ikMaster=createIkJointFromSimJoint(ikEnv,dep)
                                 simIK.setJointDependency(ikEnv,ikSlave,ikMaster,off,mult) 
-                                allObjects[dep]=ikMaster
+                                simToIkMap[dep]=ikMaster
+                                ikToSimMap[ikMaster]=dep
                                 groupData.joints[dep]=ikMaster
                                 simIK.setObjectMatrix(ikEnv,ikMaster,-1,sim.getObjectMatrix(dep,-1))
                                 -- Maybe the master is slave to another joint?!
@@ -295,7 +282,8 @@ function simIK.addIkElementFromScene(...)
                     end
                 end
             end
-            allObjects[simIterator]=ikIterator
+            simToIkMap[simIterator]=ikIterator
+            ikToSimMap[ikIterator]=simIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
         end 
         if sim.getObjectType(simIterator)==sim.object_joint_type then
@@ -310,11 +298,11 @@ function simIK.addIkElementFromScene(...)
     simIK.setObjectParent(ikEnv,ikPrevIterator,ikBase)
     simIK.setObjectParent(ikEnv,ikTarget,ikBase)
 
-    local ikElement=simIK.addIkElement(ikEnv,ikGroup,ikTip)
-    simIK.setIkElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
-    simIK.setIkElementConstraints(ikEnv,ikGroup,ikElement,constraints)
+    local ikElement=simIK.addElement(ikEnv,ikGroup,ikTip)
+    simIK.setElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
+    simIK.setElementConstraints(ikEnv,ikGroup,ikElement,constraints)
     sim.setThreadAutomaticSwitch(lb)
-    return ikElement,allObjects
+    return ikElement,simToIkMap,ikToSimMap
 end
 
 function simIK.eraseEnvironment(...)
@@ -327,46 +315,6 @@ function simIK.eraseEnvironment(...)
     end
     simIK._eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
-end
-
-function simIK.getConfigForTipPose(...)
-    -- deprecated
-    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
-    local dof=#joints
-
-    if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
-        error("Bad table size.")
-    end
-
-    local lb=sim.setThreadAutomaticSwitch(false)
-
-    local env=simIK.duplicateEnvironment(ikEnv)
-    if metric==nil then metric={1,1,1,0.1} end
-    if jointOptions==nil then jointOptions={} end
-    if lowLimits==nil then lowLimits={} end
-    if ranges==nil then ranges={} end
-    local retVal
-    if type(callback)=='string' then
-        -- deprecated
-        retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
-    else
-        if maxTime<0 then 
-            maxTime=-maxTime/1000 -- probably calling the function the old way 
-        end
-        if maxTime>2 then maxTime=2 end
-        function __cb(config)
-            return callback(config,auxData)
-        end
-        local funcNm,t
-        if callback then
-            funcNm='__cb'
-            t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
-        end
-        retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
-    end
-    simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(lb)
-    return retVal
 end
 
 function simIK.findConfig(...)
@@ -395,7 +343,7 @@ function simIK.findConfig(...)
     return retVal
 end
 
-function simIK.handleIkGroup(...)
+function simIK.handleGroup(...)
     local ikEnv,ikGroup,options=checkargs({{type='int'},{type='int'},{type='table',default={}}},...)
     local lb=sim.setThreadAutomaticSwitch(false)
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect)
@@ -424,7 +372,7 @@ function simIK.handleIkGroup(...)
     if options.syncWorlds then
         simIK.syncToIkWorld(ikEnv,ikGroup)
     end
-    local retVal,reason,prec=simIK._handleIkGroup(ikEnv,ikGroup,funcNm,t)
+    local retVal,reason,prec=simIK._handleGroup(ikEnv,ikGroup,funcNm,t)
     if options.syncWorlds then
         if (reason&simIK.calc_notwithintolerance)==0 or options.allowError then
             simIK.syncFromIkWorld(ikEnv,ikGroup)
@@ -500,7 +448,7 @@ function simIK.generatePath(...)
             local t=j/(ptCnt-1)
             local m=sim.interpolateMatrices(startMatrix,goalMatrix,t)
             simIK.setObjectMatrix(env,targetHandle,-1,m)
-            success=simIK.handleIkGroup(env,ikGroup)==simIK.result_success
+            success=simIK.handleGroup(env,ikGroup)==simIK.result_success
             if not success then
                 break
             end
@@ -605,7 +553,7 @@ function simIK.solveIkPath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        local ikResult,failureCode=simIK.handleIkGroup(ikEnv,ikGroup,{callback=opts.jacobianCallback})
+        local ikResult,failureCode=simIK.handleGroup(ikEnv,ikGroup,{callback=opts.jacobianCallback})
         if ikResult~=simIK.result_success then
             reportError('Failed to perform IK step at t=%.2f (reason: %s)',posAlongPath/totalLength,simIK.getFailureDescription(failureCode))
             goto fail
@@ -645,13 +593,84 @@ function simIK.solveIkPath(...)
     setIkConfig(origIkCfg)
 end
 
+function simIK.addIkElementFromScene(...)
+    -- deprecated
+    return simIK.addElementFromScene(...)
+end
+
+function simIK.handleIkGroup(...)
+    -- deprecated
+    return simIK.handleGroup(...)
+end
+
+function simIK.applySceneToIkEnvironment(...)
+    -- deprecated
+    local ikEnv,ikGroup=checkargs({{type='int'},{type='int'}},...)
+    return simIK.syncToIkWorld(ikEnv,ikGroup)
+end
+
+function simIK.applyIkEnvironmentToScene(...)
+    -- deprecated
+    local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    
+    simIK.syncToIkWorld(ikEnv,ikGroup)
+    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local res,reason,prec=simIK.handleGroup(ikEnv,ikGroup)
+    if res==simIK.result_success or not applyOnlyWhenSuccessful then
+        simIK.syncFromIkWorld(ikEnv,ikGroup)
+    end
+    sim.setThreadAutomaticSwitch(lb)
+    return res,reason,prec
+end
+
+function simIK.getConfigForTipPose(...)
+    -- deprecated
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
+    local dof=#joints
+
+    if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
+        error("Bad table size.")
+    end
+
+    local lb=sim.setThreadAutomaticSwitch(false)
+
+    local env=simIK.duplicateEnvironment(ikEnv)
+    if metric==nil then metric={1,1,1,0.1} end
+    if jointOptions==nil then jointOptions={} end
+    if lowLimits==nil then lowLimits={} end
+    if ranges==nil then ranges={} end
+    local retVal
+    if type(callback)=='string' then
+        -- deprecated
+        retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
+    else
+        if maxTime<0 then 
+            maxTime=-maxTime/1000 -- probably calling the function the old way 
+        end
+        if maxTime>2 then maxTime=2 end
+        function __cb(config)
+            return callback(config,auxData)
+        end
+        local funcNm,t
+        if callback then
+            funcNm='__cb'
+            t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
+        end
+        retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
+    end
+    simIK.eraseEnvironment(env)
+    sim.setThreadAutomaticSwitch(lb)
+    return retVal
+end
+
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
     sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','float[] configs=simIK.getAlternateConfigs(int environmentHandle,int[] jointHandles,float[] lowLimits=nil,float[] ranges=nil)')
-    sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','int ikElement,map simToIkObjectMap=simIK.addIkElementFromScene(int environmentHandle,int ikGroup,int baseHandle,int tipHandle,int targetHandle,int constraints)')
+    sim.registerScriptFunction('simIK.addElementFromScene@simIK','int ikElement,map simToIkMap,map ikToSimMap=simIK.addElementFromScene(int environmentHandle,int ikGroup,int baseHandle,int tipHandle,int targetHandle,int constraints)')
     sim.registerScriptFunction('simIK.syncToIkWorld@simIK','simIK.syncToIkWorld(int environmentHandle,int ikGroup)')
     sim.registerScriptFunction('simIK.syncFromIkWorld@simIK','simIK.syncFromIkWorld(int environmentHandle,int ikGroup)')
-    sim.registerScriptFunction('simIK.handleIkGroup@simIK','int success,int flags,float[2] precision=simIK.handleIkGroup(int environmentHandle,int ikGroup,map options={})')
+    sim.registerScriptFunction('simIK.handleGroup@simIK','int success,int flags,float[2] precision=simIK.handleGroup(int environmentHandle,int ikGroup,map options={})')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
     sim.registerScriptFunction('simIK.findConfig@simIK','float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getFailureDescription@simIK','string description=simIK.getFailureDescription(int reason)')
