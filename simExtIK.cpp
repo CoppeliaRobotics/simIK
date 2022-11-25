@@ -2671,13 +2671,19 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
         int envId=inData->at(0).int32Data[0];
         int ikGroupHandle=inData->at(1).int32Data[0];
         int ikElementHandle=inData->at(2).int32Data[0];
-        double* weights=&inData->at(3).doubleData[0];
+        double weights[3];
+        weights[0]=inData->at(3).doubleData[0];
+        weights[1]=inData->at(3).doubleData[1];
+        if (inData->at(3).doubleData.size()>2)
+            weights[2]=inData->at(3).doubleData[2];
+        else
+            weights[2]=1.0;
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool result=ikSetElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1]);
+                bool result=ikSetElementWeights(ikGroupHandle,ikElementHandle,weights[0],weights[1],weights[2]);
                 if (!result)
                      err=ikGetLastError();
             }
@@ -3911,7 +3917,7 @@ SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int 
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight));
+        ikSetElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight),1.0);
 }
 
 SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)

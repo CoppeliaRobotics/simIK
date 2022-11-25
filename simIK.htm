@@ -1070,7 +1070,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[2] weights=simIK.getElementWeights(int environmentHandle,int ikGroupHandle,int elementHandle)</td>
+<td class="apiTableRightLSyn">float[3] weights=simIK.getElementWeights(int environmentHandle,int ikGroupHandle,int elementHandle)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -1083,7 +1083,7 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>weights</strong>: a table with the linear and angular resolution weights.</div>
+<div><strong>weights</strong>: a table with the linear, angular and overall resolution weights.</div>
 </td>
 </tr>
 
@@ -2262,7 +2262,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setElementWeights(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] weights)</td>
+<td class="apiTableRightLSyn">simIK.setElementWeights(int environmentHandle,int ikGroupHandle,int elementHandle,float[3] weights)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -2270,7 +2270,7 @@ td.section { margin: 0; padding: 0; }
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
 <div><strong>elementHandle</strong>: the IK element handle, or X, where X=handleOfTipDummy+simIK.handleflag_tipdummy (if several IK elements with the same tip dummy exist, then the first encountered will be selected).</div>
-<div><strong>weights</strong>: a table with two values for the linear and angular resolution weight.</div>
+<div><strong>weights</strong>: a table with three values for the linear, angular and overall resolution weight.</div>
 </td>
 </tr>
 <tr class="apiTableTr">
