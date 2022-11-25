@@ -137,8 +137,8 @@ function simIK.syncToIkWorld(ikEnv,ikGroup)
         end
     end
     for i=1,#groupData.targetTipBaseTriplets,1 do
+        -- Make sure target relative to base is in sync too:
         simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][4],groupData.targetTipBaseTriplets[i][6],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][1],groupData.targetTipBaseTriplets[i][3]))
-        simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][2],groupData.targetTipBaseTriplets[i][3]))
     end
     sim.setThreadAutomaticSwitch(lb)
 end
@@ -186,117 +186,98 @@ function simIK.addElementFromScene(...)
     if not groupData then
         groupData={}
         groupData.joints={}
-        groupData.bases={}
-        groupData.targets={}
         groupData.targetTipBaseTriplets={}
         _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
-    local ikBase=-1
-    if simBase~=-1 then
-        ikBase=simToIkMap[simBase] -- maybe already there
-        if not ikBase then
-            ikBase=simIK.createDummy(ikEnv)
-            simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
-            simToIkMap[simBase]=ikBase
-            ikToSimMap[ikBase]=simBase
-        end
-        groupData.bases[simBase]=ikBase
-    end
-    
-    local ikTip=simToIkMap[simTip] -- maybe already there
-    if not ikTip then
-        ikTip=simIK.createDummy(ikEnv)
-        simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
-        simToIkMap[simTip]=ikTip
-        ikToSimMap[ikTip]=simTip
-    end
 
-    local ikTarget=simToIkMap[simTarget] -- maybe already there
-    if not ikTarget then
-        ikTarget=simIK.createDummy(ikEnv)
-        simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
-        simToIkMap[simTarget]=ikTarget
-        ikToSimMap[ikTarget]=simTarget
-    end
-    groupData.targets[simTarget]=ikTarget
-    groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
-    
-    simIK.setLinkedDummy(ikEnv,ikTip,ikTarget)
-
-    local simPrevIterator=simTip
-    local simIterator=sim.getObjectParent(simPrevIterator)
-    local ikPrevIterator=ikTip
-    local ikIterator=-1
-    while simIterator~=simBase do
-        if simToIkMap[simIterator] then
-            -- object already added (but maybe parenting not done yet, e.g. with master joints in dependency relationship)
-            ikIterator=simToIkMap[simIterator]
-        else
-            if sim.getObjectType(simIterator)~=sim.object_joint_type then
-                ikIterator=simIK.createDummy(ikEnv)
+    function iterateAndAdd(theTip,theBase,chainIsActive)
+        local ikPrevIterator=-1
+        local simIterator=theTip
+        while true do
+            local ikIterator=-1
+            if simToIkMap[simIterator] then
+                -- object already added (but maybe parenting not done yet, e.g. with master joints in dependency relationship)
+                ikIterator=simToIkMap[simIterator]
             else
-                function createIkJointFromSimJoint(ikEnv,simJoint)
-                    local t=sim.getJointType(simJoint)
-                    local ikJoint=simIK.createJoint(ikEnv,t)
-                    local c,interv=sim.getJointInterval(simJoint)
-                    simIK.setJointInterval(ikEnv,ikJoint,c,interv)
-                    local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_screw_pitch)
-                    simIK.setJointScrewPitch(ikEnv,ikJoint,sp)
-                    local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_step_size)
-                    simIK.setJointMaxStepSize(ikEnv,ikJoint,sp)
-                    local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_ik_weight)
-                    simIK.setJointWeight(ikEnv,ikJoint,sp)
-                    if t==sim.joint_spherical_subtype then
-                        simIK.setSphericalJointMatrix(ikEnv,ikJoint,sim.getJointMatrix(simJoint))
-                    else
-                        simIK.setJointPosition(ikEnv,ikJoint,sim.getJointPosition(simJoint))
-                    end
-                    return ikJoint
-                end
-                ikIterator=createIkJointFromSimJoint(ikEnv,simIterator)
-                -- check if this joint is a slave in a dependency relationship:
-                if sim.getJointMode(simIterator)==sim.jointmode_dependent then
-                    local dep,off,mult=sim.getJointDependency(simIterator)
-                    if dep~=-1 then
-                        -- yes. Is the master already there?
-                        if simToIkMap[dep] then
-                            -- master is already there
-                            simIK.setJointDependency(ikEnv,ikIterator,simToIkMap[dep],off,mult) 
+                if sim.getObjectType(simIterator)~=sim.object_joint_type then
+                    ikIterator=simIK.createDummy(ikEnv)
+                else
+                    function createIkJointFromSimJoint(ikEnv,simJoint)
+                        local t=sim.getJointType(simJoint)
+                        local ikJoint=simIK.createJoint(ikEnv,t)
+                        local c,interv=sim.getJointInterval(simJoint)
+                        simIK.setJointInterval(ikEnv,ikJoint,c,interv)
+                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_screw_pitch)
+                        simIK.setJointScrewPitch(ikEnv,ikJoint,sp)
+                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_step_size)
+                        simIK.setJointMaxStepSize(ikEnv,ikJoint,sp)
+                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_ik_weight)
+                        simIK.setJointWeight(ikEnv,ikJoint,sp)
+                        if t==sim.joint_spherical_subtype then
+                            simIK.setSphericalJointMatrix(ikEnv,ikJoint,sim.getJointMatrix(simJoint))
                         else
-                            -- master is not yet there
-                            local ikSlave=ikIterator
-                            while dep~=-1 do
-                                local ikMaster=createIkJointFromSimJoint(ikEnv,dep)
-                                simIK.setJointDependency(ikEnv,ikSlave,ikMaster,off,mult) 
-                                simToIkMap[dep]=ikMaster
-                                ikToSimMap[ikMaster]=dep
-                                groupData.joints[dep]=ikMaster
-                                simIK.setObjectMatrix(ikEnv,ikMaster,-1,sim.getObjectMatrix(dep,-1))
-                                -- Maybe the master is slave to another joint?!
-                                dep,off,mult=sim.getJointDependency(dep)
-                                ikSlave=ikMaster
-                            end
+                            simIK.setJointPosition(ikEnv,ikJoint,sim.getJointPosition(simJoint))
                         end
-                    else
-                        simIK.setJointMode(ikEnv,ikIterator,simIK.jointmode_passive)
+                        return ikJoint
+                    end
+                    ikIterator=createIkJointFromSimJoint(ikEnv,simIterator)
+                    -- check if this joint is a slave in a dependency relationship:
+                    if sim.getJointMode(simIterator)==sim.jointmode_dependent then
+                        local dep,off,mult=sim.getJointDependency(simIterator)
+                        if dep~=-1 then
+                            -- yes. Is the master already there?
+                            if simToIkMap[dep] then
+                                -- master is already there
+                                simIK.setJointDependency(ikEnv,ikIterator,simToIkMap[dep],off,mult) 
+                            else
+                                -- master is not yet there
+                                local ikSlave=ikIterator
+                                while dep~=-1 do
+                                    local ikMaster=createIkJointFromSimJoint(ikEnv,dep)
+                                    simIK.setJointDependency(ikEnv,ikSlave,ikMaster,off,mult) 
+                                    simToIkMap[dep]=ikMaster
+                                    ikToSimMap[ikMaster]=dep
+                                    groupData.joints[dep]=ikMaster
+                                    simIK.setObjectMatrix(ikEnv,ikMaster,-1,sim.getObjectMatrix(dep,-1))
+                                    -- Maybe the master is slave to another joint?!
+                                    dep,off,mult=sim.getJointDependency(dep)
+                                    ikSlave=ikMaster
+                                end
+                            end
+                        else
+                            simIK.setJointMode(ikEnv,ikIterator,simIK.jointmode_passive)
+                        end
                     end
                 end
+                simToIkMap[simIterator]=ikIterator
+                ikToSimMap[ikIterator]=simIterator
+                simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
+            end 
+            if chainIsActive and sim.getObjectType(simIterator)==sim.object_joint_type then
+                groupData.joints[simIterator]=ikIterator
             end
-            simToIkMap[simIterator]=ikIterator
-            ikToSimMap[ikIterator]=simIterator
-            simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
-        end 
-        if sim.getObjectType(simIterator)==sim.object_joint_type then
-            groupData.joints[simIterator]=ikIterator
+            if ikPrevIterator~=-1 then
+                simIK.setObjectParent(ikEnv,ikPrevIterator,ikIterator)
+            end
+            local newSimIterator=sim.getObjectParent(simIterator)
+            if simIterator==theBase or newSimIterator==-1 then
+                break
+            end
+            simIterator=newSimIterator
+            ikPrevIterator=ikIterator
         end
-        simIK.setObjectParent(ikEnv,ikPrevIterator,ikIterator)
-        simPrevIterator=simIterator
-        ikPrevIterator=ikIterator
-        simIterator=sim.getObjectParent(simIterator)
-        ikIterator=simIK.getObjectParent(ikEnv,ikIterator)
     end
-    simIK.setObjectParent(ikEnv,ikPrevIterator,ikBase)
-    simIK.setObjectParent(ikEnv,ikTarget,ikBase)
+    
+    iterateAndAdd(simTip,simBase,true)
+    local ikTip=simToIkMap[simTip]
+    local ikBase=-1;
+    if simBase~=-1 then
+        ikBase=simToIkMap[simBase]
+    end
+    iterateAndAdd(simTarget,-1,false) -- need to add the whole target chain too, otherwise subtle bugs!
+    local ikTarget=simToIkMap[simTarget]
+    simIK.setLinkedDummy(ikEnv,ikTip,ikTarget)
+    groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
 
     local ikElement=simIK.addElement(ikEnv,ikGroup,ikTip)
     simIK.setElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
