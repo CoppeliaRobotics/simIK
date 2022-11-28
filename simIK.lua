@@ -190,7 +190,7 @@ function simIK.addElementFromScene(...)
         _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
 
-    function iterateAndAdd(theTip,theBase,chainIsActive)
+    function iterateAndAdd(theTip,theBase)
         local ikPrevIterator=-1
         local simIterator=theTip
         while true do
@@ -253,7 +253,7 @@ function simIK.addElementFromScene(...)
                 ikToSimMap[ikIterator]=simIterator
                 simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
             end 
-            if chainIsActive and sim.getObjectType(simIterator)==sim.object_joint_type then
+            if sim.getObjectType(simIterator)==sim.object_joint_type then
                 groupData.joints[simIterator]=ikIterator
             end
             if ikPrevIterator~=-1 then
@@ -268,15 +268,15 @@ function simIK.addElementFromScene(...)
         end
     end
     
-    iterateAndAdd(simTip,simBase,true)
+    iterateAndAdd(simTip,simBase)
     local ikTip=simToIkMap[simTip]
     local ikBase=-1;
     if simBase~=-1 then
         ikBase=simToIkMap[simBase]
     end
-    iterateAndAdd(simTarget,-1,false) -- need to add the whole target chain too, otherwise subtle bugs!
+    iterateAndAdd(simTarget,-1) -- need to add the whole target chain too, otherwise subtle bugs!
     local ikTarget=simToIkMap[simTarget]
-    simIK.setLinkedDummy(ikEnv,ikTip,ikTarget)
+    simIK.setTargetDummy(ikEnv,ikTip,ikTarget)
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
 
     local ikElement=simIK.addElement(ikEnv,ikGroup,ikTip)
@@ -409,7 +409,7 @@ function simIK.generatePath(...)
     local lb=sim.setThreadAutomaticSwitch(false)
 
     local env=simIK.duplicateEnvironment(ikEnv)
-    local targetHandle=simIK.getLinkedDummy(env,tip)
+    local targetHandle=simIK.getTargetDummy(env,tip)
     local startMatrix=simIK.getObjectMatrix(env,tip,-1)
     local goalMatrix=simIK.getObjectMatrix(env,targetHandle,-1)
     local retPath={{}}

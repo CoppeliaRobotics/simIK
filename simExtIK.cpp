@@ -648,7 +648,92 @@ void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getLinkedDummy
+// simIK.getTargetDummy
+// --------------------------------------------------------------------------------------
+#define LUA_GETTARGETDUMMY_COMMAND_PLUGIN "simIK.getTargetDummy@IK"
+#define LUA_GETTARGETDUMMY_COMMAND "simIK.getTargetDummy"
+
+const int inArgs_GETTARGETDUMMY[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    int retVal=-1;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETTARGETDUMMY,inArgs_GETTARGETDUMMY[0],LUA_GETTARGETDUMMY_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int dummyHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetTargetDummy(dummyHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETTARGETDUMMY_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(retVal));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.setTargetDummy
+// --------------------------------------------------------------------------------------
+#define LUA_SETTARGETDUMMY_COMMAND_PLUGIN "simIK.setTargetDummy@IK"
+#define LUA_SETTARGETDUMMY_COMMAND "simIK.setTargetDummy"
+
+const int inArgs_SETTARGETDUMMY[]={
+    3,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_SETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_SETTARGETDUMMY,inArgs_SETTARGETDUMMY[0],LUA_SETTARGETDUMMY_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int dummyHandle=inData->at(1).int32Data[0];
+        int targetDummyHandle=inData->at(2).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetTargetDummy(dummyHandle,targetDummyHandle);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_SETTARGETDUMMY_COMMAND,err.c_str());
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.getLinkedDummy OLD, use simIK.getTargetDummy instead
 // --------------------------------------------------------------------------------------
 #define LUA_GETLINKEDDUMMY_COMMAND_PLUGIN "simIK.getLinkedDummy@IK"
 #define LUA_GETLINKEDDUMMY_COMMAND "simIK.getLinkedDummy"
@@ -693,7 +778,7 @@ void LUA_GETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setLinkedDummy
+// simIK.setLinkedDummy OLD, use simIK.setTargetDummy instead
 // --------------------------------------------------------------------------------------
 #define LUA_SETLINKEDDUMMY_COMMAND_PLUGIN "simIK.setLinkedDummy@IK"
 #define LUA_SETLINKEDDUMMY_COMMAND "simIK.setLinkedDummy"
@@ -3507,8 +3592,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETOBJECTPARENT_COMMAND_PLUGIN,strConCat("int parentObjectHandle=",LUA_GETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_GETOBJECTPARENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTPARENT_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle,int parentObjectHandle, bool keepInPlace=true)"),LUA_SETOBJECTPARENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_CREATEDUMMY_COMMAND_PLUGIN,strConCat("int dummyHandle=",LUA_CREATEDUMMY_COMMAND,"(int environmentHandle,string dummyName='')"),LUA_CREATEDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETLINKEDDUMMY_COMMAND_PLUGIN,strConCat("int linkedDummyHandle=",LUA_GETLINKEDDUMMY_COMMAND,"(int environmentHandle,int dummyHandle)"),LUA_GETLINKEDDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETLINKEDDUMMY_COMMAND_PLUGIN,strConCat("",LUA_SETLINKEDDUMMY_COMMAND,"(int environmentHandle,int dummyHandle,int linkedDummyHandle)"),LUA_SETLINKEDDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETTARGETDUMMY_COMMAND_PLUGIN,strConCat("int targetDummyHandle=",LUA_GETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle)"),LUA_GETTARGETDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETTARGETDUMMY_COMMAND_PLUGIN,strConCat("",LUA_SETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle,int targetDummyHandle)"),LUA_SETTARGETDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_CREATEJOINT_COMMAND_PLUGIN,strConCat("int jointHandle=",LUA_CREATEJOINT_COMMAND,"(int environmentHandle,int jointType,string jointName='')"),LUA_CREATEJOINT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTTYPE_COMMAND_PLUGIN,strConCat("int jointType=",LUA_GETJOINTTYPE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTYPE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTMODE_COMMAND_PLUGIN,strConCat("int jointMode=",LUA_GETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMODE_CALLBACK);
@@ -3603,6 +3688,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.group_avoidlimits@simExtIK",std::to_string(ik_group_avoidlimits).c_str(),0);
 
     // deprecated:
+    simRegisterScriptCallbackFunction(LUA_GETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_GETLINKEDDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_SETLINKEDDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETMANIPULABILITY_COMMAND_PLUGIN,nullptr,LUA_GETMANIPULABILITY_CALLBACK);
     simRegisterScriptCallbackFunction("simIK.getJointIkWeight@IK",nullptr,LUA_GETJOINTIKWEIGHT_CALLBACK);
