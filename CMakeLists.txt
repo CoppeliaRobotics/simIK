@@ -49,6 +49,7 @@ coppeliasim_add_plugin(
 target_compile_definitions(simExtIK PRIVATE SIM_MATH_DOUBLE)
 target_include_directories(simExtIK PRIVATE ../coppeliaKinematicsRoutines)
 target_include_directories(simExtIK PRIVATE ${COPPELIASIM_ROOT_DIR}/programming/simMath)
+target_link_libraries(simExtIK Eigen3::Eigen)
 coppeliasim_add_lua(simIK.lua)
 coppeliasim_add_helpfile(simIK.htm)
 coppeliasim_add_helpfile(simIK.json SUBDIR index)
