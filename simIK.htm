@@ -28,6 +28,7 @@ td.section { margin: 0; padding: 0; }
 <tr><td id="alphabetical" class="section"><pre class="apiList">
 <a href="?#simIK.addElement">simIK.addElement</a>
 <a href="?#simIK.addElementFromScene">simIK.addElementFromScene</a>
+<a href="?#simIK.computeGroupJacobian">simIK.computeGroupJacobian</a>
 <a href="?#simIK.computeJacobian">simIK.computeJacobian</a>
 <a href="?#simIK.createDummy">simIK.createDummy</a>
 <a href="?#simIK.createEnvironment">simIK.createEnvironment</a>
@@ -204,6 +205,7 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.handleGroup">simIK.handleGroup</a>
 <a href="?#simIK.findConfig">simIK.findConfig</a>
 <a href="?#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>
+<a href="?#simIK.computeGroupJacobian">simIK.computeGroupJacobian</a>
 <a href="?#simIK.computeJacobian">simIK.computeJacobian</a>
 <a href="?#simIK.generatePath">simIK.generatePath</a>
 <a href="?#simIK.syncFromIkWorld">simIK.syncFromIkWorld</a>
@@ -365,6 +367,46 @@ td.section { margin: 0; padding: 0; }
 <br>
 
 <p class="subsectionBar">
+<a name="simIK.computeGroupJacobian" id="simIK.computeGroupJacobian"></a>simIK.computeGroupJacobian</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Computes the Jacobian and error vector for an IK group</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeGroupJacobian(int environmentHandle,int ikGroupHandle)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment</div>
+<div><strong>ikGroupHandle</strong>: the handle of an IK group</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>jacobian</strong>: the jacobian (row major order). Each row corresponds to one constraint in following order: x, y, z, alpha, beta, gamma. Each column corresponds to one joint, from base to tip</div>
+<div><strong>errorVector</strong>: the error vector between the target and the tip</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeGroupJacobian(<span class="apiTableRightLSyn">int environmentHandle,int ikGroupHandle)</span></td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroup">simIK.handleGroup</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
+</tr>
+</table>
+<br>
+
+
+
+<p class="subsectionBar">
 <a name="simIK.computeJacobian" id="simIK.computeJacobian"></a>simIK.computeJacobian</p>
 <table class="apiTable">
 <tr class="apiTableTr">
@@ -402,10 +444,12 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroup">simIK.handleGroup</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroup">simIK.handleGroup</a>, <a href="#simIK.computeGroupJacobian">simIK.computeGroupJacobian</a></td>
 </tr>
 </table>
 <br>
+
+
 
 <p class="subsectionBar">
 <a name="simIK.createDummy" id="simIK.createDummy"></a>simIK.createDummy</p>
