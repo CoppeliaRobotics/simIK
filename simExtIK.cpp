@@ -3447,6 +3447,49 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.computeJacobian
+// --------------------------------------------------------------------------------------
+#define LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN "simIK.computeGroupJacobian@IK"
+#define LUA_COMPUTEGROUPJACOBIAN_COMMAND "simIK.computeGroupJacobian"
+
+const int inArgs_COMPUTEGROUPJACOBIAN[]={
+    2,
+    sim_script_arg_int32,0, // Ik env
+    sim_script_arg_int32,0, // group handle
+};
+
+void LUA_COMPUTEGROUPJACOBIAN_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEGROUPJACOBIAN,inArgs_COMPUTEGROUPJACOBIAN[0],LUA_COMPUTEGROUPJACOBIAN_COMMAND))
+    {
+        std::string err;
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int groupHandle=inData->at(1).int32Data[0];
+        std::vector<double> jacobian;
+        std::vector<double> errorVect;
+        CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+        if (ikSwitchEnvironment(envId))
+        {
+            if (ikComputeGroupJacobian(groupHandle,&jacobian,&errorVect))
+            {
+                D.pushOutData(CScriptFunctionDataItem(jacobian));
+                D.pushOutData(CScriptFunctionDataItem(errorVect));
+                D.writeDataToStack(p->stackID);
+            }
+            else
+                err=ikGetLastError();
+        }
+        else
+            err=ikGetLastError();
+        if (err.size()>0)
+            simSetLastError(LUA_COMPUTEGROUPJACOBIAN_COMMAND,err.c_str());
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getJacobian, deprecated on 25.10.2022
 // --------------------------------------------------------------------------------------
 #define LUA_GETJACOBIAN_COMMAND_PLUGIN "simIK.getJacobian@IK"
@@ -3644,6 +3687,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEGROUPJACOBIAN_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
 
     simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
     simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);
