@@ -3641,32 +3641,32 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_GETJOINTTYPE_COMMAND_PLUGIN,strConCat("int jointType=",LUA_GETJOINTTYPE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTYPE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTMODE_COMMAND_PLUGIN,strConCat("int jointMode=",LUA_GETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMODE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTMODE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle,int jointMode)"),LUA_SETJOINTMODE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("bool cyclic,float[2] interval=",LUA_GETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTINTERVAL_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle,bool cyclic,float[2] interval={})"),LUA_SETJOINTINTERVAL_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("float pitch=",LUA_GETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTSCREWPITCH_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle,float pitch)"),LUA_SETJOINTSCREWPITCH_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("float weight=",LUA_GETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle,float weight)"),LUA_SETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("float margin=",LUA_GETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTLIMITMARGIN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle,float margin)"),LUA_SETJOINTLIMITMARGIN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("float stepSize=",LUA_GETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle,float stepSize)"),LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("int depJointHandle,float offset,float mult=",LUA_GETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTDEPENDENCY_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("bool cyclic,double[2] interval=",LUA_GETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTINTERVAL_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle,bool cyclic,double[2] interval={})"),LUA_SETJOINTINTERVAL_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("double pitch=",LUA_GETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle,double pitch)"),LUA_SETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("double weight=",LUA_GETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle,double weight)"),LUA_SETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("double margin=",LUA_GETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTLIMITMARGIN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle,double margin)"),LUA_SETJOINTLIMITMARGIN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("double stepSize=",LUA_GETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle,double stepSize)"),LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("int depJointHandle,double offset,double mult=",LUA_GETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTDEPENDENCY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN,nullptr,LUA_SETJOINTDEPENDENCY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTPOSITION_COMMAND_PLUGIN,strConCat("float position=",LUA_GETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTPOSITION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTPOSITION_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle,float position)"),LUA_SETJOINTPOSITION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle,float[12] matrix)"),LUA_SETSPHERICALJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETJOINTTRANSFORMATION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTROTATION_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTROTATION_COMMAND,"(int environmentHandle,int jointHandle,float[] eulerOrQuaternion)"),LUA_SETSPHERICALJOINTROTATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTPOSITION_COMMAND_PLUGIN,strConCat("double position=",LUA_GETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTPOSITION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTPOSITION_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle,double position)"),LUA_SETJOINTPOSITION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTMATRIX_COMMAND_PLUGIN,strConCat("double[12] matrix=",LUA_GETJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle,double[12] matrix)"),LUA_SETSPHERICALJOINTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTTRANSFORMATION_COMMAND_PLUGIN,strConCat("double[3] position,double[4] quaternion,double[3] euler=",LUA_GETJOINTTRANSFORMATION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTROTATION_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTROTATION_COMMAND,"(int environmentHandle,int jointHandle,double[] eulerOrQuaternion)"),LUA_SETSPHERICALJOINTROTATION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPHANDLE_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_GETIKGROUPHANDLE_COMMAND,"(int environmentHandle,string ikGroupName)"),LUA_GETIKGROUPHANDLE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_DOESIKGROUPEXIST_COMMAND_PLUGIN,strConCat("bool result=",LUA_DOESIKGROUPEXIST_COMMAND,"(int environmentHandle,string ikGroupName)"),LUA_DOESIKGROUPEXIST_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_CREATEIKGROUP_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_CREATEIKGROUP_COMMAND,"(int environmentHandle,string ikGroupName='')"),LUA_CREATEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPFLAGS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int flags)"),LUA_SETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("int method,float damping,int maxIterations=",LUA_GETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle,int method,float damping,int maxIterations)"),LUA_SETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,float[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("int method,double damping,int maxIterations=",LUA_GETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle,int method,double damping,int maxIterations)"),LUA_SETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,double[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETGROUPJOINTS_COMMAND_PLUGIN,strConCat("int[] jointHandles=",LUA_GETGROUPJOINTS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETGROUPJOINTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_ADDIKELEMENT_COMMAND_PLUGIN,strConCat("int elementHandle=",LUA_ADDIKELEMENT_COMMAND,"(int environmentHandle,int ikGroupHandle,int tipDummyHandle)"),LUA_ADDIKELEMENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKELEMENTFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTFLAGS_CALLBACK);
@@ -3675,19 +3675,19 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTBASE_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTBASE_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int baseHandle,int constraintsBaseHandle=-1)"),LUA_SETIKELEMENTBASE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN,strConCat("int constraints=",LUA_GETIKELEMENTCONSTRAINTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTCONSTRAINTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int constraints)"),LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("float[2] precision=",LUA_GETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] precision)"),LUA_SETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("float[2] weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("double[2] precision=",LUA_GETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,double[2] precision)"),LUA_SETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("double[2] weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,double[2] weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,nullptr,LUA_HANDLEIKGROUP_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_FINDCONFIG_COMMAND_PLUGIN,nullptr,LUA_FINDCONFIG_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[3] position,float[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEGROUPJACOBIAN_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("double[3] position,double[4] quaternion,double[3] euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,double[3] position,double[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("double[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,double[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("double[] jacobian,double[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,double[7..12] tipMatrix,double[7..12] targetMatrix=nil,double[7..12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN,strConCat("double[] jacobian,double[] errorVector=",LUA_COMPUTEGROUPJACOBIAN_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
 
     simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
     simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);
@@ -3891,81 +3891,85 @@ SIM_DLLEXPORT void ikPlugin_setJointMode(int ikEnv,int jointHandle,int jointMode
         ikSetJointMode(jointHandle,jointMode);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointInterval(int ikEnv,int jointHandle,bool cyclic,const float* intervalMinAndRange)
+SIM_DLLEXPORT void ikPlugin_setJointInterval(int ikEnv,int jointHandle,bool cyclic,const double* intervalMinAndRange)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
     {
+#ifdef switchToDouble
+        ikSetJointInterval(jointHandle,cyclic,intervalMinAndRange);
+#else
         double v[2]={double(intervalMinAndRange[0]),double(intervalMinAndRange[1])};
         ikSetJointInterval(jointHandle,cyclic,v);
+#endif
     }
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int ikEnv,int jointHandle,float pitch)
+SIM_DLLEXPORT void ikPlugin_setJointScrewPitch(int ikEnv,int jointHandle,double pitch)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointScrewPitch(jointHandle,double(pitch));
+        ikSetJointScrewPitch(jointHandle,pitch);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,float ikWeight)
+SIM_DLLEXPORT void ikPlugin_setJointIkWeight(int ikEnv,int jointHandle,double ikWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointWeight(jointHandle,double(ikWeight));
+        ikSetJointWeight(jointHandle,ikWeight);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,float maxStepSize)
+SIM_DLLEXPORT void ikPlugin_setJointMaxStepSize(int ikEnv,int jointHandle,double maxStepSize)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointMaxStepSize(jointHandle,double(maxStepSize));
+        ikSetJointMaxStepSize(jointHandle,maxStepSize);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointDependency(int ikEnv,int jointHandle,int dependencyJointHandle,float offset,float mult)
+SIM_DLLEXPORT void ikPlugin_setJointDependency(int ikEnv,int jointHandle,int dependencyJointHandle,double offset,double mult)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointDependency(jointHandle,dependencyJointHandle,double(offset),double(mult));
+        ikSetJointDependency(jointHandle,dependencyJointHandle,offset,mult);
 }
 
-SIM_DLLEXPORT float ikPlugin_getJointPosition(int ikEnv,int jointHandle)
+SIM_DLLEXPORT double ikPlugin_getJointPosition(int ikEnv,int jointHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    double p=double(0.0);
+    double p=0.0;
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetJointPosition(jointHandle,&p);
-    return(float(p));
+    return(p);
 }
 
-SIM_DLLEXPORT void ikPlugin_setJointPosition(int ikEnv,int jointHandle,float position)
+SIM_DLLEXPORT void ikPlugin_setJointPosition(int ikEnv,int jointHandle,double position)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetJointPosition(jointHandle,double(position));
+        ikSetJointPosition(jointHandle,position);
 }
 
-SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandle,float quaternion[4])
+SIM_DLLEXPORT void ikPlugin_getSphericalJointQuaternion(int ikEnv,int jointHandle,double quaternion[4])
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C7Vector tr;
     tr.setIdentity();
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetJointTransformation(jointHandle,&tr);
-    quaternion[0]=float(tr.Q(0));
-    quaternion[1]=float(tr.Q(1));
-    quaternion[2]=float(tr.Q(2));
-    quaternion[3]=float(tr.Q(3));
+    quaternion[0]=tr.Q(0);
+    quaternion[1]=tr.Q(1);
+    quaternion[2]=tr.Q(2);
+    quaternion[3]=tr.Q(3);
 }
 
-SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int ikEnv,int jointHandle,const float* quaternion)
+SIM_DLLEXPORT void ikPlugin_setSphericalJointQuaternion(int ikEnv,int jointHandle,const double* quaternion)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C4Vector q;
-    q(0)=double(quaternion[0]);
-    q(1)=double(quaternion[1]);
-    q(2)=double(quaternion[2]);
-    q(3)=double(quaternion[3]);
+    q(0)=quaternion[0];
+    q(1)=quaternion[1];
+    q(2)=quaternion[2];
+    q(3)=quaternion[3];
     if (ikSwitchEnvironment(ikEnv,true))
         ikSetSphericalJointQuaternion(jointHandle,&q);
 }
@@ -3993,11 +3997,11 @@ SIM_DLLEXPORT void ikPlugin_setIkGroupFlags(int ikEnv,int ikGroupHandle,int flag
         ikSetGroupFlags(ikGroupHandle,flags);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,int method,float damping,int maxIterations)
+SIM_DLLEXPORT void ikPlugin_setIkGroupCalculation(int ikEnv,int ikGroupHandle,int method,double damping,int maxIterations)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetGroupCalculation(ikGroupHandle,method,double(damping),maxIterations);
+        ikSetGroupCalculation(ikGroupHandle,method,damping,maxIterations);
 }
 
 SIM_DLLEXPORT int ikPlugin_addIkElement(int ikEnv,int ikGroupHandle,int tipHandle)
@@ -4037,18 +4041,18 @@ SIM_DLLEXPORT void ikPlugin_setIkElementConstraints(int ikEnv,int ikGroupHandle,
         ikSetElementConstraints(ikGroupHandle,ikElementHandle,constraints);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearPrecision,float angularPrecision)
+SIM_DLLEXPORT void ikPlugin_setIkElementPrecision(int ikEnv,int ikGroupHandle,int ikElementHandle,double linearPrecision,double angularPrecision)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetElementPrecision(ikGroupHandle,ikElementHandle,double(linearPrecision),double(angularPrecision));
+        ikSetElementPrecision(ikGroupHandle,ikElementHandle,linearPrecision,angularPrecision);
 }
 
-SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,float linearWeight,float angularWeight)
+SIM_DLLEXPORT void ikPlugin_setIkElementWeights(int ikEnv,int ikGroupHandle,int ikElementHandle,double linearWeight,double angularWeight)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     if (ikSwitchEnvironment(ikEnv,true))
-        ikSetElementWeights(ikGroupHandle,ikElementHandle,double(linearWeight),double(angularWeight),1.0);
+        ikSetElementWeights(ikGroupHandle,ikElementHandle,linearWeight,angularWeight,1.0);
 }
 
 SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
@@ -4076,10 +4080,10 @@ SIM_DLLEXPORT bool ikPlugin_computeJacobian(int ikEnv,int ikGroupHandle,int opti
     return(retVal);
 }
 
-SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matrixSize)
+SIM_DLLEXPORT double* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matrixSize)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    float* retVal=nullptr;
+    double* retVal=nullptr;
     if (ikSwitchEnvironment(ikEnv,true))
     {
         size_t ms[2];
@@ -4088,67 +4092,67 @@ SIM_DLLEXPORT float* ikPlugin_getJacobian(int ikEnv,int ikGroupHandle,int* matri
         {
             matrixSize[0]=int(ms[0]);
             matrixSize[1]=int(ms[1]);
-            retVal=reinterpret_cast<float*>(simCreateBuffer(int(sizeof(float)*ms[0]*ms[1])));
+            retVal=reinterpret_cast<double*>(simCreateBuffer(int(sizeof(double)*ms[0]*ms[1])));
             for (size_t i=0;i<ms[0]*ms[1];i++)
-                retVal[i]=float(m[i]);
+                retVal[i]=m[i];
             ikReleaseBuffer(m);
         }
     }
     return(retVal);
 }
 
-SIM_DLLEXPORT float ikPlugin_getManipulability(int ikEnv,int ikGroupHandle)
+SIM_DLLEXPORT double ikPlugin_getManipulability(int ikEnv,int ikGroupHandle)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
-    double retVal=double(0.0);
+    double retVal=0.0;
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetManipulability_old(ikGroupHandle,&retVal);
-    return(float(retVal));
+    return(retVal);
 }
 
-SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHandle,float* pos,float* quat)
+SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHandle,double* pos,double* quat)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C7Vector tr;
     tr.setIdentity();
     if (ikSwitchEnvironment(ikEnv,true))
         ikGetObjectTransformation(objectHandle,ik_handle_parent,&tr);
-    pos[0]=float(tr.X(0));
-    pos[1]=float(tr.X(1));
-    pos[2]=float(tr.X(2));
-    quat[0]=float(tr.Q(0));
-    quat[1]=float(tr.Q(1));
-    quat[2]=float(tr.Q(2));
-    quat[3]=float(tr.Q(3));
+    pos[0]=tr.X(0);
+    pos[1]=tr.X(1);
+    pos[2]=tr.X(2);
+    quat[0]=tr.Q(0);
+    quat[1]=tr.Q(1);
+    quat[2]=tr.Q(2);
+    quat[3]=tr.Q(3);
 }
 
-SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHandle,const float* pos,const float* quat)
+SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHandle,const double* pos,const double* quat)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     C7Vector tr;
-    tr.X(0)=double(pos[0]);
-    tr.X(1)=double(pos[1]);
-    tr.X(2)=double(pos[2]);
-    tr.Q(0)=double(quat[0]);
-    tr.Q(1)=double(quat[1]);
-    tr.Q(2)=double(quat[2]);
-    tr.Q(3)=double(quat[3]);
+    tr.X(0)=pos[0];
+    tr.X(1)=pos[1];
+    tr.X(2)=pos[2];
+    tr.Q(0)=quat[0];
+    tr.Q(1)=quat[1];
+    tr.Q(2)=quat[2];
+    tr.Q(3)=quat[3];
     if (ikSwitchEnvironment(ikEnv,true))
         ikSetObjectTransformation(objectHandle,ik_handle_parent,&tr);
 }
 
 static size_t _validationCallback_jointCnt;
-static bool(*__validationCallback)(float*);
-static float* _validationCallback_config;
+static bool(*__validationCallback)(double*);
+static double* _validationCallback_config;
 
 bool _validationCallback(double* conf)
 {
     for (size_t i=0;i<_validationCallback_jointCnt;i++)
-        _validationCallback_config[i]=float(conf[i]);
+        _validationCallback_config[i]=conf[i];
     return(__validationCallback(_validationCallback_config));
 }
 
-SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int jointCnt,const int* jointHandles,float thresholdDist,int maxIterations,int* result,float* retConfig,const float* metric,bool(*validationCallback)(float*),const int* jointOptions,const float* lowLimits,const float* ranges)
+SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int jointCnt,const int* jointHandles,double thresholdDist,int maxIterations,int* result,double* retConfig,const double* metric,bool(*validationCallback)(double*),const int* jointOptions,const double* lowLimits,const double* ranges)
 {
     CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
     char* retVal=nullptr;
@@ -4160,10 +4164,10 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
         double __metric[4];
         if (metric!=nullptr)
         {
-            __metric[0]=double(metric[0]);
-            __metric[1]=double(metric[1]);
-            __metric[2]=double(metric[2]);
-            __metric[3]=double(metric[3]);
+            __metric[0]=metric[0];
+            __metric[1]=metric[1];
+            __metric[2]=metric[2];
+            __metric[3]=metric[3];
             _metric=__metric;
         }
         double* _lowLimits=nullptr;
@@ -4171,7 +4175,7 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
         if (lowLimits!=nullptr)
         {
             for (size_t i=0;i<size_t(jointCnt);i++)
-                __lowLimits.push_back(double(lowLimits[i]));
+                __lowLimits.push_back(lowLimits[i]);
             _lowLimits=&__lowLimits[0];
         }
         double* _ranges=nullptr;
@@ -4179,22 +4183,22 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
         if (ranges!=nullptr)
         {
             for (size_t i=0;i<size_t(jointCnt);i++)
-                __ranges.push_back(double(ranges[i]));
+                __ranges.push_back(ranges[i]);
             _ranges=&__ranges[0];
         }
         _validationCallback_jointCnt=size_t(jointCnt);
-        std::vector<float> __valCb_j;
+        std::vector<double> __valCb_j;
         __valCb_j.resize(size_t(jointCnt));
         _validationCallback_config=&__valCb_j[0];
         __validationCallback=validationCallback;
         bool(*_validationCb)(double*)=nullptr;
         if (validationCallback!=nullptr)
             _validationCb=_validationCallback;
-        result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,double(thresholdDist),maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
+        result[0]=ikGetConfigForTipPose(ikGroupHandle,size_t(jointCnt),jointHandles,thresholdDist,maxIterations,&_retConfig[0],_metric,_validationCb,jointOptions,_lowLimits,_ranges);
         if (result[0]>0)
         {
             for (size_t i=0;i<_retConfig.size();i++)
-                retConfig[i]=float(_retConfig[i]);
+                retConfig[i]=_retConfig[i];
         }
         if (result[0]<0)
         {
