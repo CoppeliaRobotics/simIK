@@ -4203,7 +4203,7 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
         if (result[0]<0)
         {
             std::string err(ikGetLastError());
-            retVal=simCreateBuffer(int(err.size()+1));
+            retVal=(char*)simCreateBuffer(int(err.size()+1));
             for (size_t i=0;i<err.size();i++)
                 retVal[i]=err[i];
             retVal[err.size()]=0;
