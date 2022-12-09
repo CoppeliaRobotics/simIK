@@ -190,6 +190,25 @@ function simIK.addElementFromScene(...)
         _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
 
+    function createIkJointFromSimJoint(ikEnv,simJoint)
+        local t=sim.getJointType(simJoint)
+        local ikJoint=simIK.createJoint(ikEnv,t)
+        local c,interv=sim.getJointInterval(simJoint)
+        simIK.setJointInterval(ikEnv,ikJoint,c,interv)
+        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_screw_pitch)
+        simIK.setJointScrewPitch(ikEnv,ikJoint,sp)
+        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_step_size)
+        simIK.setJointMaxStepSize(ikEnv,ikJoint,sp)
+        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_ik_weight)
+        simIK.setJointWeight(ikEnv,ikJoint,sp)
+        if t==sim.joint_spherical_subtype then
+            simIK.setSphericalJointMatrix(ikEnv,ikJoint,sim.getJointMatrix(simJoint))
+        else
+            simIK.setJointPosition(ikEnv,ikJoint,sim.getJointPosition(simJoint))
+        end
+        return ikJoint
+    end
+    
     function iterateAndAdd(theTip,theBase)
         local ikPrevIterator=-1
         local simIterator=theTip
@@ -202,52 +221,7 @@ function simIK.addElementFromScene(...)
                 if sim.getObjectType(simIterator)~=sim.object_joint_type then
                     ikIterator=simIK.createDummy(ikEnv)
                 else
-                    function createIkJointFromSimJoint(ikEnv,simJoint)
-                        local t=sim.getJointType(simJoint)
-                        local ikJoint=simIK.createJoint(ikEnv,t)
-                        local c,interv=sim.getJointInterval(simJoint)
-                        simIK.setJointInterval(ikEnv,ikJoint,c,interv)
-                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_screw_pitch)
-                        simIK.setJointScrewPitch(ikEnv,ikJoint,sp)
-                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_step_size)
-                        simIK.setJointMaxStepSize(ikEnv,ikJoint,sp)
-                        local sp=sim.getObjectFloatParam(simJoint,sim.jointfloatparam_ik_weight)
-                        simIK.setJointWeight(ikEnv,ikJoint,sp)
-                        if t==sim.joint_spherical_subtype then
-                            simIK.setSphericalJointMatrix(ikEnv,ikJoint,sim.getJointMatrix(simJoint))
-                        else
-                            simIK.setJointPosition(ikEnv,ikJoint,sim.getJointPosition(simJoint))
-                        end
-                        return ikJoint
-                    end
                     ikIterator=createIkJointFromSimJoint(ikEnv,simIterator)
-                    -- check if this joint is a slave in a dependency relationship:
-                    if sim.getJointMode(simIterator)==sim.jointmode_dependent then
-                        local dep,off,mult=sim.getJointDependency(simIterator)
-                        if dep~=-1 then
-                            -- yes. Is the master already there?
-                            if simToIkMap[dep] then
-                                -- master is already there
-                                simIK.setJointDependency(ikEnv,ikIterator,simToIkMap[dep],off,mult) 
-                            else
-                                -- master is not yet there
-                                local ikSlave=ikIterator
-                                while dep~=-1 do
-                                    local ikMaster=createIkJointFromSimJoint(ikEnv,dep)
-                                    simIK.setJointDependency(ikEnv,ikSlave,ikMaster,off,mult) 
-                                    simToIkMap[dep]=ikMaster
-                                    ikToSimMap[ikMaster]=dep
-                                    groupData.joints[dep]=ikMaster
-                                    simIK.setObjectMatrix(ikEnv,ikMaster,-1,sim.getObjectMatrix(dep,-1))
-                                    -- Maybe the master is slave to another joint?!
-                                    dep,off,mult=sim.getJointDependency(dep)
-                                    ikSlave=ikMaster
-                                end
-                            end
-                        else
-                            simIK.setJointMode(ikEnv,ikIterator,simIK.jointmode_passive)
-                        end
-                    end
                 end
                 simToIkMap[simIterator]=ikIterator
                 ikToSimMap[ikIterator]=simIterator
@@ -278,6 +252,55 @@ function simIK.addElementFromScene(...)
     local ikTarget=simToIkMap[simTarget]
     simIK.setTargetDummy(ikEnv,ikTip,ikTarget)
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
+    
+    -- Now handle joint dependencies. Consider slave0 --> slave1 --> .. --> master
+    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have a complex daisy chain):
+    local simJoints=sim.getObjectsInTree(sim.handle_scene,sim.object_joint_type)
+    local slaves={}
+    local masters={}
+    local passives={}
+    local mastersToSlaves={}
+    for i=1,#simJoints,1 do
+        local jo=simJoints[i]
+        if sim.getJointMode(jo)==sim.jointmode_dependent then
+            local dep,off,mult=sim.getJointDependency(jo)
+            if dep~=-1 then
+                slaves[#slaves+1]=jo
+                masters[#masters+1]=dep
+                mastersToSlaves[jo]=dep
+            else
+                passives[#passives+1]=jo
+            end
+        end
+    end
+    for i=1,#passives,1 do
+        local ikJo=simToIkMap[passives[i]]
+        if ikJo then
+            simIK.setJointMode(ikEnv,ikJo,simIK.jointmode_passive)
+        end
+    end
+    for i=1,#slaves,1 do
+        local slave=slaves[i]
+        local master=masters[i]
+        local ikJo_s=simToIkMap[slave]
+        local ikJo_m=simToIkMap[master]
+        if ikJo_s==nil then
+            ikJo_s=createIkJointFromSimJoint(ikEnv,slave)
+            simToIkMap[slave]=ikJo_s
+            ikToSimMap[ikJo_s]=slave
+            simIK.setObjectMatrix(ikEnv,ikJo_s,-1,sim.getObjectMatrix(slave,-1))
+            groupData.joints[slave]=ikJo_s
+        end
+        if ikJo_m==nil then
+            ikJo_m=createIkJointFromSimJoint(ikEnv,master)
+            simToIkMap[master]=ikJo_m
+            ikToSimMap[ikJo_m]=master
+            simIK.setObjectMatrix(ikEnv,ikJo_m,-1,sim.getObjectMatrix(master,-1))
+            groupData.joints[master]=ikJo_m
+        end
+        local dep,off,mult=sim.getJointDependency(slave)
+        simIK.setJointDependency(ikEnv,ikJo_s,ikJo_m,off,mult) 
+    end
 
     local ikElement=simIK.addElement(ikEnv,ikGroup,ikTip)
     simIK.setElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
