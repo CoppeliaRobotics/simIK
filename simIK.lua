@@ -242,24 +242,23 @@ function simIK.addElementFromScene(...)
         end
     end
     
-    iterateAndAdd(simTip,simBase)
+    iterateAndAdd(simTip,-1) -- need to add the whole chain down to world, otherwise subtle bugs!
     local ikTip=simToIkMap[simTip]
     local ikBase=-1;
     if simBase~=-1 then
         ikBase=simToIkMap[simBase]
     end
-    iterateAndAdd(simTarget,-1) -- need to add the whole target chain too, otherwise subtle bugs!
+    iterateAndAdd(simTarget,-1) -- need to add the whole target chain down to world too, otherwise subtle bugs!
     local ikTarget=simToIkMap[simTarget]
     simIK.setTargetDummy(ikEnv,ikTip,ikTarget)
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
     
     -- Now handle joint dependencies. Consider slave0 --> slave1 --> .. --> master
-    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have a complex daisy chain):
+    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have complex daisy chains):
     local simJoints=sim.getObjectsInTree(sim.handle_scene,sim.object_joint_type)
     local slaves={}
     local masters={}
     local passives={}
-    local mastersToSlaves={}
     for i=1,#simJoints,1 do
         local jo=simJoints[i]
         if sim.getJointMode(jo)==sim.jointmode_dependent then
@@ -267,7 +266,6 @@ function simIK.addElementFromScene(...)
             if dep~=-1 then
                 slaves[#slaves+1]=jo
                 masters[#masters+1]=dep
-                mastersToSlaves[jo]=dep
             else
                 passives[#passives+1]=jo
             end
