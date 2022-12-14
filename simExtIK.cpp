@@ -3721,7 +3721,6 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.calc_cannotinvert@simExtIK",std::to_string(ik_calc_cannotinvert).c_str(),0);
     simRegisterScriptVariable("simIK.calc_notwithintolerance@simExtIK",std::to_string(ik_calc_notwithintolerance).c_str(),0);
     simRegisterScriptVariable("simIK.calc_stepstoobig@simExtIK",std::to_string(ik_calc_stepstoobig).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_movingaway@simExtIK",std::to_string(ik_calc_movingaway).c_str(),0);
     simRegisterScriptVariable("simIK.calc_limithit@simExtIK",std::to_string(ik_calc_limithit).c_str(),0);
 
     simRegisterScriptVariable("simIK.group_enabled@simExtIK",std::to_string(ik_group_enabled).c_str(),0);
