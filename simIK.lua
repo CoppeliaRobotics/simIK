@@ -391,7 +391,6 @@ function simIK.getFailureDescription(reason)
         'cannotinvert',
         'notwithintolerance',
         'stepstoobig',
-        'movingaway',
         'limithit',
     } do
         local f='calc_'..k
