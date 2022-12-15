@@ -2832,38 +2832,38 @@ bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,co
     return(retVal);
 }
 // --------------------------------------------------------------------------------------
-// simIK._handleGroup
+// simIK._handleGroups
 // --------------------------------------------------------------------------------------
-#define LUA_HANDLEIKGROUP_COMMAND_PLUGIN "simIK._handleGroup@IK"
-#define LUA_HANDLEIKGROUP_COMMAND "simIK._handleGroup"
+#define LUA_HANDLEIKGROUPS_COMMAND_PLUGIN "simIK._handleGroups@IK"
+#define LUA_HANDLEIKGROUPS_COMMAND "simIK._handleGroups"
 
-const int inArgs_HANDLEIKGROUP[]={
+const int inArgs_HANDLEIKGROUPS[]={
     4,
     sim_script_arg_int32,0,
-    sim_script_arg_int32,0,
+    sim_script_arg_int32|sim_script_arg_table,1,
     sim_script_arg_string|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // cb func name
     sim_script_arg_int32|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // script handle of cb
 };
 
-void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
+void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
     int ikRes=ik_result_not_performed;
     bool result=false;
     double precision[2]={0.0,0.0};
-    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUP,inArgs_HANDLEIKGROUP[0]-3,LUA_HANDLEIKGROUP_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUPS,inArgs_HANDLEIKGROUPS[0]-3,LUA_HANDLEIKGROUPS_COMMAND))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
-        int ikGroupHandle=ik_handle_all;
+        std::vector<int>* ikGroupHandles=nullptr; // means handle all
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
                 bool(*cb)(const int*,std::vector<double>*,const int*,const int*,const int*,const int*,std::vector<double>*,double*)=nullptr;
-                if ( (inData->size()>1)&&(inData->at(1).int32Data.size()==1) )
-                    ikGroupHandle=inData->at(1).int32Data[0];
+                if ( (inData->size()>1)&&(inData->at(1).int32Data.size()>=1) )
+                    ikGroupHandles=&inData->at(1).int32Data;
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
                 {
                     jacobianCallback_funcName=inData->at(2).stringData[0];
@@ -2871,7 +2871,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
                     jacobianCallback_envId=envId;
                     cb=jacobianCallback;
                 }
-                result=ikHandleGroup(ikGroupHandle,&ikRes,precision,cb);
+                result=ikHandleGroups(ikGroupHandles,&ikRes,precision,cb);
                 if (!result)
                     err=ikGetLastError();
             }
@@ -2879,7 +2879,7 @@ void LUA_HANDLEIKGROUP_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_HANDLEIKGROUP_COMMAND,err.c_str());
+            simSetLastError(LUA_HANDLEIKGROUPS_COMMAND,err.c_str());
     }
     if (result)
     {
@@ -3679,7 +3679,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] precision)"),LUA_SETIKELEMENTPRECISION_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("float[2] weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUP_COMMAND_PLUGIN,nullptr,LUA_HANDLEIKGROUP_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUPS_COMMAND_PLUGIN,nullptr,LUA_HANDLEIKGROUPS_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_FINDCONFIG_COMMAND_PLUGIN,nullptr,LUA_FINDCONFIG_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
@@ -4060,7 +4060,9 @@ SIM_DLLEXPORT int ikPlugin_handleIkGroup(int ikEnv,int ikGroupHandle)
     int retVal=-1;
     if (ikSwitchEnvironment(ikEnv,true))
     {
-        ikHandleGroup(ikGroupHandle,&retVal,nullptr);
+        std::vector<int> gr;
+        gr.push_back(ikGroupHandle);
+        ikHandleGroups(&gr,&retVal,nullptr);
         if ( (retVal&ik_calc_notperformed)!=0 )
             retVal=0; // ik_result_not_performed
         else if ( (retVal&(ik_calc_cannotinvert|ik_calc_notwithintolerance))!=0 )
