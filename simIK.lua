@@ -362,21 +362,55 @@ function simIK.handleGroups(...)
     local lb=sim.setThreadAutomaticSwitch(false)
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect)
         local data={}
-        data.jacobian={data=jacobian,dims={#rows_constr,#cols_handles}}
+        data.jacobian=Matrix({data=jacobian,dims={#rows_constr,#cols_handles}})
         data.rows={}
         data.cols={}
-        data.errorVector={data=errorVect,dims={#rows_constr,1}}
+        data.e=Matrix({data=errorVect,dims={#rows_constr,1}})
         for i=1,#rows_constr,1 do
             data.rows[i]={constraint=rows_constr[i],element=rows_ikEl[i]}
         end
         for i=1,#cols_handles,1 do
             data.cols[i]={joint=cols_handles[i],dofIndex=cols_dofIndex[i]}
         end
+        local outData
         if type(options.callback)=='string' then
-            return _G[options.callback](data,options.auxData)
+            outData=_G[options.callback](data,options.auxData)
         else
-            return options.callback(data,options.auxData)
+            outData=options.callback(data,options.auxData)
         end
+        local j={}
+        local e={}
+        local dq={}
+        local jpinv={}
+        if outData.jacobian then
+            if outData.jacobian:cols()==#cols_handles and outData.jacobian:rows()==#rows_constr then
+                j=outData.jacobian:data()
+            else
+                error("invalid jacobian matrix size")
+            end
+        end
+        if outData.e then
+            if outData.e:rows()==#rows_constr and outData.e:cols()==1 then
+                e=outData.e:data()
+            else
+                error("invalid e vector size")
+            end
+        end
+        if outData.dq then
+            if outData.dq:rows()==#cols_handles and outData.dq:cols()==1 then
+                dq=outData.dq:data()
+            else
+                error("invalid dq vector size")
+            end
+        end
+        if outData.jacobianPinv then
+            if outData.jacobianPinv:rows()==#cols_handles and outData.jacobianPinv:cols()==#rows_constr then
+                jpinv=outData.jacobianPinv:data()
+            else
+                error("invalid jacobian pseudo-inverse matrix size")
+            end
+        end
+        return j,e,dq,jpinv
     end
     local funcNm,t
     if options.callback then

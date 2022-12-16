@@ -2786,44 +2786,52 @@ static std::string jacobianCallback_funcName;
 static int jacobianCallback_scriptHandle;
 static int jacobianCallback_envId;
 
-bool jacobianCallback(const int jacobianSize[2],std::vector<double>* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,std::vector<double>* errorVector,double* qVector)
+int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,double* errorVector,double* qVector,double* jacobianPinv)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
-    bool retVal=false; // if true jointValues were computed
+    int retVal=-1; // error
     int stack=simCreateStack();
     int cols=jacobianSize[1];
     simPushInt32TableOntoStack(stack,rowConstraints,jacobianSize[0]);
     simPushInt32TableOntoStack(stack,rowIkElements,jacobianSize[0]);
     simPushInt32TableOntoStack(stack,colHandles,cols);
     simPushInt32TableOntoStack(stack,colStages,cols);
-    simPushDoubleTableOntoStack(stack,jacobian->data(),jacobianSize[0]*jacobianSize[1]);
-    simPushDoubleTableOntoStack(stack,errorVector->data(),jacobianSize[0]);
+    simPushDoubleTableOntoStack(stack,jacobian,jacobianSize[0]*jacobianSize[1]);
+    simPushDoubleTableOntoStack(stack,errorVector,jacobianSize[0]);
     if (simCallScriptFunctionEx(jacobianCallback_scriptHandle,jacobianCallback_funcName.c_str(),stack)!=-1)
     {
-        if (simGetStackSize(stack)==1)
+        if (simGetStackSize(stack)==4)
         {
-            int s=simGetStackTableInfo(stack,0);
-            if (s==jacobianSize[1])
-            { // we receive the joint values (the solution)
-                retVal=true;
-                simGetStackDoubleTable(stack,qVector,s);
+            retVal=0;
+            // first the Jacobian pseudoinverse, if present:
+            int cnt=simGetStackTableInfo(stack,0);
+            if (cnt==jacobianSize[1]*jacobianSize[0])
+            {
+                retVal=retVal|2;
+                simGetStackDoubleTable(stack,jacobianPinv,cnt);
             }
-        }
-        if (simGetStackSize(stack)==2)
-        { // we received the Jacobian and the error vector
-            // First the error vector:
-            int rows=simGetStackTableInfo(stack,0);
-            // we receive the updated error vector
-            errorVector->resize(rows);
-            simGetStackDoubleTable(stack,errorVector->data(),rows);
             simPopStackItem(stack,1);
-            // Now the Jacobian:
-            int r=simGetStackTableInfo(stack,0);
-            if (r==rows*cols)
-            { // we receive the updated Jacobian
-                jacobian->resize(r);
-                simGetStackDoubleTable(stack,jacobian->data(),r);
+
+            // now dq, if present:
+            cnt=simGetStackTableInfo(stack,0);
+            if (cnt==jacobianSize[1])
+            {
+                retVal=retVal|1;
+                simGetStackDoubleTable(stack,qVector,cnt);
             }
+            simPopStackItem(stack,1);
+
+            // now e, if present:
+            cnt=simGetStackTableInfo(stack,0);
+            if (cnt==jacobianSize[0])
+                simGetStackDoubleTable(stack,errorVector,cnt);
+            simPopStackItem(stack,1);
+
+            // now the Jacobian, if present:
+            cnt=simGetStackTableInfo(stack,0);
+            if (cnt==jacobianSize[0]*jacobianSize[1])
+                simGetStackDoubleTable(stack,jacobian,cnt);
+            simPopStackItem(stack,1);
         }
     }
     simReleaseStack(stack);
@@ -2861,7 +2869,7 @@ void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                bool(*cb)(const int*,std::vector<double>*,const int*,const int*,const int*,const int*,std::vector<double>*,double*)=nullptr;
+                int(*cb)(const int*,double*,const int*,const int*,const int*,const int*,double*,double*,double*)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()>=1) )
                     ikGroupHandles=&inData->at(1).int32Data;
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )
