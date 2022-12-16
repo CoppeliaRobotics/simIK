@@ -132,10 +132,18 @@ function simIK.syncToIkWorld(...)
     for g=1,#ikGroups,1 do
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k,v in pairs(groupData.joints) do
-            if sim.getJointType(k)==sim.joint_spherical_subtype then
-                simIK.setSphericalJointMatrix(ikEnv,v,sim.getJointMatrix(k))
+            if sim.isHandle(k) then
+                if sim.getJointType(k)==sim.joint_spherical_subtype then
+                    simIK.setSphericalJointMatrix(ikEnv,v,sim.getJointMatrix(k))
+                else
+                    simIK.setJointPosition(ikEnv,v,sim.getJointPosition(k))
+                end
             else
-                simIK.setJointPosition(ikEnv,v,sim.getJointPosition(k))
+                -- that is probably a joint in a dependency relation, that was removed
+                simIK.eraseObject(ikEnv,v)
+                groupData.joints[k]=nil
+                _S.ikEnvs[ikEnv].simToIkMap[k]=nil
+                _S.ikEnvs[ikEnv].ikToSimMap[v]=nil
             end
         end
         for i=1,#groupData.targetTipBaseTriplets,1 do
@@ -152,16 +160,24 @@ function simIK.syncFromIkWorld(...)
     for g=1,#ikGroups,1 do
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k,v in pairs(groupData.joints) do
-            if sim.getJointType(k)==sim.joint_spherical_subtype then
-                if sim.getJointMode(k)~=sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
-                    sim.setSphericalJointMatrix(k,simIK.getJointMatrix(ikEnv,v))
+            if sim.isHandle(k) then
+                if sim.getJointType(k)==sim.joint_spherical_subtype then
+                    if sim.getJointMode(k)~=sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
+                        sim.setSphericalJointMatrix(k,simIK.getJointMatrix(ikEnv,v))
+                    end
+                else
+                    if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
+                        sim.setJointTargetPosition(k,simIK.getJointPosition(ikEnv,v))
+                    else    
+                        sim.setJointPosition(k,simIK.getJointPosition(ikEnv,v))
+                    end
                 end
             else
-                if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
-                    sim.setJointTargetPosition(k,simIK.getJointPosition(ikEnv,v))
-                else    
-                    sim.setJointPosition(k,simIK.getJointPosition(ikEnv,v))
-                end
+                -- that is probably a joint in a dependency relation, that was removed
+                simIK.eraseObject(ikEnv,v)
+                groupData.joints[k]=nil
+                _S.ikEnvs[ikEnv].simToIkMap[k]=nil
+                _S.ikEnvs[ikEnv].ikToSimMap[v]=nil
             end
         end
     end
@@ -260,7 +276,9 @@ function simIK.addElementFromScene(...)
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets+1]={simTarget,simTip,simBase,ikTarget,ikTip,ikBase}
     
     -- Now handle joint dependencies. Consider slave0 --> slave1 --> .. --> master
-    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have complex daisy chains):
+    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have complex daisy chains)
+    -- We will however have to be careful, and always first check if a joint is still valid (e.g. we could remove a joint from the scene
+    -- in an unrelated model)
     local simJoints=sim.getObjectsInTree(sim.handle_scene,sim.object_joint_type)
     local slaves={}
     local masters={}
