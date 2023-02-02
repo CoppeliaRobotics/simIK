@@ -36,19 +36,19 @@ coppeliasim_add_plugin(
     ../coppeliaKinematicsRoutines/sceneObject.cpp
     ../coppeliaKinematicsRoutines/dummy.cpp
     ../coppeliaKinematicsRoutines/joint.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/MyMath.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/3Vector.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/4Vector.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/7Vector.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/3X3Matrix.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/4X4Matrix.cpp
-    ${COPPELIASIM_ROOT_DIR}/programming/simMath/MMatrix.cpp
-    ${COPPELIASIM_COMMON_DIR}/scriptFunctionData.cpp
-    ${COPPELIASIM_COMMON_DIR}/scriptFunctionDataItem.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/MyMath.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/3Vector.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/4Vector.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/7Vector.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/3X3Matrix.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/4X4Matrix.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simMath/MMatrix.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/scriptFunctionData.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/scriptFunctionDataItem.cpp
 )
 target_compile_definitions(simExtIK PRIVATE SIM_MATH_DOUBLE)
 target_include_directories(simExtIK PRIVATE ../coppeliaKinematicsRoutines)
-target_include_directories(simExtIK PRIVATE ${COPPELIASIM_ROOT_DIR}/programming/simMath)
+target_include_directories(simExtIK PRIVATE ${COPPELIASIM_INCLUDE_DIR}/simMath)
 target_link_libraries(simExtIK Eigen3::Eigen)
 coppeliasim_add_lua(simIK.lua)
 coppeliasim_add_helpfile(simIK.htm)
