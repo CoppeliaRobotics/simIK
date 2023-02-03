@@ -8,7 +8,7 @@
     #define SIM_DLLEXPORT extern "C"
 #endif
 
-#include "simTypes.h"
+#include <simTypes.h>
 
 SIM_DLLEXPORT unsigned char simStart(void*,int);
 SIM_DLLEXPORT void simEnd();

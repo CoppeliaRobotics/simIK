@@ -1,11 +1,11 @@
 #include "simExtIK.h"
 #include "envCont.h"
-#include "simLib.h"
-#include "ik.h"
-#include "4X4Matrix.h"
+#include <simLib.h>
+#include <ik.h>
+#include <simMath/4X4Matrix.h>
 #include <iostream>
 #include <cstdio>
-#include "scriptFunctionData.h"
+#include <scriptFunctionData.h>
 #include <algorithm>
 
 #ifdef _WIN32
