@@ -5,7 +5,7 @@
 #include <simMath/4X4Matrix.h>
 #include <iostream>
 #include <cstdio>
-#include <scriptFunctionData.h>
+#include <simLib/scriptFunctionData.h>
 #include <algorithm>
 
 #ifdef _WIN32
