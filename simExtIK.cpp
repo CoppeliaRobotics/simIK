@@ -1,6 +1,6 @@
 #include "simExtIK.h"
 #include "envCont.h"
-#include <simLib.h>
+#include <simLib/simLib.h>
 #include <ik.h>
 #include <simMath/4X4Matrix.h>
 #include <iostream>
