@@ -56,9 +56,9 @@ INCLUDEPATH += $$EIGEN_INCLUDEPATH
 
 HEADERS += simExtIK.h \
     envCont.h \
-    ../include/simLib.h \
-    ../include/scriptFunctionData.h \
-    ../include/scriptFunctionDataItem.h \
+    ../include/simLib/simLib.h \
+    ../include/simLib/scriptFunctionData.h \
+    ../include/simLib/scriptFunctionDataItem.h \
     ../coppeliaKinematicsRoutines/ik.h \
     ../coppeliaKinematicsRoutines/environment.h \
     ../coppeliaKinematicsRoutines/serialization.h \
@@ -80,9 +80,9 @@ HEADERS += simExtIK.h \
 
 SOURCES += simExtIK.cpp \
     envCont.cpp \
-    ../include/simLib.cpp \
-    ../include/scriptFunctionData.cpp \
-    ../include/scriptFunctionDataItem.cpp \
+    ../include/simLib/simLib.cpp \
+    ../include/simLib/scriptFunctionData.cpp \
+    ../include/simLib/scriptFunctionDataItem.cpp \
     ../coppeliaKinematicsRoutines/ik.cpp \
     ../coppeliaKinematicsRoutines/environment.cpp \
     ../coppeliaKinematicsRoutines/serialization.cpp \
