@@ -1090,7 +1090,93 @@ void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getJointScrewPitch
+// simIK.getJointScrewLead
+// --------------------------------------------------------------------------------------
+#define LUA_GETJOINTSCREWLEAD_COMMAND_PLUGIN "simIK.getJointScrewLead@IK"
+#define LUA_GETJOINTSCREWLEAD_COMMAND "simIK.getJointScrewLead"
+
+const int inArgs_GETJOINTSCREWLEAD[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    double lead=0.0;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWLEAD,inArgs_GETJOINTSCREWLEAD[0],LUA_GETJOINTSCREWLEAD_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetJointScrewLead(jointHandle,&lead);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETJOINTSCREWLEAD_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(lead));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.setJointScrewLead
+// --------------------------------------------------------------------------------------
+#define LUA_SETJOINTSCREWLEAD_COMMAND_PLUGIN "simIK.setJointScrewLead@IK"
+#define LUA_SETJOINTSCREWLEAD_COMMAND "simIK.setJointScrewLead"
+
+const int inArgs_SETJOINTSCREWLEAD[]={
+    3,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+    sim_script_arg_double,0,
+};
+
+void LUA_SETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTSCREWLEAD,inArgs_SETJOINTSCREWLEAD[0],LUA_SETJOINTSCREWLEAD_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        double lead=inData->at(2).doubleData[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                bool result=ikSetJointScrewLead(jointHandle,lead);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_SETJOINTSCREWLEAD_COMMAND,err.c_str());
+    }
+}
+// --------------------------------------------------------------------------------------
+
+
+// --------------------------------------------------------------------------------------
+// simIK.getJointScrewPitch, deprecated
 // --------------------------------------------------------------------------------------
 #define LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN "simIK.getJointScrewPitch@IK"
 #define LUA_GETJOINTSCREWPITCH_COMMAND "simIK.getJointScrewPitch"
@@ -1135,7 +1221,7 @@ void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setJointScrewPitch
+// simIK.setJointScrewPitch, deprecated
 // --------------------------------------------------------------------------------------
 #define LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN "simIK.setJointScrewPitch@IK"
 #define LUA_SETJOINTSCREWPITCH_COMMAND "simIK.setJointScrewPitch"
@@ -3651,8 +3737,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_SETJOINTMODE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle,int jointMode)"),LUA_SETJOINTMODE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("bool cyclic,float[2] interval=",LUA_GETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTINTERVAL_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle,bool cyclic,float[2] interval={})"),LUA_SETJOINTINTERVAL_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("float pitch=",LUA_GETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTSCREWPITCH_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWPITCH_COMMAND,"(int environmentHandle,int jointHandle,float pitch)"),LUA_SETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWLEAD_COMMAND_PLUGIN,strConCat("float lead=",LUA_GETJOINTSCREWLEAD_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTSCREWLEAD_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWLEAD_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWLEAD_COMMAND,"(int environmentHandle,int jointHandle,float lead)"),LUA_SETJOINTSCREWLEAD_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("float weight=",LUA_GETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTIKWEIGHT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle,float weight)"),LUA_SETJOINTIKWEIGHT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("float margin=",LUA_GETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTLIMITMARGIN_CALLBACK);
@@ -3739,6 +3825,8 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.group_avoidlimits@simExtIK",std::to_string(ik_group_avoidlimits).c_str(),0);
 
     // deprecated:
+    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN,nullptr,LUA_GETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,nullptr,LUA_SETJOINTSCREWPITCH_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_GETLINKEDDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_SETLINKEDDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
