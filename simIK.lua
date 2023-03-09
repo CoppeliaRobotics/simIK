@@ -593,15 +593,28 @@ function simIK.createDebugOverlay(...)
     local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,1,{0,1,0})
     sim.addDrawingObjectItem(tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
     drawingConts[#drawingConts+1]=tipCont
+    local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{1,1,1})
+    drawingConts[#drawingConts+1]=linkCont
     local obj=ikTip
+    local prevJ=obj
     while obj~=-1 do
         local t=simIK.getObjectType(ikEnv,obj)
         if t==simIK.objecttype_joint then
+            local p=simIK.getObjectPose(ikEnv,prevJ,sim.handle_world)
+            local m1=simIK.getObjectMatrix(ikEnv,obj,sim.handle_world)
+            local m2=simIK.getJointMatrix(ikEnv,obj)
+            m1=sim.multiplyMatrices(m1,m2)
+            p[4]=m1[4]
+            p[5]=m1[8]
+            p[6]=m1[12]
+            sim.addDrawingObjectItem(linkCont,p)
+            prevJ=obj
             local spherical=(simIK.getJointType(ikEnv,obj)==simIK.jointtype_spherical)
             local m=simIK.getJointMode(ikEnv,obj) -- simIK.jointmode_passive or simIK.jointmode_ik
             local d=simIK.getJointDependency(ikEnv,obj)
             local drt=sim.drawing_lines
             local s=4
+            local hs=0.05
             if spherical then
                 drt=sim.drawing_spherepts
                 s=0.03
@@ -609,6 +622,8 @@ function simIK.createDebugOverlay(...)
             local c={1,1,0}
             if d>=0 then
                 c={0,0.5,1}
+                s=2
+                hs=0.06
             elseif m==simIK.jointmode_passive then
                 c={0,0,0}
             end
@@ -618,7 +633,6 @@ function simIK.createDebugOverlay(...)
             if spherical then
                 sim.addDrawingObjectItem(cont,{m[4],m[8],m[12]})
             else
-                local hs=0.05
                 sim.addDrawingObjectItem(cont,{m[4]-m[3]*hs,m[8]-m[7]*hs,m[12]-m[11]*hs,m[4]+m[3]*hs,m[8]+m[7]*hs,m[12]+m[11]*hs})
             end
         end
