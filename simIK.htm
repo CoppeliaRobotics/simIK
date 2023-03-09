@@ -468,13 +468,14 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int objectHandle=simIK.createDebugOverlay(int environmentHandle,int tipDummy)</td>
+<td class="apiTableRightLSyn">int objectHandle=simIK.createDebugOverlay(int environmentHandle,int tipHandle,int baseHandle=-1)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>tipDummy</strong>: the handle of the tip dummy.</div>
+<div><strong>tipHandle</strong>: the handle of the tip dummy.</div>
+<div><strong>baseHandle</strong>: the handle of the base object.</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -486,7 +487,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int objectHandle=simIK.createDebugOverlay(int environmentHandle,int tipDummy)</td>
+<td class="apiTableRightPSyn">int objectHandle=simIK.createDebugOverlay(int environmentHandle,int tipHandle,int baseHandle=-1)</td>
 </tr>
 
 <tr class="apiTableTr">

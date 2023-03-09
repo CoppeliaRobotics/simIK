@@ -194,7 +194,7 @@ function simIK.debugGroup(ikEnv,ikGroup)
     end
     groupData.debug={}
     for i=1,#groupData.targetTipBaseTriplets,1 do
-        groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5])
+        groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
     end
     sim.setThreadAutomaticSwitch(lb)
 end
@@ -578,7 +578,7 @@ function simIK.setObjectPose(...)
 end
 
 function simIK.createDebugOverlay(...)
-    local ikEnv,ikTip=checkargs({{type='int'},{type='int'}},...)
+    local ikEnv,ikTip,ikBase=checkargs({{type='int'},{type='int'},{type='int',default=-1}},...)
     if not _S.ikDebug then
         _S.ikDebug={}
         _S.ikDebugId=0
@@ -587,7 +587,7 @@ function simIK.createDebugOverlay(...)
     _S.ikDebug[_S.ikDebugId]=drawingConts
     _S.ikDebug[#_S.ikDebug+1]=drawingConts
     local ikTarget=simIK.getTargetDummy(ikEnv,ikTip)
-    local targetCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.02,0,-1,1,{1,0,0})
+    local targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.03,0,-1,1,{1,0,0})
     sim.addDrawingObjectItem(targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
     drawingConts[#drawingConts+1]=targetCont
     local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,1,{0,1,0})
@@ -595,9 +595,16 @@ function simIK.createDebugOverlay(...)
     drawingConts[#drawingConts+1]=tipCont
     local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{1,1,1})
     drawingConts[#drawingConts+1]=linkCont
+    local baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.03,0,-1,1,{1,0,1})
+    local w={0,0,0,1,0,0,0}
+    if ikBase~=-1 then
+        w=simIK.getObjectPose(ikEnv,ikBase,simIK.handle_world)
+    end
+    sim.addDrawingObjectItem(baseCont,w)
+    drawingConts[#drawingConts+1]=baseCont
     local obj=ikTip
     local prevJ=obj
-    while obj~=-1 do
+    while obj~=-1 and obj~=ikBase do
         local t=simIK.getObjectType(ikEnv,obj)
         if t==simIK.objecttype_joint then
             local p=simIK.getObjectPose(ikEnv,prevJ,sim.handle_world)
@@ -638,6 +645,18 @@ function simIK.createDebugOverlay(...)
         end
         obj=simIK.getObjectParent(ikEnv,obj)
     end
+    
+    local p=simIK.getObjectPose(ikEnv,prevJ,sim.handle_world)
+    p[4]=0
+    p[5]=0
+    p[6]=0
+    if ikBase~=-1 then
+        local p2=simIK.getObjectPose(ikEnv,ikBase,sim.handle_world)
+        p[4]=p2[1]
+        p[5]=p2[2]
+        p[6]=p2[3]
+    end
+    sim.addDrawingObjectItem(linkCont,p)
     _S.ikDebugId=_S.ikDebugId+1
     return _S.ikDebugId-1
 end
@@ -842,7 +861,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
     sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[7] pose)')
-    sim.registerScriptFunction('simIK.createDebugOverlay@simIK','int debugObject=simIK.createDebugOverlay(int environmentHandle,int tipHandle)')
+    sim.registerScriptFunction('simIK.createDebugOverlay@simIK','int debugObject=simIK.createDebugOverlay(int environmentHandle,int tipHandle,int baseHandle=-1)')
     sim.registerScriptFunction('simIK.eraseDebugOverlay@simIK','simIK.eraseDebugOverlay(int debugObject)')
     simIK.init=nil
 end
