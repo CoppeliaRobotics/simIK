@@ -550,6 +550,51 @@ void LUA_SETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
+// simIK.getObjectType
+// --------------------------------------------------------------------------------------
+#define LUA_GETOBJECTTYPE_COMMAND_PLUGIN "simIK.getObjectType@IK"
+#define LUA_GETOBJECTTYPE_COMMAND "simIK.getObjectType"
+
+const int inArgs_GETOBJECTTYPE[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETOBJECTTYPE_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    int retVal=-1;
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTYPE,inArgs_GETOBJECTTYPE[0],LUA_GETOBJECTTYPE_COMMAND))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int objectHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
+            if (ikSwitchEnvironment(envId))
+            {
+                result=ikGetObjectType(objectHandle,&retVal);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(LUA_GETOBJECTTYPE_COMMAND,err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(retVal));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.getObjects
 // --------------------------------------------------------------------------------------
 #define LUA_GETOBJECTS_COMMAND_PLUGIN "simIK.getObjects@IK"
@@ -3728,6 +3773,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptCallbackFunction(LUA_ERASEOBJECT_COMMAND_PLUGIN,strConCat("",LUA_ERASEOBJECT_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_ERASEOBJECT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETOBJECTPARENT_COMMAND_PLUGIN,strConCat("int parentObjectHandle=",LUA_GETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_GETOBJECTPARENT_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETOBJECTPARENT_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle,int parentObjectHandle, bool keepInPlace=true)"),LUA_SETOBJECTPARENT_CALLBACK);
+    simRegisterScriptCallbackFunction(LUA_GETOBJECTTYPE_COMMAND_PLUGIN,strConCat("int objectType=",LUA_GETOBJECTTYPE_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_GETOBJECTTYPE_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_CREATEDUMMY_COMMAND_PLUGIN,strConCat("int dummyHandle=",LUA_CREATEDUMMY_COMMAND,"(int environmentHandle,string dummyName='')"),LUA_CREATEDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_GETTARGETDUMMY_COMMAND_PLUGIN,strConCat("int targetDummyHandle=",LUA_GETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle)"),LUA_GETTARGETDUMMY_CALLBACK);
     simRegisterScriptCallbackFunction(LUA_SETTARGETDUMMY_COMMAND_PLUGIN,strConCat("",LUA_SETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle,int targetDummyHandle)"),LUA_SETTARGETDUMMY_CALLBACK);

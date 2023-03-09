@@ -184,6 +184,21 @@ function simIK.syncFromIkWorld(...)
     sim.setThreadAutomaticSwitch(lb)
 end
 
+function simIK.debugGroup(ikEnv,ikGroup)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+    if groupData.debug then
+        for i=1,#groupData.debug,1 do
+            simIK.eraseDebugOverlay(groupData.debug[i])
+        end
+    end
+    groupData.debug={}
+    for i=1,#groupData.targetTipBaseTriplets,1 do
+        groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5])
+    end
+    sim.setThreadAutomaticSwitch(lb)
+end
+
 function simIK.addElementFromScene(...)
     local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
     
@@ -446,6 +461,11 @@ function simIK.handleGroups(...)
             simIK.syncFromIkWorld(ikEnv,ikGroups)
         end
     end
+    if options.debug then
+        for i=1,#ikGroups,1 do
+            simIK.debugGroup(ikEnv,ikGroups[i])
+        end
+    end
     sim.setThreadAutomaticSwitch(lb)
     return retVal,reason,prec
 end
@@ -555,6 +575,68 @@ end
 function simIK.setObjectPose(...)
     local ikEnv,obj,relObj,pose=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=7,item_type='float'}},...)
     simIK.setObjectTransformation(ikEnv,obj,relObj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]})
+end
+
+function simIK.createDebugOverlay(...)
+    local ikEnv,ikTip=checkargs({{type='int'},{type='int'}},...)
+    if not _S.ikDebug then
+        _S.ikDebug={}
+        _S.ikDebugId=0
+    end
+    local drawingConts={}
+    _S.ikDebug[_S.ikDebugId]=drawingConts
+    _S.ikDebug[#_S.ikDebug+1]=drawingConts
+    local ikTarget=simIK.getTargetDummy(ikEnv,ikTip)
+    local targetCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.02,0,-1,1,{1,0,0})
+    sim.addDrawingObjectItem(targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
+    drawingConts[#drawingConts+1]=targetCont
+    local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,1,{0,1,0})
+    sim.addDrawingObjectItem(tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
+    drawingConts[#drawingConts+1]=tipCont
+    local obj=ikTip
+    while obj~=-1 do
+        local t=simIK.getObjectType(ikEnv,obj)
+        if t==simIK.objecttype_joint then
+            local spherical=(simIK.getJointType(ikEnv,obj)==simIK.jointtype_spherical)
+            local m=simIK.getJointMode(ikEnv,obj) -- simIK.jointmode_passive or simIK.jointmode_ik
+            local d=simIK.getJointDependency(ikEnv,obj)
+            local drt=sim.drawing_lines
+            local s=4
+            if spherical then
+                drt=sim.drawing_spherepts
+                s=0.03
+            end
+            local c={1,1,0}
+            if d>=0 then
+                c={0,0.5,1}
+            elseif m==simIK.jointmode_passive then
+                c={0,0,0}
+            end
+            local cont=sim.addDrawingObject(drt|sim.drawing_overlay,s,0,-1,0,c)
+            drawingConts[#drawingConts+1]=cont
+            local m=simIK.getObjectMatrix(ikEnv,obj,simIK.handle_world)
+            if spherical then
+                sim.addDrawingObjectItem(cont,{m[4],m[8],m[12]})
+            else
+                local hs=0.05
+                sim.addDrawingObjectItem(cont,{m[4]-m[3]*hs,m[8]-m[7]*hs,m[12]-m[11]*hs,m[4]+m[3]*hs,m[8]+m[7]*hs,m[12]+m[11]*hs})
+            end
+        end
+        obj=simIK.getObjectParent(ikEnv,obj)
+    end
+    _S.ikDebugId=_S.ikDebugId+1
+    return _S.ikDebugId-1
+end
+
+function simIK.eraseDebugOverlay(...)
+    local id=checkargs({{type='int'}},...)
+    local a=_S.ikDebug[id]
+    if a then
+        for i=1,#a,1 do
+            sim.removeDrawingObject(a[i])
+        end
+        _S.ikDebug[id]=nil
+    end
 end
 
 function simIK.solveIkPath(...)
@@ -746,6 +828,8 @@ function simIK.init()
     sim.registerScriptFunction('simIK.generatePath@simIK','float[] path=simIK.generatePath(int environmentHandle,int ikGroupHandle,int[] jointHandles,int tipHandle,int pathPointCount,func validationCallback=nil,any auxData=nil)')
     sim.registerScriptFunction('simIK.getObjectPose@simIK','float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle)')
     sim.registerScriptFunction('simIK.setObjectPose@simIK','simIK.setObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[7] pose)')
+    sim.registerScriptFunction('simIK.createDebugOverlay@simIK','int debugObject=simIK.createDebugOverlay(int environmentHandle,int tipHandle)')
+    sim.registerScriptFunction('simIK.eraseDebugOverlay@simIK','simIK.eraseDebugOverlay(int debugObject)')
     simIK.init=nil
 end
 
