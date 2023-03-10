@@ -595,6 +595,8 @@ function simIK.createDebugOverlay(...)
     drawingConts[#drawingConts+1]=tipCont
     local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{1,1,1})
     drawingConts[#drawingConts+1]=linkCont
+    local linkContN=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,0,{1,1,1})
+    drawingConts[#drawingConts+1]=linkContN
     local baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.03,0,-1,1,{1,0,1})
     local w={0,0,0,1,0,0,0}
     if ikBase~=-1 then
@@ -603,11 +605,11 @@ function simIK.createDebugOverlay(...)
     sim.addDrawingObjectItem(baseCont,w)
     drawingConts[#drawingConts+1]=baseCont
     local obj=ikTip
-    local prevJ=obj
+    local prevObj=obj
     while obj~=-1 and obj~=ikBase do
         local t=simIK.getObjectType(ikEnv,obj)
         if t==simIK.objecttype_joint then
-            local p=simIK.getObjectPose(ikEnv,prevJ,sim.handle_world)
+            local p=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
             local m1=simIK.getObjectMatrix(ikEnv,obj,sim.handle_world)
             local m2=simIK.getJointMatrix(ikEnv,obj)
             m1=sim.multiplyMatrices(m1,m2)
@@ -615,7 +617,6 @@ function simIK.createDebugOverlay(...)
             p[5]=m1[8]
             p[6]=m1[12]
             sim.addDrawingObjectItem(linkCont,p)
-            prevJ=obj
             local spherical=(simIK.getJointType(ikEnv,obj)==simIK.jointtype_spherical)
             local m=simIK.getJointMode(ikEnv,obj) -- simIK.jointmode_passive or simIK.jointmode_ik
             local d=simIK.getJointDependency(ikEnv,obj)
@@ -630,7 +631,7 @@ function simIK.createDebugOverlay(...)
             if d>=0 then
                 c={0,0.5,1}
                 s=2
-                hs=0.06
+                hs=0.1
             elseif m==simIK.jointmode_passive then
                 c={0,0,0}
             end
@@ -642,11 +643,22 @@ function simIK.createDebugOverlay(...)
             else
                 sim.addDrawingObjectItem(cont,{m[4]-m[3]*hs,m[8]-m[7]*hs,m[12]-m[11]*hs,m[4]+m[3]*hs,m[8]+m[7]*hs,m[12]+m[11]*hs})
             end
+        else
+            if prevObj~=obj then
+                local p=simIK.getObjectPose(ikEnv,obj,sim.handle_world)
+                local p2=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
+                p[4]=p2[1]
+                p[5]=p2[2]
+                p[6]=p2[3]
+                sim.addDrawingObjectItem(linkCont,p)
+                sim.addDrawingObjectItem(linkContN,p)
+            end
         end
+        prevObj=obj
         obj=simIK.getObjectParent(ikEnv,obj)
     end
     
-    local p=simIK.getObjectPose(ikEnv,prevJ,sim.handle_world)
+    local p=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
     p[4]=0
     p[5]=0
     p[6]=0
@@ -657,6 +669,7 @@ function simIK.createDebugOverlay(...)
         p[6]=p2[3]
     end
     sim.addDrawingObjectItem(linkCont,p)
+    
     _S.ikDebugId=_S.ikDebugId+1
     return _S.ikDebugId-1
 end
