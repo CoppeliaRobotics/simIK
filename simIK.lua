@@ -184,19 +184,29 @@ function simIK.syncFromIkWorld(...)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.debugGroup(ikEnv,ikGroup)
-    local lb=sim.setThreadAutomaticSwitch(false)
-    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-    if groupData.debug then
-        for i=1,#groupData.debug,1 do
-            simIK.eraseDebugOverlay(groupData.debug[i])
+function simIK.debugGroupIfNeeded(ikEnv,ikGroup,force)
+    if sim.getNamedStringParam('simIK.debug_world')=='true' or force then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+        if groupData.debug then
+            for i=1,#groupData.debug,1 do
+                simIK.eraseDebugOverlay(groupData.debug[i])
+            end
         end
+        groupData.debug={}
+        for i=1,#groupData.targetTipBaseTriplets,1 do
+            groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
+        end
+        sim.setThreadAutomaticSwitch(lb)
+    else
+        local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+        if groupData.debug then
+            for i=1,#groupData.debug,1 do
+                simIK.eraseDebugOverlay(groupData.debug[i])
+            end
+        end
+        groupData.debug={}
     end
-    groupData.debug={}
-    for i=1,#groupData.targetTipBaseTriplets,1 do
-        groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
-    end
-    sim.setThreadAutomaticSwitch(lb)
 end
 
 function simIK.addElementFromScene(...)
@@ -461,10 +471,8 @@ function simIK.handleGroups(...)
             simIK.syncFromIkWorld(ikEnv,ikGroups)
         end
     end
-    if options.debug then
-        for i=1,#ikGroups,1 do
-            simIK.debugGroup(ikEnv,ikGroups[i])
-        end
+    for i=1,#ikGroups,1 do
+        simIK.debugGroupIfNeeded(ikEnv,ikGroups[i],options.debug==1)
     end
     sim.setThreadAutomaticSwitch(lb)
     return retVal,reason,prec

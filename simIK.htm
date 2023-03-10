@@ -2210,7 +2210,7 @@ td.section { margin: 0; padding: 0; }
 <div><strong>options</strong>: options:</div>
 <div class=tabTab>options.syncWorlds: if true, then calculation will be preceeded by simIK.syncToIkWorld and followed by simIK.syncFromIkWorld</div>
 <div class=tabTab>options.allowError: if true, and options.syncWorlds is true too, then calculation result will be applied to the scene, even if tip/target pairs are not within tolerance</div>
-<div class=tabTab>options.debug: if true, then a visual representation of the IK group will be made</div>
+<div class=tabTab>options.debug: bit0 is set, then a visual representation of the IK group will be made</div>
 <div class=tabTab>options.callback: a callback function that allows to inspect and manipulate the Jacobian. It also allows to directly perform joint valiation calculations while skipping internal computations:</div>
 <div class=tabTab>outData=callbackFunction(inData)</div>
 <div>inData.jacobian: a Matrix object representing the Jacobian</div>
@@ -2275,7 +2275,7 @@ td.section { margin: 0; padding: 0; }
 <div><strong>options</strong>: options:</div>
 <div class=tabTab>options.syncWorlds: if true, then calculation will be preceeded by simIK.syncToIkWorld and followed by simIK.syncFromIkWorld</div>
 <div class=tabTab>options.allowError: if true, and options.syncWorlds is true too, then calculation result will be applied to the scene, even if tip/target pairs are not within tolerance</div>
-<div class=tabTab>options.debug: if true, then a visual representation of the IK groups will be made</div>
+<div class=tabTab>options.debug: if bit0 is set, then a visual representation of the IK groups will be made</div>
 <div class=tabTab>options.callback: a callback function that allows to inspect and manipulate the Jacobian. It also allows to directly perform joint valiation calculations while skipping internal computations:</div>
 <div class=tabTab>outData=callbackFunction(inData)</div>
 <div>inData.jacobian: a Matrix object representing the Jacobian</div>
