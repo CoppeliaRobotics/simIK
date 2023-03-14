@@ -433,7 +433,6 @@ function simIK.debugJacobianDisplay(inData)
                             for(var ix = 0; ix < cols; ix++) {
                                 var z = iy/rows - ix/cols
                                 z = Math.sign(z) * Math.pow(10, 3 * Math.abs(z))
-                                console.log(z)
                                 _r.push(z)
                             }
                             _t.push(_r)
