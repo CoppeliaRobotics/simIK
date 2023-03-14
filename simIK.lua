@@ -185,7 +185,7 @@ function simIK.syncFromIkWorld(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
-    if sim.getNamedStringParam('simIK.debug_world')=='true' or ((debugFlags&1)~=0) then
+    if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
         local lb=sim.setThreadAutomaticSwitch(false)
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
         if groupData.visualDebug then
@@ -418,7 +418,7 @@ function simIK.handleGroups(...)
     if options.debug then
         debugFlags=options.debug
     end
-    local debugJacobian=((debugFlags&2)~=0) or  sim.getNamedStringParam('simIK.debug_world')=='true'
+    local debugJacobian=((debugFlags&2)~=0) or sim.getNamedBoolParam('simIK.debug_world')
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect,groupId,iteration)
         local data={}
         data.jacobian=Matrix({data=jacobian,dims={#rows_constr,#cols_handles}})
