@@ -2917,7 +2917,7 @@ static std::string jacobianCallback_funcName;
 static int jacobianCallback_scriptHandle;
 static int jacobianCallback_envId;
 
-int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,double* errorVector,double* qVector,double* jacobianPinv)
+int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,double* errorVector,double* qVector,double* jacobianPinv,int groupHandle,int iteration)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
     int retVal=-1; // error
@@ -2929,6 +2929,8 @@ int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowCo
     simPushInt32TableOntoStack(stack,colStages,cols);
     simPushDoubleTableOntoStack(stack,jacobian,jacobianSize[0]*jacobianSize[1]);
     simPushDoubleTableOntoStack(stack,errorVector,jacobianSize[0]);
+    simPushInt32OntoStack(stack,groupHandle);
+    simPushInt32OntoStack(stack,iteration);
     if (simCallScriptFunctionEx(jacobianCallback_scriptHandle,jacobianCallback_funcName.c_str(),stack)!=-1)
     {
         if (simGetStackSize(stack)==4)
@@ -3000,7 +3002,7 @@ void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
             if (ikSwitchEnvironment(envId))
             {
-                int(*cb)(const int*,double*,const int*,const int*,const int*,const int*,double*,double*,double*)=nullptr;
+                int(*cb)(const int*,double*,const int*,const int*,const int*,const int*,double*,double*,double*,int,int)=nullptr;
                 if ( (inData->size()>1)&&(inData->at(1).int32Data.size()>=1) )
                     ikGroupHandles=&inData->at(1).int32Data;
                 if ( (inData->size()>3)&&(inData->at(2).stringData.size()==1)&&(inData->at(2).stringData[0].size()>0)&&(inData->at(3).int32Data.size()==1) )

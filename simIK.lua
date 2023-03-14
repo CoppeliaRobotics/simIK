@@ -184,28 +184,28 @@ function simIK.syncFromIkWorld(...)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.debugGroupIfNeeded(ikEnv,ikGroup,force)
-    if sim.getNamedStringParam('simIK.debug_world')=='true' or force then
+function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
+    if sim.getNamedStringParam('simIK.debug_world')=='true' or ((debugFlags&1)~=0) then
         local lb=sim.setThreadAutomaticSwitch(false)
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-        if groupData.debug then
-            for i=1,#groupData.debug,1 do
-                simIK.eraseDebugOverlay(groupData.debug[i])
+        if groupData.visualDebug then
+            for i=1,#groupData.visualDebug,1 do
+                simIK.eraseDebugOverlay(groupData.visualDebug[i])
             end
         end
-        groupData.debug={}
+        groupData.visualDebug={}
         for i=1,#groupData.targetTipBaseTriplets,1 do
-            groupData.debug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
+            groupData.visualDebug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
         end
         sim.setThreadAutomaticSwitch(lb)
     else
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-        if groupData.debug then
-            for i=1,#groupData.debug,1 do
-                simIK.eraseDebugOverlay(groupData.debug[i])
+        if groupData.visualDebug then
+            for i=1,#groupData.visualDebug,1 do
+                simIK.eraseDebugOverlay(groupData.visualDebug[i])
             end
         end
-        groupData.debug={}
+        groupData.visualDebug={}
     end
 end
 
@@ -400,10 +400,26 @@ function simIK.handleGroup(...) -- convenience function
     return simIK.handleGroups(ikEnv,ikGroups,options)
 end
 
+function simIK.debugJacobianDisplay(inData)
+    -- inData.groupHandle= current group handle
+    -- inData.iteration= current iteration
+    local groupData=_S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
+    if groupData.jacobianDebug==nil then
+        -- e.g. create custom UI
+        -- groupData.jacobianDebug=simUI.create(...)
+    end
+end
+
 function simIK.handleGroups(...)
     local ikEnv,ikGroups,options=checkargs({{type='int'},{type='table'},{type='table',default={}}},...)
     local lb=sim.setThreadAutomaticSwitch(false)
-    function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect)
+    _S.currentIkEnv=ikEnv
+    local debugFlags=0
+    if options.debug then
+        debugFlags=options.debug
+    end
+    local debugJacobian=((debugFlags&2)~=0) or  sim.getNamedStringParam('simIK.debug_world')=='true'
+    function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect,groupId,iteration)
         local data={}
         data.jacobian=Matrix({data=jacobian,dims={#rows_constr,#cols_handles}})
         data.rows={}
@@ -415,50 +431,57 @@ function simIK.handleGroups(...)
         for i=1,#cols_handles,1 do
             data.cols[i]={joint=cols_handles[i],dofIndex=cols_dofIndex[i]}
         end
-        local outData
-        if type(options.callback)=='string' then
-            outData=_G[options.callback](data,options.auxData)
-        else
-            outData=options.callback(data,options.auxData)
+        data.groupHandle=groupId
+        data.iteration=iteration
+        if debugJacobian then
+            simIK.debugJacobianDisplay(data)
         end
         local j={}
         local e={}
         local dq={}
         local jpinv={}
-        if outData then
-            if outData.jacobian then
-                if outData.jacobian:cols()==#cols_handles and outData.jacobian:rows()==#rows_constr then
-                    j=outData.jacobian:data()
-                else
-                    error("invalid jacobian matrix size")
-                end
+        if options.callback then
+            local outData
+            if type(options.callback)=='string' then
+                outData=_G[options.callback](data,options.auxData)
+            else
+                outData=options.callback(data,options.auxData)
             end
-            if outData.e then
-                if outData.e:rows()==#rows_constr and outData.e:cols()==1 then
-                    e=outData.e:data()
-                else
-                    error("invalid e vector size")
+            if outData then
+                if outData.jacobian then
+                    if outData.jacobian:cols()==#cols_handles and outData.jacobian:rows()==#rows_constr then
+                        j=outData.jacobian:data()
+                    else
+                        error("invalid jacobian matrix size")
+                    end
                 end
-            end
-            if outData.dq then
-                if outData.dq:rows()==#cols_handles and outData.dq:cols()==1 then
-                    dq=outData.dq:data()
-                else
-                    error("invalid dq vector size")
+                if outData.e then
+                    if outData.e:rows()==#rows_constr and outData.e:cols()==1 then
+                        e=outData.e:data()
+                    else
+                        error("invalid e vector size")
+                    end
                 end
-            end
-            if outData.jacobianPinv then
-                if outData.jacobianPinv:rows()==#cols_handles and outData.jacobianPinv:cols()==#rows_constr then
-                    jpinv=outData.jacobianPinv:data()
-                else
-                    error("invalid jacobian pseudo-inverse matrix size")
+                if outData.dq then
+                    if outData.dq:rows()==#cols_handles and outData.dq:cols()==1 then
+                        dq=outData.dq:data()
+                    else
+                        error("invalid dq vector size")
+                    end
+                end
+                if outData.jacobianPinv then
+                    if outData.jacobianPinv:rows()==#cols_handles and outData.jacobianPinv:cols()==#rows_constr then
+                        jpinv=outData.jacobianPinv:data()
+                    else
+                        error("invalid jacobian pseudo-inverse matrix size")
+                    end
                 end
             end
         end
         return j,e,dq,jpinv
     end
     local funcNm,t
-    if options.callback then
+    if options.callback or debugJacobian then
         funcNm='__cb'
         t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
     end
@@ -472,7 +495,7 @@ function simIK.handleGroups(...)
         end
     end
     for i=1,#ikGroups,1 do
-        simIK.debugGroupIfNeeded(ikEnv,ikGroups[i],options.debug==1)
+        simIK.debugGroupIfNeeded(ikEnv,ikGroups[i],debugFlags)
     end
     sim.setThreadAutomaticSwitch(lb)
     return retVal,reason,prec
