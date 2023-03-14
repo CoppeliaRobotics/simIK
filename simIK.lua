@@ -401,12 +401,102 @@ function simIK.handleGroup(...) -- convenience function
 end
 
 function simIK.debugJacobianDisplay(inData)
-    -- inData.groupHandle= current group handle
-    -- inData.iteration= current iteration
     local groupData=_S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
-    if groupData.jacobianDebug==nil then
-        -- e.g. create custom UI
-        -- groupData.jacobianDebug=simUI.create(...)
+    if simQML then
+        if groupData.jacobianDebug==nil then
+            groupData.jacobianDebug={
+                qmlEngine=simQML.createEngine()
+            }
+            function jacobianDebugClicked()
+                jacobianDebugPrint=true
+            end
+            simQML.setEventHandler(groupData.jacobianDebug.qmlEngine,'dispatchEventsToFunctions')
+            simQML.loadData(groupData.jacobianDebug.qmlEngine,[[
+                import QtQuick 2.15
+                import QtQuick.Window 2.15
+                import CoppeliaSimPlugin 1.0
+
+                PluginWindow {
+                    id: mainWindow
+                    width: cellSize * cols
+                    height: cellSize * rows
+                    title: qsTr("Jacobian")
+
+                    property int rows: 6
+                    property int cols: 12
+                    readonly property int cellSize: 8
+
+                    property var jacobianData: {
+                        var _t = []
+                        for(var iy = 0; iy < rows; iy++) {
+                            var _r = []
+                            for(var ix = 0; ix < cols; ix++) {
+                                var z = iy/rows - ix/cols
+                                z = Math.sign(z) * Math.pow(10, 3 * Math.abs(z))
+                                console.log(z)
+                                _r.push(z)
+                            }
+                            _t.push(_r)
+                        }
+                        return _t
+                    }
+
+                    function colorMap(value,min,max) {
+                        min = Math.log10(Math.abs(min))
+                        max = Math.log10(Math.abs(max))
+                        var sign = Math.sign(value)
+                        value = Math.max(0, Math.min(1, (Math.log10(Math.abs(value)) - min) / (max - min)))
+                        return Qt.hsva((value * sign * 0.5 + 0.5) * 0.666, Math.sqrt(value), 1, 1)
+                    }
+
+                    Canvas {
+                        id: canvas
+                        anchors.fill: parent
+                        onPaint: {
+                            var ctx = getContext('2d')
+                            ctx.reset()
+                            var s = mainWindow.cellSize
+                            for(var y = 0; y < mainWindow.rows; y++) {
+                                for(var x = 0; x < mainWindow.cols; x++) {
+                                    var v = mainWindow.jacobianData[y][x]
+                                    ctx.fillStyle = colorMap(v, 0.001, 10)
+                                    ctx.fillRect(x * s, y * s, s, s)
+                                }
+                            }
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        onPressed: simBridge.sendEvent('jacobianDebugClicked', {})
+                    }
+
+                    Component.onCompleted: {
+                        x = Screen.width - width - 5
+                        y = Screen.height - height - 180
+                    }
+
+                    function setData(d) {
+                        mainWindow.rows = d.length
+                        mainWindow.cols = d[0].length
+                        var _t = []
+                        for(var iy = 0; iy < rows; iy++) {
+                            var _r = []
+                            for(var ix = 0; ix < cols; ix++)
+                                _r.push(d[iy][ix])
+                            _t.push(_r)
+                        }
+                        mainWindow.jacobianData = _t
+                        canvas.requestPaint()
+                    }
+                }
+            ]])
+        end
+        simQML.sendEvent(groupData.jacobianDebug.qmlEngine,'setData',inData.jacobian:totable())
+    end
+    if jacobianDebugPrint then
+        jacobianDebugPrint=false
+        inData.jacobian:print'J'
     end
 end
 
