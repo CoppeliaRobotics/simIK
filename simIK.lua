@@ -424,7 +424,7 @@ function simIK.debugJacobianDisplay(inData)
 
                     property int rows: 6
                     property int cols: 12
-                    readonly property int cellSize: 8
+                    readonly property int cellSize: 15
 
                     property var jacobianData: {
                         var _t = []
@@ -454,12 +454,13 @@ function simIK.debugJacobianDisplay(inData)
                         onPaint: {
                             var ctx = getContext('2d')
                             ctx.reset()
-                            var s = mainWindow.cellSize
+                            var sw = mainWindow.width / mainWindow.cols
+                            var sh = mainWindow.height / mainWindow.rows
                             for(var y = 0; y < mainWindow.rows; y++) {
                                 for(var x = 0; x < mainWindow.cols; x++) {
                                     var v = mainWindow.jacobianData[y][x]
                                     ctx.fillStyle = colorMap(v, 0.001, 10)
-                                    ctx.fillRect(x * s, y * s, s, s)
+                                    ctx.fillRect(x * sw, y * sh, sw, sh)
                                 }
                             }
                         }
