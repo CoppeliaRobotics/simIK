@@ -448,19 +448,29 @@ function simIK.debugJacobianDisplay(inData)
                         return Qt.hsva((value * sign * 0.5 + 0.5) * 0.666, Math.sqrt(value), 1, 1)
                     }
 
-                    Canvas {
-                        id: canvas
-                        anchors.fill: parent
-                        onPaint: {
-                            var ctx = getContext('2d')
-                            ctx.reset()
-                            var sw = mainWindow.width / mainWindow.cols
-                            var sh = mainWindow.height / mainWindow.rows
-                            for(var y = 0; y < mainWindow.rows; y++) {
-                                for(var x = 0; x < mainWindow.cols; x++) {
-                                    var v = mainWindow.jacobianData[y][x]
-                                    ctx.fillStyle = colorMap(v, 0.001, 10)
-                                    ctx.fillRect(x * sw, y * sh, sw, sh)
+                    Column {
+                        Repeater {
+                            model: mainWindow.rows
+                            Row {
+                                readonly property int i: index
+                                Repeater {
+                                    model: mainWindow.cols
+                                    Rectangle {
+                                        readonly property int j: index
+                                        width: mainWindow.width / mainWindow.cols
+                                        height: mainWindow.height / mainWindow.rows
+                                        color: colorMap(mainWindow.jacobianData[i][j], 0.001, 10)
+                                        border.color: Qt.rgba(0, 0, 0, 0.03)
+                                        Text {
+                                            anchors.fill: parent
+                                            text: mainWindow.jacobianData[i][j] ? Number(mainWindow.jacobianData[i][j]).toLocaleString(Qt.locale("en_US"),'f',width / font.pixelSize) : ''
+                                            horizontalAlignment: Text.AlignHCenter
+                                            verticalAlignment: Text.AlignVCenter
+                                            readonly property real k: 0.33
+                                            font.pixelSize: Math.min(k * parent.width, k * parent.height, 14)
+                                            opacity: Math.min(font.pixelSize / 11, 1)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -477,8 +487,6 @@ function simIK.debugJacobianDisplay(inData)
                     }
 
                     function setData(d) {
-                        mainWindow.rows = d.length
-                        mainWindow.cols = d[0].length
                         var _t = []
                         for(var iy = 0; iy < rows; iy++) {
                             var _r = []
@@ -487,7 +495,8 @@ function simIK.debugJacobianDisplay(inData)
                             _t.push(_r)
                         }
                         mainWindow.jacobianData = _t
-                        canvas.requestPaint()
+                        mainWindow.rows = d.length
+                        mainWindow.cols = d[0].length
                     }
                 }
             ]])
