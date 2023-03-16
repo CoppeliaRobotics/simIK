@@ -426,6 +426,10 @@ function simIK.debugJacobianDisplay(inData)
                     property int cols: 12
                     readonly property int cellSize: 15
 
+                    property real absMin: 0
+                    property real absMax: 0.001
+                    property bool initMax: true
+
                     property var jacobianData: {
                         var _t = []
                         for(var iy = 0; iy < rows; iy++) {
@@ -440,12 +444,15 @@ function simIK.debugJacobianDisplay(inData)
                         return _t
                     }
 
-                    function colorMap(value,min,max) {
-                        min = Math.log10(Math.abs(min))
-                        max = Math.log10(Math.abs(max))
+                    function colorMap(value) {
+                        var min = Math.log10(Math.max(0.00001, absMin))
+                        var max = Math.log10(absMax)
                         var sign = Math.sign(value)
-                        value = Math.max(0, Math.min(1, (Math.log10(Math.abs(value)) - min) / (max - min)))
-                        return Qt.hsva((value * sign * 0.5 + 0.5) * 0.666, Math.sqrt(value), 1, 1)
+                        value = Math.max(0, Math.min(1, (Math.log10(Math.abs(value)) - min) / Math.max(1e-9, max - min)))
+                        var c = x => Math.min(Math.max(x, 0), 1)
+                        var r = c(sign * value)
+                        var b = c(-sign * value)
+                        return Qt.rgba(1 - b, 1 - 0.6 * (r + b), 1 - r)
                     }
 
                     Column {
@@ -461,8 +468,9 @@ function simIK.debugJacobianDisplay(inData)
                                         readonly property real elemData: rowData[j] || 0
                                         width: mainWindow.width / mainWindow.cols
                                         height: mainWindow.height / mainWindow.rows
-                                        color: colorMap(elemData, 0.001, 10)
+                                        color: colorMap(elemData)
                                         border.color: Qt.rgba(0, 0, 0, 0.03)
+                                        opacity: 0.8
                                         Text {
                                             anchors.fill: parent
                                             text: Number(elemData).toLocaleString(Qt.locale("en_US"), 'f', width / font.pixelSize)
@@ -490,10 +498,18 @@ function simIK.debugJacobianDisplay(inData)
 
                     function setData(d) {
                         var _t = []
-                        for(var iy = 0; iy < rows; iy++) {
+                        if(mainWindow.initMax && d.length > 0 && d[0].length > 0) {
+                            mainWindow.initMax = false
+                            mainWindow.absMin = Math.abs(d[0][0])
+                            mainWindow.absMax = Math.abs(d[0][0])
+                        }
+                        for(var iy = 0; iy < d.length; iy++) {
                             var _r = []
-                            for(var ix = 0; ix < cols; ix++)
+                            for(var ix = 0; ix < d[0].length; ix++) {
+                                mainWindow.absMin = Math.min(mainWindow.absMin, Math.abs(d[iy][ix]))
+                                mainWindow.absMax = Math.max(mainWindow.absMax, Math.abs(d[iy][ix]))
                                 _r.push(d[iy][ix])
+                            }
                             _t.push(_r)
                         }
                         mainWindow.jacobianData = _t
