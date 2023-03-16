@@ -453,17 +453,19 @@ function simIK.debugJacobianDisplay(inData)
                             model: mainWindow.rows
                             Row {
                                 readonly property int i: index
+                                readonly property var rowData: mainWindow.jacobianData[i] || new Array(mainWindow.cols).fill(0)
                                 Repeater {
                                     model: mainWindow.cols
                                     Rectangle {
                                         readonly property int j: index
+                                        readonly property real elemData: rowData[j] || 0
                                         width: mainWindow.width / mainWindow.cols
                                         height: mainWindow.height / mainWindow.rows
-                                        color: colorMap(mainWindow.jacobianData[i][j], 0.001, 10)
+                                        color: colorMap(elemData, 0.001, 10)
                                         border.color: Qt.rgba(0, 0, 0, 0.03)
                                         Text {
                                             anchors.fill: parent
-                                            text: mainWindow.jacobianData[i][j] ? Number(mainWindow.jacobianData[i][j]).toLocaleString(Qt.locale("en_US"),'f',width / font.pixelSize) : ''
+                                            text: Number(elemData).toLocaleString(Qt.locale("en_US"), 'f', width / font.pixelSize)
                                             horizontalAlignment: Text.AlignHCenter
                                             verticalAlignment: Text.AlignVCenter
                                             readonly property real k: 0.33
