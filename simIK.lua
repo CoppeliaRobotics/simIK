@@ -185,27 +185,29 @@ function simIK.syncFromIkWorld(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
-    if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-        if groupData.visualDebug then
-            for i=1,#groupData.visualDebug,1 do
-                simIK.eraseDebugOverlay(groupData.visualDebug[i])
+    if _S.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
+        if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
+            local lb=sim.setThreadAutomaticSwitch(false)
+            local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+            if groupData.visualDebug then
+                for i=1,#groupData.visualDebug,1 do
+                    simIK.eraseDebugOverlay(groupData.visualDebug[i])
+                end
             end
-        end
-        groupData.visualDebug={}
-        for i=1,#groupData.targetTipBaseTriplets,1 do
-            groupData.visualDebug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
-        end
-        sim.setThreadAutomaticSwitch(lb)
-    else
-        local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-        if groupData.visualDebug then
-            for i=1,#groupData.visualDebug,1 do
-                simIK.eraseDebugOverlay(groupData.visualDebug[i])
+            groupData.visualDebug={}
+            for i=1,#groupData.targetTipBaseTriplets,1 do
+                groupData.visualDebug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
             end
+            sim.setThreadAutomaticSwitch(lb)
+        else
+            local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
+            if groupData.visualDebug then
+                for i=1,#groupData.visualDebug,1 do
+                    simIK.eraseDebugOverlay(groupData.visualDebug[i])
+                end
+            end
+            groupData.visualDebug={}
         end
-        groupData.visualDebug={}
     end
 end
 
@@ -540,7 +542,8 @@ function simIK.handleGroups(...)
     if options.debug then
         debugFlags=options.debug
     end
-    local debugJacobian=((debugFlags&2)~=0) or sim.getNamedBoolParam('simIK.debug_world')
+    local debugJacobian=( ((debugFlags&2)~=0) or sim.getNamedBoolParam('simIK.debug_world') ) and _S.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
+
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect,groupId,iteration)
         local data={}
         data.jacobian=Matrix({data=jacobian,dims={#rows_constr,#cols_handles}})
