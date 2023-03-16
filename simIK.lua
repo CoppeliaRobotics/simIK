@@ -402,6 +402,7 @@ end
 
 function simIK.debugJacobianDisplay(inData)
     local groupData=_S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
+    local groupIdStr=string.format('env:%d/group:%d',_S.currentIkEnv,inData.groupHandle)
     if simQML then
         if groupData.jacobianDebug==nil then
             groupData.jacobianDebug={
@@ -420,7 +421,9 @@ function simIK.debugJacobianDisplay(inData)
                     id: mainWindow
                     width: cellSize * cols
                     height: cellSize * rows
-                    title: qsTr("Jacobian")
+                    title: "Jacobian ]]..groupIdStr..[["
+
+                    readonly property string groupId: "]]..groupIdStr..[["
 
                     property int rows: 6
                     property int cols: 12
@@ -496,7 +499,9 @@ function simIK.debugJacobianDisplay(inData)
                         y = Screen.height - height - 180
                     }
 
-                    function setData(d) {
+                    function setData(info) {
+                        if(info.groupId !== mainWindow.groupId) return
+                        var d = info.jacobian
                         var _t = []
                         if(mainWindow.initMax && d.length > 0 && d[0].length > 0) {
                             mainWindow.initMax = false
@@ -519,7 +524,7 @@ function simIK.debugJacobianDisplay(inData)
                 }
             ]])
         end
-        simQML.sendEvent(groupData.jacobianDebug.qmlEngine,'setData',inData.jacobian:totable())
+        simQML.sendEvent(groupData.jacobianDebug.qmlEngine,'setData',{groupId=groupIdStr,jacobian=inData.jacobian:totable()})
     end
     if jacobianDebugPrint then
         jacobianDebugPrint=false
