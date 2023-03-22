@@ -841,7 +841,7 @@ function simIK.eraseDebugOverlay(...)
     end
 end
 
-function simIK.solveIkPath(...)
+function simIK.solvePath(...)
     -- undocumented (for now) function
     -- simPath can be a Path object handle, or the path data itself
     -- ikPath a dummy with a pose and parent consistent with simPath
