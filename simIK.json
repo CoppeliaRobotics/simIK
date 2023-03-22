@@ -101,7 +101,7 @@
         "setSphericalJointMatrix": "simIK.htm#simIK.setSphericalJointMatrix",
         "setSphericalJointRotation": "simIK.htm#simIK.setSphericalJointRotation",
         "setTargetDummy": "simIK.htm#simIK.setTargetDummy",
-        "syncFromIkWorld": "simIK.syncFromIkWorld",
-        "syncToIkWorld": "simIK.syncToIkWorld"
+        "syncToSim": "simIK.syncToSim",
+        "syncFromSim": "simIK.syncFromSim"
     }
 }

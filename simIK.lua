@@ -126,7 +126,7 @@ function simIK.getAlternateConfigs(...)
     return configs
 end
 
-function simIK.syncToIkWorld(...)
+function simIK.syncFromSim(...)
     local ikEnv,ikGroups=checkargs({{type='int'},{type='table'}},...)
     local lb=sim.setThreadAutomaticSwitch(false)
     for g=1,#ikGroups,1 do
@@ -154,7 +154,7 @@ function simIK.syncToIkWorld(...)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.syncFromIkWorld(...)
+function simIK.syncToSim(...)
     local ikEnv,ikGroups=checkargs({{type='int'},{type='table'}},...)
     local lb=sim.setThreadAutomaticSwitch(false)
     for g=1,#ikGroups,1 do
@@ -611,12 +611,12 @@ function simIK.handleGroups(...)
         t=sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_handle)
     end
     if options.syncWorlds then
-        simIK.syncToIkWorld(ikEnv,ikGroups)
+        simIK.syncFromSim(ikEnv,ikGroups)
     end
     local retVal,reason,prec=simIK._handleGroups(ikEnv,ikGroups,funcNm,t)
     if options.syncWorlds then
         if (reason&simIK.calc_notwithintolerance)==0 or options.allowError then
-            simIK.syncFromIkWorld(ikEnv,ikGroups)
+            simIK.syncToSim(ikEnv,ikGroups)
         end
     end
     for i=1,#ikGroups,1 do
@@ -957,7 +957,7 @@ end
 function simIK.applySceneToIkEnvironment(...)
     -- deprecated
     local ikEnv,ikGroup=checkargs({{type='int'},{type='int'}},...)
-    return simIK.syncToIkWorld(ikEnv,{ikGroup})
+    return simIK.syncFromSim(ikEnv,{ikGroup})
 end
 
 function simIK.applyIkEnvironmentToScene(...)
@@ -965,11 +965,11 @@ function simIK.applyIkEnvironmentToScene(...)
     local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
     local lb=sim.setThreadAutomaticSwitch(false)
     
-    simIK.syncToIkWorld(ikEnv,{ikGroup})
+    simIK.syncFromSim(ikEnv,{ikGroup})
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
     local res,reason,prec=simIK.handleGroups(ikEnv,{ikGroup})
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
-        simIK.syncFromIkWorld(ikEnv,{ikGroup})
+        simIK.syncToSim(ikEnv,{ikGroup})
     end
     sim.setThreadAutomaticSwitch(lb)
     return res,reason,prec
@@ -1019,8 +1019,8 @@ function simIK.init()
     -- can only be executed once sim.* functions were initialized
     sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','float[] configs=simIK.getAlternateConfigs(int environmentHandle,int[] jointHandles,float[] lowLimits=nil,float[] ranges=nil)')
     sim.registerScriptFunction('simIK.addElementFromScene@simIK','int ikElement,map simToIkMap,map ikToSimMap=simIK.addElementFromScene(int environmentHandle,int ikGroup,int baseHandle,int tipHandle,int targetHandle,int constraints)')
-    sim.registerScriptFunction('simIK.syncToIkWorld@simIK','simIK.syncToIkWorld(int environmentHandle,int[] ikGroups)')
-    sim.registerScriptFunction('simIK.syncFromIkWorld@simIK','simIK.syncFromIkWorld(int environmentHandle,int[] ikGroups)')
+    sim.registerScriptFunction('simIK.syncFromSim@simIK','simIK.syncFromSim(int environmentHandle,int[] ikGroups)')
+    sim.registerScriptFunction('simIK.syncToSim@simIK','simIK.syncToSim(int environmentHandle,int[] ikGroups)')
     sim.registerScriptFunction('simIK.handleGroup@simIK','int success,int flags,float[2] precision=simIK.handleGroup(int environmentHandle,int ikGroup,map options={})')
     sim.registerScriptFunction('simIK.handleGroups@simIK','int success,int flags,float[2] precision=simIK.handleGroups(int environmentHandle,int[] ikGroups,map options={})')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(int environmentHandle)')
