@@ -743,17 +743,17 @@ function simIK.createDebugOverlay(...)
     _S.ikDebug[_S.ikDebugId]=drawingConts
     _S.ikDebug[#_S.ikDebug+1]=drawingConts
     local ikTarget=simIK.getTargetDummy(ikEnv,ikTip)
-    local targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.03,0,-1,1,{1,0,0})
+    local targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.012,0,-1,1,{1,0,0})
     sim.addDrawingObjectItem(targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
     drawingConts[#drawingConts+1]=targetCont
-    local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,1,{0,1,0})
+    local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.01,0,-1,1,{0,1,0})
     sim.addDrawingObjectItem(tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
     drawingConts[#drawingConts+1]=tipCont
-    local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{1,1,1})
+    local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{0,0,0})
     drawingConts[#drawingConts+1]=linkCont
-    local linkContN=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.02,0,-1,0,{1,1,1})
+    local linkContN=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.01,0,-1,0,{1,1,1})
     drawingConts[#drawingConts+1]=linkContN
-    local baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.03,0,-1,1,{1,0,1})
+    local baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.01,0,-1,1,{1,0,1})
     local w={0,0,0,1,0,0,0}
     if ikBase~=-1 then
         w=simIK.getObjectPose(ikEnv,ikBase,simIK.handle_world)
@@ -778,18 +778,18 @@ function simIK.createDebugOverlay(...)
             local d=simIK.getJointDependency(ikEnv,obj)
             local drt=sim.drawing_lines
             local s=4
-            local hs=0.05
+            local hs=0.025
             if spherical then
                 drt=sim.drawing_spherepts
-                s=0.03
+                s=0.012
             end
-            local c={1,1,0}
+            local c={1,0.5,0}
             if d>=0 then
                 c={0,0.5,1}
                 s=2
-                hs=0.1
+                hs=0.05
             elseif m==simIK.jointmode_passive then
-                c={0,0,0}
+                c={0.5,0.5,0.5}
             end
             local cont=sim.addDrawingObject(drt|sim.drawing_overlay,s,0,-1,0,c)
             drawingConts[#drawingConts+1]=cont
