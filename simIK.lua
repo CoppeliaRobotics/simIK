@@ -415,8 +415,8 @@ function simIK.debugJacobianDisplay(inData)
             end
             simQML.setEventHandler(groupData.jacobianDebug.qmlEngine,'dispatchEventsToFunctions')
             simQML.loadData(groupData.jacobianDebug.qmlEngine,[[
-                import QtQuick 2.15
-                import QtQuick.Window 2.15
+                import QtQuick 2.12
+                import QtQuick.Window 2.12
                 import CoppeliaSimPlugin 1.0
 
                 PluginWindow {
