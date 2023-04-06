@@ -3,6 +3,7 @@
 #include <simLib/simLib.h>
 #include <ik.h>
 #include <simMath/4X4Matrix.h>
+#include <simMath/mathFuncs.h>
 #include <iostream>
 #include <cstdio>
 #include <simLib/scriptFunctionData.h>
@@ -2920,7 +2921,7 @@ static int jacobianCallback_envId;
 int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowConstraints,const int* rowIkElements,const int* colHandles,const int* colStages,double* errorVector,double* qVector,double* jacobianPinv,int groupHandle,int iteration)
 {
     unlockInterface(); // actually required to correctly support CoppeliaSim's old GUI-based IK
-    int retVal=-1; // error
+    int retVal=-1; // error, -2 is nan error (ik_calc_invalidcallbackdata)
     int stack=simCreateStack();
     int cols=jacobianSize[1];
     simPushInt32TableOntoStack(stack,rowConstraints,jacobianSize[0]);
@@ -2942,6 +2943,8 @@ int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowCo
             {
                 retVal=retVal|2;
                 simGetStackDoubleTable(stack,jacobianPinv,cnt);
+                if (!isFloatArrayOk(jacobianPinv,cnt))
+                    retVal=-2;
             }
             simPopStackItem(stack,1);
 
@@ -2951,6 +2954,8 @@ int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowCo
             {
                 retVal=retVal|1;
                 simGetStackDoubleTable(stack,qVector,cnt);
+                if (!isFloatArrayOk(qVector,cnt))
+                    retVal=-2;
             }
             simPopStackItem(stack,1);
 
@@ -3864,6 +3869,7 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simRegisterScriptVariable("simIK.calc_notwithintolerance@simExtIK",std::to_string(ik_calc_notwithintolerance).c_str(),0);
     simRegisterScriptVariable("simIK.calc_stepstoobig@simExtIK",std::to_string(ik_calc_stepstoobig).c_str(),0);
     simRegisterScriptVariable("simIK.calc_limithit@simExtIK",std::to_string(ik_calc_limithit).c_str(),0);
+    simRegisterScriptVariable("simIK.calc_invalidcallbackdata@simExtIK",std::to_string(ik_calc_invalidcallbackdata).c_str(),0);
 
     simRegisterScriptVariable("simIK.group_enabled@simExtIK",std::to_string(ik_group_enabled).c_str(),0);
     simRegisterScriptVariable("simIK.group_ignoremaxsteps@simExtIK",std::to_string(ik_group_ignoremaxsteps).c_str(),0);
