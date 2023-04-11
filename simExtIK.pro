@@ -25,6 +25,7 @@ DEFINES += SIM_MATH_DOUBLE
     QMAKE_CXXFLAGS_WARN_ON = -Wall
     QMAKE_CFLAGS += -Wno-float-equal
     QMAKE_CXXFLAGS += -Wno-float-equal
+    QMAKE_CXXFLAGS += -fvisibility=hidden
 }
 
 clang* {
