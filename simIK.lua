@@ -185,6 +185,10 @@ function simIK.syncToSim(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
+    if not _S.ikEnvs then
+        _S.ikEnvs={}
+    end
+
     if _S.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
         if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
             local lb=sim.setThreadAutomaticSwitch(false)
