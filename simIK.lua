@@ -193,11 +193,6 @@ function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
         if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
             local lb=sim.setThreadAutomaticSwitch(false)
             local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
-            if groupData.visualDebug then
-                for i=1,#groupData.visualDebug,1 do
-                    simIK.eraseDebugOverlay(groupData.visualDebug[i])
-                end
-            end
             groupData.visualDebug={}
             for i=1,#groupData.targetTipBaseTriplets,1 do
                 groupData.visualDebug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
@@ -740,30 +735,60 @@ end
 function simIK.createDebugOverlay(...)
     local ikEnv,ikTip,ikBase=checkargs({{type='int'},{type='int'},{type='int',default=-1}},...)
     if not _S.ikDebug then
-        _S.ikDebug={}
-        _S.ikDebugId=0
+        _S.ikDebug={ikEnv={},ikDebugId=0}
     end
-    local drawingConts={}
-    _S.ikDebug[_S.ikDebugId]=drawingConts
-    _S.ikDebug[#_S.ikDebug+1]=drawingConts
+    if not _S.ikDebug.ikEnv[ikEnv] then
+        _S.ikDebug.ikEnv[ikEnv]={}
+    end
+    if not _S.ikDebug.ikEnv[ikEnv][ikTip] then
+        _S.ikDebug.ikEnv[ikEnv][ikTip]={drawingConts={},id=_S.ikDebug.ikDebugId}
+        _S.ikDebug.ikDebugId=_S.ikDebug.ikDebugId+1
+    end
+    local drawingConts=_S.ikDebug.ikEnv[ikEnv][ikTip].drawingConts
+
     local ikTarget=simIK.getTargetDummy(ikEnv,ikTip)
-    local targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.012,0,-1,1,{1,0,0})
-    sim.addDrawingObjectItem(targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
-    drawingConts[#drawingConts+1]=targetCont
-    local tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.01,0,-1,1,{0,1,0})
-    sim.addDrawingObjectItem(tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
-    drawingConts[#drawingConts+1]=tipCont
-    local linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{0,0,0})
-    drawingConts[#drawingConts+1]=linkCont
-    local linkContN=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.01,0,-1,0,{1,1,1})
-    drawingConts[#drawingConts+1]=linkContN
-    local baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay,0.01,0,-1,1,{1,0,1})
+    if drawingConts.targetCont==nil then
+        drawingConts.targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay|sim.drawing_cyclic,0.012,0,-1,1,{1,0,0})
+    end
+    sim.addDrawingObjectItem(drawingConts.targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
+    if drawingConts.tipCont==nil then
+        drawingConts.tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay|sim.drawing_cyclic,0.01,0,-1,1,{0,1,0})
+    end
+    sim.addDrawingObjectItem(drawingConts.tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
+    if drawingConts.linkCont==nil then
+        drawingConts.linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{0,0,0})
+    else
+        sim.addDrawingObjectItem(drawingConts.linkCont,nil)
+    end
+    if drawingConts.linkContN==nil then
+        drawingConts.linkContN=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.01,0,-1,0,{1,1,1})
+    else
+        sim.addDrawingObjectItem(drawingConts.linkContN,nil)
+    end
+    if drawingConts.baseCont==nil then
+        drawingConts.baseCont=sim.addDrawingObject(sim.drawing_cubepts|sim.drawing_overlay|sim.drawing_cyclic,0.01,0,-1,1,{1,0,1})
+    end
     local w={0,0,0,1,0,0,0}
     if ikBase~=-1 then
         w=simIK.getObjectPose(ikEnv,ikBase,simIK.handle_world)
     end
-    sim.addDrawingObjectItem(baseCont,w)
-    drawingConts[#drawingConts+1]=baseCont
+    sim.addDrawingObjectItem(drawingConts.baseCont,w)
+    if drawingConts.jointCont==nil then
+        drawingConts.jointCont={}
+        drawingConts.jointCont[1]=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,4,0,-1,0,{1,0.5,0})
+        drawingConts.jointCont[2]=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{0,0.5,1})
+        drawingConts.jointCont[3]=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,4,0,-1,0,{0.5,0.5,0.5})
+        drawingConts.jointCont[4]=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.012,0,-1,0,{1,0.5,0})
+        drawingConts.jointCont[5]=-1
+        drawingConts.jointCont[6]=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay,0.012,0,-1,0,{0.5,0.5,0.5})
+    else
+        sim.addDrawingObjectItem(drawingConts.jointCont[1],nil)
+        sim.addDrawingObjectItem(drawingConts.jointCont[2],nil)
+        sim.addDrawingObjectItem(drawingConts.jointCont[3],nil)
+        sim.addDrawingObjectItem(drawingConts.jointCont[4],nil)
+        sim.addDrawingObjectItem(drawingConts.jointCont[6],nil)
+    end
+    
     local obj=ikTip
     local prevObj=obj
     while obj~=-1 and obj~=ikBase do
@@ -776,32 +801,28 @@ function simIK.createDebugOverlay(...)
             p[4]=m1[4]
             p[5]=m1[8]
             p[6]=m1[12]
-            sim.addDrawingObjectItem(linkCont,p)
+            sim.addDrawingObjectItem(drawingConts.linkCont,p)
             local spherical=(simIK.getJointType(ikEnv,obj)==simIK.jointtype_spherical)
             local m=simIK.getJointMode(ikEnv,obj) -- simIK.jointmode_passive or simIK.jointmode_ik
             local d=simIK.getJointDependency(ikEnv,obj)
             local drt=sim.drawing_lines
-            local s=4
             local hs=0.025
+            local ind1=0
+            local ind2=1
             if spherical then
-                drt=sim.drawing_spherepts
-                s=0.012
+                ind1=3
             end
-            local c={1,0.5,0}
             if d>=0 then
-                c={0,0.5,1}
-                s=2
+                ind2=2
                 hs=0.05
             elseif m==simIK.jointmode_passive then
-                c={0.5,0.5,0.5}
+                ind2=3
             end
-            local cont=sim.addDrawingObject(drt|sim.drawing_overlay,s,0,-1,0,c)
-            drawingConts[#drawingConts+1]=cont
             local m=simIK.getObjectMatrix(ikEnv,obj,simIK.handle_world)
             if spherical then
-                sim.addDrawingObjectItem(cont,{m[4],m[8],m[12]})
+                sim.addDrawingObjectItem(drawingConts.jointCont[ind1+ind2],{m[4],m[8],m[12]})
             else
-                sim.addDrawingObjectItem(cont,{m[4]-m[3]*hs,m[8]-m[7]*hs,m[12]-m[11]*hs,m[4]+m[3]*hs,m[8]+m[7]*hs,m[12]+m[11]*hs})
+                sim.addDrawingObjectItem(drawingConts.jointCont[ind1+ind2],{m[4]-m[3]*hs,m[8]-m[7]*hs,m[12]-m[11]*hs,m[4]+m[3]*hs,m[8]+m[7]*hs,m[12]+m[11]*hs})
             end
         else
             if prevObj~=obj then
@@ -810,8 +831,8 @@ function simIK.createDebugOverlay(...)
                 p[4]=p2[1]
                 p[5]=p2[2]
                 p[6]=p2[3]
-                sim.addDrawingObjectItem(linkCont,p)
-                sim.addDrawingObjectItem(linkContN,p)
+                sim.addDrawingObjectItem(drawingConts.linkCont,p)
+                sim.addDrawingObjectItem(drawingConts.linkContN,p)
             end
         end
         prevObj=obj
@@ -828,20 +849,49 @@ function simIK.createDebugOverlay(...)
         p[5]=p2[2]
         p[6]=p2[3]
     end
-    sim.addDrawingObjectItem(linkCont,p)
+    sim.addDrawingObjectItem(drawingConts.linkCont,p)
     
-    _S.ikDebugId=_S.ikDebugId+1
-    return _S.ikDebugId-1
+    return _S.ikDebug.ikEnv[ikEnv][ikTip].id
 end
 
 function simIK.eraseDebugOverlay(...)
     local id=checkargs({{type='int'}},...)
-    local a=_S.ikDebug[id]
-    if a then
-        for i=1,#a,1 do
-            sim.removeDrawingObject(a[i])
+    if _S.ikDebug then
+        for k,env in pairs(_S.ikDebug.ikEnv) do
+            for l,tip in pairs(env) do
+                if tip.id==id then
+                    if tip.drawingConts.targetCont~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.targetCont)
+                        tip.drawingConts.targetCont=nil
+                    end
+                    if tip.drawingConts.tipCont~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.tipCont)
+                        tip.drawingConts.tipCont=nil
+                    end
+                    if tip.drawingConts.linkCont~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.linkCont)
+                        tip.drawingConts.linkCont=nil
+                    end
+                    if tip.drawingConts.linkContN~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.linkContN)
+                        tip.drawingConts.linkContN=nil
+                    end
+                    if tip.drawingConts.baseCont~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.baseCont)
+                        tip.drawingConts.baseCont=nil
+                    end
+                    if tip.drawingConts.jointCont~=nil then
+                        sim.removeDrawingObject(tip.drawingConts.jointCont[1])
+                        sim.removeDrawingObject(tip.drawingConts.jointCont[2])
+                        sim.removeDrawingObject(tip.drawingConts.jointCont[3])
+                        sim.removeDrawingObject(tip.drawingConts.jointCont[4])
+                        sim.removeDrawingObject(tip.drawingConts.jointCont[6])
+                        tip.drawingConts.jointCont=nil
+                    end
+                    return
+                end
+            end
         end
-        _S.ikDebug[id]=nil
     end
 end
 
