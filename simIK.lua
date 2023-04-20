@@ -190,7 +190,8 @@ function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
     end
 
     if _S.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
-        if sim.getNamedBoolParam('simIK.debug_world') or ((debugFlags&1)~=0) then
+        local p=sim.getNamedInt32Param('simIK.debug_world')
+        if (p and (p&1)~=0) or ((debugFlags&1)~=0) then
             local lb=sim.setThreadAutomaticSwitch(false)
             local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
             groupData.visualDebug={}
@@ -541,7 +542,8 @@ function simIK.handleGroups(...)
     if options.debug then
         debugFlags=options.debug
     end
-    local debugJacobian=( ((debugFlags&2)~=0) or sim.getNamedBoolParam('simIK.debug_world') ) and _S.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
+    local p=sim.getNamedInt32Param('simIK.debug_world')
+    local debugJacobian=( ((debugFlags&2)~=0) or (p and (p&2)~=0) ) and _S.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
 
     function __cb(rows_constr,rows_ikEl,cols_handles,cols_dofIndex,jacobian,errorVect,groupId,iteration)
         local data={}
