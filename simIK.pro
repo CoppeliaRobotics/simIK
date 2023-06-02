@@ -1,6 +1,6 @@
 include(config.pri)
 
-TARGET = simExtIK
+TARGET = simIK
 TEMPLATE = lib
 DEFINES -= UNICODE
 CONFIG += shared plugin
@@ -55,7 +55,7 @@ INCLUDEPATH += "../coppeliaKinematicsRoutines"
 
 INCLUDEPATH += $$EIGEN_INCLUDEPATH
 
-HEADERS += simExtIK.h \
+HEADERS += simIK.h \
     envCont.h \
     ../include/simLib/simLib.h \
     ../include/simLib/scriptFunctionData.h \
@@ -79,7 +79,7 @@ HEADERS += simExtIK.h \
     ../include/simMath/4X4Matrix.h \
     ../include/simMath/mXnMatrix.h \
 
-SOURCES += simExtIK.cpp \
+SOURCES += simIK.cpp \
     envCont.cpp \
     ../include/simLib/simLib.cpp \
     ../include/simLib/scriptFunctionData.cpp \

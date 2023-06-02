@@ -1,12 +1,11 @@
-#ifndef SIMEXTIK_H
-#define SIMEXTIK_H
+#pragma once
 
 #include <simLib/simTypes.h>
 #include <simLib/simExp.h>
 
-SIM_DLLEXPORT unsigned char simStart(void*,int);
-SIM_DLLEXPORT void simEnd();
-SIM_DLLEXPORT void* simMessage(int,int*,void*,int*);
+SIM_DLLEXPORT int simInit(const char*);
+SIM_DLLEXPORT void simCleanup();
+SIM_DLLEXPORT void simMsg(int,int*,void*);
 
 SIM_DLLEXPORT int ikPlugin_createEnv();
 SIM_DLLEXPORT void ikPlugin_eraseEnvironment(int ikEnv);
@@ -44,4 +43,3 @@ SIM_DLLEXPORT char* ikPlugin_getConfigForTipPose(int ikEnv,int ikGroupHandle,int
 SIM_DLLEXPORT void ikPlugin_getObjectLocalTransformation(int ikEnv,int objectHandle,double* pos,double* quat);
 SIM_DLLEXPORT void ikPlugin_setObjectLocalTransformation(int ikEnv,int objectHandle,const double* pos,const double* quat);
 
-#endif

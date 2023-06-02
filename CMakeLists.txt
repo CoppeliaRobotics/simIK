@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(simExtIK)
+project(simIK)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_MACOSX_RPATH 1)
@@ -21,10 +21,10 @@ find_package(CoppeliaSim 4.5.0.0 REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 coppeliasim_add_plugin(
-    simExtIK
+    simIK
     LEGACY
     SOURCES
-    simExtIK.cpp
+    simIK.cpp
     envCont.cpp
     ../coppeliaKinematicsRoutines/ik.cpp
     ../coppeliaKinematicsRoutines/environment.cpp
@@ -46,10 +46,11 @@ coppeliasim_add_plugin(
     ${COPPELIASIM_INCLUDE_DIR}/simLib/scriptFunctionData.cpp
     ${COPPELIASIM_INCLUDE_DIR}/simLib/scriptFunctionDataItem.cpp
 )
-target_compile_definitions(simExtIK PRIVATE SIM_MATH_DOUBLE)
-target_include_directories(simExtIK PRIVATE ../coppeliaKinematicsRoutines)
-target_include_directories(simExtIK PRIVATE ${COPPELIASIM_INCLUDE_DIR}/simMath)
-target_link_libraries(simExtIK Eigen3::Eigen)
+target_compile_definitions(simIK PRIVATE SIM_MATH_DOUBLE)
+target_include_directories(simIK PRIVATE ../coppeliaKinematicsRoutines)
+target_include_directories(simIK PRIVATE ${COPPELIASIM_INCLUDE_DIR}/simMath)
+target_link_libraries(simIK Eigen3::Eigen)
 coppeliasim_add_lua(simIK.lua)
+coppeliasim_add_lua(simIK-ce.lua)
 coppeliasim_add_helpfile(simIK.htm)
 coppeliasim_add_helpfile(simIK.json SUBDIR index)

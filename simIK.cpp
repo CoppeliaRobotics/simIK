@@ -1,4 +1,4 @@
-#include "simExtIK.h"
+#include "simIK.h"
 #include "envCont.h"
 #include <simLib/simLib.h>
 #include <ik.h>
@@ -33,6 +33,7 @@
 static LIBRARY simLib;
 static WMutex _simpleMutex;
 static CEnvCont* _allEnvironments;
+static std::string _pluginName;
 
 void lockInterface()
 {
@@ -90,7 +91,7 @@ bool _logCallback(int verbosity,const char* funcName,const char* msg)
         std::string m(funcName);
         m+=": ";
         m+=msg;
-        simAddLog("IK",v,m.c_str());
+        simAddLog(_pluginName.c_str(),v,m.c_str());
     }
     else
         retVal=false;
@@ -125,9 +126,6 @@ void _removeJointDependencyCallback(int envId,int slaveJoint)
 // --------------------------------------------------------------------------------------
 // simIK.createEnvironment
 // --------------------------------------------------------------------------------------
-#define LUA_CREATEENVIRONMENT_COMMAND_PLUGIN "simIK.createEnvironment@IK"
-#define LUA_CREATEENVIRONMENT_COMMAND "simIK.createEnvironment"
-
 const int inArgs_CREATEENVIRONMENT[]={
     1,
     sim_script_arg_int32,0,
@@ -138,7 +136,7 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool res=false;
-    if (D.readDataFromStack(p->stackID,inArgs_CREATEENVIRONMENT,inArgs_CREATEENVIRONMENT[0]-1,LUA_CREATEENVIRONMENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_CREATEENVIRONMENT,inArgs_CREATEENVIRONMENT[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int flags=0;
@@ -154,7 +152,7 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_CREATEENVIRONMENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (res)
     {
@@ -167,9 +165,6 @@ void LUA_CREATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK._eraseEnvironment
 // --------------------------------------------------------------------------------------
-#define LUA_ERASEENVIRONMENT_COMMAND_PLUGIN "simIK._eraseEnvironment@IK"
-#define LUA_ERASEENVIRONMENT_COMMAND "simIK._eraseEnvironment"
-
 const int inArgs_ERASEENVIRONMENT[]={
     1,
     sim_script_arg_int32,0,
@@ -178,7 +173,7 @@ const int inArgs_ERASEENVIRONMENT[]={
 void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_ERASEENVIRONMENT,inArgs_ERASEENVIRONMENT[0],LUA_ERASEENVIRONMENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_ERASEENVIRONMENT,inArgs_ERASEENVIRONMENT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -197,7 +192,7 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_ERASEENVIRONMENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -205,9 +200,6 @@ void LUA_ERASEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.duplicateEnvironment
 // --------------------------------------------------------------------------------------
-#define LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN "simIK.duplicateEnvironment@IK"
-#define LUA_DUPLICATEENVIRONMENT_COMMAND "simIK.duplicateEnvironment"
-
 const int inArgs_DUPLICATEENVIRONMENT[]={
     1,
     sim_script_arg_int32,0,
@@ -218,7 +210,7 @@ void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool res=false;
-    if (D.readDataFromStack(p->stackID,inArgs_DUPLICATEENVIRONMENT,inArgs_DUPLICATEENVIRONMENT[0],LUA_DUPLICATEENVIRONMENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_DUPLICATEENVIRONMENT,inArgs_DUPLICATEENVIRONMENT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -239,7 +231,7 @@ void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_DUPLICATEENVIRONMENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (res)
     {
@@ -252,9 +244,6 @@ void LUA_DUPLICATEENVIRONMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.load
 // --------------------------------------------------------------------------------------
-#define LUA_LOAD_COMMAND_PLUGIN "simIK.load@IK"
-#define LUA_LOAD_COMMAND "simIK.load"
-
 const int inArgs_LOAD[]={
     2,
     sim_script_arg_int32,0,
@@ -264,7 +253,7 @@ const int inArgs_LOAD[]={
 void LUA_LOAD_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_LOAD,inArgs_LOAD[0],LUA_LOAD_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_LOAD,inArgs_LOAD[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -281,7 +270,7 @@ void LUA_LOAD_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_LOAD_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -289,9 +278,6 @@ void LUA_LOAD_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.save
 // --------------------------------------------------------------------------------------
-#define LUA_SAVE_COMMAND_PLUGIN "simIK.save@IK"
-#define LUA_SAVE_COMMAND "simIK.save"
-
 const int inArgs_SAVE[]={
     1,
     sim_script_arg_int32,0,
@@ -302,7 +288,7 @@ void LUA_SAVE_CALLBACK(SScriptCallBack* p)
     std::string retVal;
     bool res=false;
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SAVE,inArgs_SAVE[0],LUA_SAVE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SAVE,inArgs_SAVE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -326,7 +312,7 @@ void LUA_SAVE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SAVE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (res)
     {
@@ -339,9 +325,6 @@ void LUA_SAVE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjectHandle
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTHANDLE_COMMAND_PLUGIN "simIK.getObjectHandle@IK"
-#define LUA_GETOBJECTHANDLE_COMMAND "simIK.getObjectHandle"
-
 const int inArgs_GETOBJECTHANDLE[]={
     2,
     sim_script_arg_int32,0,
@@ -353,7 +336,7 @@ void LUA_GETOBJECTHANDLE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTHANDLE,inArgs_GETOBJECTHANDLE[0],LUA_GETOBJECTHANDLE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTHANDLE,inArgs_GETOBJECTHANDLE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -370,7 +353,7 @@ void LUA_GETOBJECTHANDLE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTHANDLE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -383,9 +366,6 @@ void LUA_GETOBJECTHANDLE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.doesObjectExist
 // --------------------------------------------------------------------------------------
-#define LUA_DOESOBJECTEXIST_COMMAND_PLUGIN "simIK.doesObjectExist@IK"
-#define LUA_DOESOBJECTEXIST_COMMAND "simIK.doesObjectExist"
-
 const int inArgs_DOESOBJECTEXIST[]={
     2,
     sim_script_arg_int32,0,
@@ -397,7 +377,7 @@ void LUA_DOESOBJECTEXIST_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     bool retVal=false;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_DOESOBJECTEXIST,inArgs_DOESOBJECTEXIST[0],LUA_DOESOBJECTEXIST_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_DOESOBJECTEXIST,inArgs_DOESOBJECTEXIST[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -413,7 +393,7 @@ void LUA_DOESOBJECTEXIST_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_DOESOBJECTEXIST_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -426,9 +406,6 @@ void LUA_DOESOBJECTEXIST_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.eraseObject
 // --------------------------------------------------------------------------------------
-#define LUA_ERASEOBJECT_COMMAND_PLUGIN "simIK.eraseObject@IK"
-#define LUA_ERASEOBJECT_COMMAND "simIK.eraseObject"
-
 const int inArgs_ERASEOBJECT[]={
     2,
     sim_script_arg_int32,0,
@@ -438,7 +415,7 @@ const int inArgs_ERASEOBJECT[]={
 void LUA_ERASEOBJECT_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_ERASEOBJECT,inArgs_ERASEOBJECT[0],LUA_ERASEOBJECT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_ERASEOBJECT,inArgs_ERASEOBJECT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -456,7 +433,7 @@ void LUA_ERASEOBJECT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_ERASEOBJECT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -464,9 +441,6 @@ void LUA_ERASEOBJECT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjectParent
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTPARENT_COMMAND_PLUGIN "simIK.getObjectParent@IK"
-#define LUA_GETOBJECTPARENT_COMMAND "simIK.getObjectParent"
-
 const int inArgs_GETOBJECTPARENT[]={
     2,
     sim_script_arg_int32,0,
@@ -478,7 +452,7 @@ void LUA_GETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTPARENT,inArgs_GETOBJECTPARENT[0],LUA_GETOBJECTPARENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTPARENT,inArgs_GETOBJECTPARENT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -496,7 +470,7 @@ void LUA_GETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTPARENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -509,9 +483,6 @@ void LUA_GETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setObjectParent
 // --------------------------------------------------------------------------------------
-#define LUA_SETOBJECTPARENT_COMMAND_PLUGIN "simIK.setObjectParent@IK"
-#define LUA_SETOBJECTPARENT_COMMAND "simIK.setObjectParent"
-
 const int inArgs_SETOBJECTPARENT[]={
     4,
     sim_script_arg_int32,0,
@@ -523,7 +494,7 @@ const int inArgs_SETOBJECTPARENT[]={
 void LUA_SETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTPARENT,inArgs_SETOBJECTPARENT[0]-1,LUA_SETOBJECTPARENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTPARENT,inArgs_SETOBJECTPARENT[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -545,7 +516,7 @@ void LUA_SETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETOBJECTPARENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -553,9 +524,6 @@ void LUA_SETOBJECTPARENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjectType
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTTYPE_COMMAND_PLUGIN "simIK.getObjectType@IK"
-#define LUA_GETOBJECTTYPE_COMMAND "simIK.getObjectType"
-
 const int inArgs_GETOBJECTTYPE[]={
     2,
     sim_script_arg_int32,0,
@@ -567,7 +535,7 @@ void LUA_GETOBJECTTYPE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTYPE,inArgs_GETOBJECTTYPE[0],LUA_GETOBJECTTYPE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTYPE,inArgs_GETOBJECTTYPE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -585,7 +553,7 @@ void LUA_GETOBJECTTYPE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTTYPE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -598,9 +566,6 @@ void LUA_GETOBJECTTYPE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjects
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTS_COMMAND_PLUGIN "simIK.getObjects@IK"
-#define LUA_GETOBJECTS_COMMAND "simIK.getObjects"
-
 const int inArgs_GETOBJECTS[]={
     2,
     sim_script_arg_int32,0,
@@ -615,7 +580,7 @@ void LUA_GETOBJECTS_CALLBACK(SScriptCallBack* p)
     bool isJoint=false;
     int jointType=ik_jointtype_revolute;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTS,inArgs_GETOBJECTS[0],LUA_GETOBJECTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTS,inArgs_GETOBJECTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -633,7 +598,7 @@ void LUA_GETOBJECTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -649,9 +614,6 @@ void LUA_GETOBJECTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.createDummy
 // --------------------------------------------------------------------------------------
-#define LUA_CREATEDUMMY_COMMAND_PLUGIN "simIK.createDummy@IK"
-#define LUA_CREATEDUMMY_COMMAND "simIK.createDummy"
-
 const int inArgs_CREATEDUMMY[]={
     2,
     sim_script_arg_int32,0,
@@ -663,7 +625,7 @@ void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_CREATEDUMMY,inArgs_CREATEDUMMY[0]-1,LUA_CREATEDUMMY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_CREATEDUMMY,inArgs_CREATEDUMMY[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -683,7 +645,7 @@ void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_CREATEDUMMY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -696,9 +658,6 @@ void LUA_CREATEDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getTargetDummy
 // --------------------------------------------------------------------------------------
-#define LUA_GETTARGETDUMMY_COMMAND_PLUGIN "simIK.getTargetDummy@IK"
-#define LUA_GETTARGETDUMMY_COMMAND "simIK.getTargetDummy"
-
 const int inArgs_GETTARGETDUMMY[]={
     2,
     sim_script_arg_int32,0,
@@ -710,7 +669,7 @@ void LUA_GETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETTARGETDUMMY,inArgs_GETTARGETDUMMY[0],LUA_GETTARGETDUMMY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETTARGETDUMMY,inArgs_GETTARGETDUMMY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -728,7 +687,7 @@ void LUA_GETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETTARGETDUMMY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -741,9 +700,6 @@ void LUA_GETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setTargetDummy
 // --------------------------------------------------------------------------------------
-#define LUA_SETTARGETDUMMY_COMMAND_PLUGIN "simIK.setTargetDummy@IK"
-#define LUA_SETTARGETDUMMY_COMMAND "simIK.setTargetDummy"
-
 const int inArgs_SETTARGETDUMMY[]={
     3,
     sim_script_arg_int32,0,
@@ -754,7 +710,7 @@ const int inArgs_SETTARGETDUMMY[]={
 void LUA_SETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETTARGETDUMMY,inArgs_SETTARGETDUMMY[0],LUA_SETTARGETDUMMY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETTARGETDUMMY,inArgs_SETTARGETDUMMY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -773,7 +729,7 @@ void LUA_SETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETTARGETDUMMY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -781,9 +737,6 @@ void LUA_SETTARGETDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getLinkedDummy OLD, use simIK.getTargetDummy instead
 // --------------------------------------------------------------------------------------
-#define LUA_GETLINKEDDUMMY_COMMAND_PLUGIN "simIK.getLinkedDummy@IK"
-#define LUA_GETLINKEDDUMMY_COMMAND "simIK.getLinkedDummy"
-
 const int inArgs_GETLINKEDDUMMY[]={
     2,
     sim_script_arg_int32,0,
@@ -795,7 +748,7 @@ void LUA_GETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETLINKEDDUMMY,inArgs_GETLINKEDDUMMY[0],LUA_GETLINKEDDUMMY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETLINKEDDUMMY,inArgs_GETLINKEDDUMMY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -813,7 +766,7 @@ void LUA_GETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETLINKEDDUMMY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -826,9 +779,6 @@ void LUA_GETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setLinkedDummy OLD, use simIK.setTargetDummy instead
 // --------------------------------------------------------------------------------------
-#define LUA_SETLINKEDDUMMY_COMMAND_PLUGIN "simIK.setLinkedDummy@IK"
-#define LUA_SETLINKEDDUMMY_COMMAND "simIK.setLinkedDummy"
-
 const int inArgs_SETLINKEDDUMMY[]={
     3,
     sim_script_arg_int32,0,
@@ -839,7 +789,7 @@ const int inArgs_SETLINKEDDUMMY[]={
 void LUA_SETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETLINKEDDUMMY,inArgs_SETLINKEDDUMMY[0],LUA_SETLINKEDDUMMY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETLINKEDDUMMY,inArgs_SETLINKEDDUMMY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -858,7 +808,7 @@ void LUA_SETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETLINKEDDUMMY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -866,9 +816,6 @@ void LUA_SETLINKEDDUMMY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.createJoint
 // --------------------------------------------------------------------------------------
-#define LUA_CREATEJOINT_COMMAND_PLUGIN "simIK.createJoint@IK"
-#define LUA_CREATEJOINT_COMMAND "simIK.createJoint"
-
 const int inArgs_CREATEJOINT[]={
     3,
     sim_script_arg_int32,0,
@@ -881,7 +828,7 @@ void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_CREATEJOINT,inArgs_CREATEJOINT[0]-1,LUA_CREATEJOINT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_CREATEJOINT,inArgs_CREATEJOINT[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -902,7 +849,7 @@ void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_CREATEJOINT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -915,9 +862,6 @@ void LUA_CREATEJOINT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointType
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTTYPE_COMMAND_PLUGIN "simIK.getJointType@IK"
-#define LUA_GETJOINTTYPE_COMMAND "simIK.getJointType"
-
 const int inArgs_GETJOINTTYPE[]={
     2,
     sim_script_arg_int32,0,
@@ -929,7 +873,7 @@ void LUA_GETJOINTTYPE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTYPE,inArgs_GETJOINTTYPE[0],LUA_GETJOINTTYPE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTYPE,inArgs_GETJOINTTYPE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -947,7 +891,7 @@ void LUA_GETJOINTTYPE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTTYPE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -960,9 +904,6 @@ void LUA_GETJOINTTYPE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointMode
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTMODE_COMMAND_PLUGIN "simIK.getJointMode@IK"
-#define LUA_GETJOINTMODE_COMMAND "simIK.getJointMode"
-
 const int inArgs_GETJOINTMODE[]={
     2,
     sim_script_arg_int32,0,
@@ -974,7 +915,7 @@ void LUA_GETJOINTMODE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMODE,inArgs_GETJOINTMODE[0],LUA_GETJOINTMODE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMODE,inArgs_GETJOINTMODE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -992,7 +933,7 @@ void LUA_GETJOINTMODE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTMODE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1005,9 +946,6 @@ void LUA_GETJOINTMODE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointMode
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTMODE_COMMAND_PLUGIN "simIK.setJointMode@IK"
-#define LUA_SETJOINTMODE_COMMAND "simIK.setJointMode"
-
 const int inArgs_SETJOINTMODE[]={
     3,
     sim_script_arg_int32,0,
@@ -1018,7 +956,7 @@ const int inArgs_SETJOINTMODE[]={
 void LUA_SETJOINTMODE_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTMODE,inArgs_SETJOINTMODE[0],LUA_SETJOINTMODE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTMODE,inArgs_SETJOINTMODE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1037,7 +975,7 @@ void LUA_SETJOINTMODE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTMODE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1045,9 +983,6 @@ void LUA_SETJOINTMODE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointInterval
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTINTERVAL_COMMAND_PLUGIN "simIK.getJointInterval@IK"
-#define LUA_GETJOINTINTERVAL_COMMAND "simIK.getJointInterval"
-
 const int inArgs_GETJOINTINTERVAL[]={
     2,
     sim_script_arg_int32,0,
@@ -1060,7 +995,7 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
     bool cyclic=true;
     double interv[2];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTINTERVAL,inArgs_GETJOINTINTERVAL[0],LUA_GETJOINTINTERVAL_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTINTERVAL,inArgs_GETJOINTINTERVAL[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1078,7 +1013,7 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTINTERVAL_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1093,9 +1028,6 @@ void LUA_GETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointInterval
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTINTERVAL_COMMAND_PLUGIN "simIK.setJointInterval@IK"
-#define LUA_SETJOINTINTERVAL_COMMAND "simIK.setJointInterval"
-
 const int inArgs_SETJOINTINTERVAL[]={
     4,
     sim_script_arg_int32,0,
@@ -1107,7 +1039,7 @@ const int inArgs_SETJOINTINTERVAL[]={
 void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTINTERVAL,inArgs_SETJOINTINTERVAL[0]-1,LUA_SETJOINTINTERVAL_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTINTERVAL,inArgs_SETJOINTINTERVAL[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1130,7 +1062,7 @@ void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTINTERVAL_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1138,9 +1070,6 @@ void LUA_SETJOINTINTERVAL_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointScrewLead
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTSCREWLEAD_COMMAND_PLUGIN "simIK.getJointScrewLead@IK"
-#define LUA_GETJOINTSCREWLEAD_COMMAND "simIK.getJointScrewLead"
-
 const int inArgs_GETJOINTSCREWLEAD[]={
     2,
     sim_script_arg_int32,0,
@@ -1152,7 +1081,7 @@ void LUA_GETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double lead=0.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWLEAD,inArgs_GETJOINTSCREWLEAD[0],LUA_GETJOINTSCREWLEAD_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWLEAD,inArgs_GETJOINTSCREWLEAD[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1170,7 +1099,7 @@ void LUA_GETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTSCREWLEAD_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1183,9 +1112,6 @@ void LUA_GETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointScrewLead
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTSCREWLEAD_COMMAND_PLUGIN "simIK.setJointScrewLead@IK"
-#define LUA_SETJOINTSCREWLEAD_COMMAND "simIK.setJointScrewLead"
-
 const int inArgs_SETJOINTSCREWLEAD[]={
     3,
     sim_script_arg_int32,0,
@@ -1196,7 +1122,7 @@ const int inArgs_SETJOINTSCREWLEAD[]={
 void LUA_SETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTSCREWLEAD,inArgs_SETJOINTSCREWLEAD[0],LUA_SETJOINTSCREWLEAD_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTSCREWLEAD,inArgs_SETJOINTSCREWLEAD[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1215,7 +1141,7 @@ void LUA_SETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTSCREWLEAD_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1224,9 +1150,6 @@ void LUA_SETJOINTSCREWLEAD_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointScrewPitch, deprecated
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN "simIK.getJointScrewPitch@IK"
-#define LUA_GETJOINTSCREWPITCH_COMMAND "simIK.getJointScrewPitch"
-
 const int inArgs_GETJOINTSCREWPITCH[]={
     2,
     sim_script_arg_int32,0,
@@ -1238,7 +1161,7 @@ void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double pitch=0.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWPITCH,inArgs_GETJOINTSCREWPITCH[0],LUA_GETJOINTSCREWPITCH_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTSCREWPITCH,inArgs_GETJOINTSCREWPITCH[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1256,7 +1179,7 @@ void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTSCREWPITCH_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1269,9 +1192,6 @@ void LUA_GETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointScrewPitch, deprecated
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN "simIK.setJointScrewPitch@IK"
-#define LUA_SETJOINTSCREWPITCH_COMMAND "simIK.setJointScrewPitch"
-
 const int inArgs_SETJOINTSCREWPITCH[]={
     3,
     sim_script_arg_int32,0,
@@ -1282,7 +1202,7 @@ const int inArgs_SETJOINTSCREWPITCH[]={
 void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTSCREWPITCH,inArgs_SETJOINTSCREWPITCH[0],LUA_SETJOINTSCREWPITCH_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTSCREWPITCH,inArgs_SETJOINTSCREWPITCH[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1301,7 +1221,7 @@ void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTSCREWPITCH_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1309,9 +1229,6 @@ void LUA_SETJOINTSCREWPITCH_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointWeight
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.getJointWeight@IK"
-#define LUA_GETJOINTIKWEIGHT_COMMAND "simIK.getJointWeight"
-
 const int inArgs_GETJOINTIKWEIGHT[]={
     2,
     sim_script_arg_int32,0,
@@ -1323,7 +1240,7 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double weight=1.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTIKWEIGHT,inArgs_GETJOINTIKWEIGHT[0],LUA_GETJOINTIKWEIGHT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTIKWEIGHT,inArgs_GETJOINTIKWEIGHT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1341,7 +1258,7 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTIKWEIGHT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1354,9 +1271,6 @@ void LUA_GETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointWeight
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN "simIK.setJointWeight@IK"
-#define LUA_SETJOINTIKWEIGHT_COMMAND "simIK.setJointWeight"
-
 const int inArgs_SETJOINTIKWEIGHT[]={
     3,
     sim_script_arg_int32,0,
@@ -1367,7 +1281,7 @@ const int inArgs_SETJOINTIKWEIGHT[]={
 void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTIKWEIGHT,inArgs_SETJOINTIKWEIGHT[0],LUA_SETJOINTIKWEIGHT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTIKWEIGHT,inArgs_SETJOINTIKWEIGHT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1386,7 +1300,7 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTIKWEIGHT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1394,9 +1308,6 @@ void LUA_SETJOINTIKWEIGHT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointLimitMargin
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN "simIK.getJointLimitMargin@IK"
-#define LUA_GETJOINTLIMITMARGIN_COMMAND "simIK.getJointLimitMargin"
-
 const int inArgs_GETJOINTLIMITMARGIN[]={
     2,
     sim_script_arg_int32,0,
@@ -1408,7 +1319,7 @@ void LUA_GETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double weight=1.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTLIMITMARGIN,inArgs_GETJOINTLIMITMARGIN[0],LUA_GETJOINTLIMITMARGIN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTLIMITMARGIN,inArgs_GETJOINTLIMITMARGIN[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1426,7 +1337,7 @@ void LUA_GETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTLIMITMARGIN_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1439,9 +1350,6 @@ void LUA_GETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointLimitMargin
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN "simIK.setJointLimitMargin@IK"
-#define LUA_SETJOINTLIMITMARGIN_COMMAND "simIK.setJointLimitMargin"
-
 const int inArgs_SETJOINTLIMITMARGIN[]={
     3,
     sim_script_arg_int32,0,
@@ -1452,7 +1360,7 @@ const int inArgs_SETJOINTLIMITMARGIN[]={
 void LUA_SETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTLIMITMARGIN,inArgs_SETJOINTLIMITMARGIN[0],LUA_SETJOINTLIMITMARGIN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTLIMITMARGIN,inArgs_SETJOINTLIMITMARGIN[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1471,7 +1379,7 @@ void LUA_SETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTLIMITMARGIN_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1479,9 +1387,6 @@ void LUA_SETJOINTLIMITMARGIN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointMaxStepSize
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN "simIK.getJointMaxStepSize@IK"
-#define LUA_GETJOINTMAXSTEPSIZE_COMMAND "simIK.getJointMaxStepSize"
-
 const int inArgs_GETJOINTMAXSTEPSIZE[]={
     2,
     sim_script_arg_int32,0,
@@ -1493,7 +1398,7 @@ void LUA_GETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double stepSize=0.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMAXSTEPSIZE,inArgs_GETJOINTMAXSTEPSIZE[0],LUA_GETJOINTMAXSTEPSIZE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMAXSTEPSIZE,inArgs_GETJOINTMAXSTEPSIZE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1511,7 +1416,7 @@ void LUA_GETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTMAXSTEPSIZE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1524,9 +1429,6 @@ void LUA_GETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointMaxStepSize
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN "simIK.setJointMaxStepSize@IK"
-#define LUA_SETJOINTMAXSTEPSIZE_COMMAND "simIK.setJointMaxStepSize"
-
 const int inArgs_SETJOINTMAXSTEPSIZE[]={
     3,
     sim_script_arg_int32,0,
@@ -1537,7 +1439,7 @@ const int inArgs_SETJOINTMAXSTEPSIZE[]={
 void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTMAXSTEPSIZE,inArgs_SETJOINTMAXSTEPSIZE[0],LUA_SETJOINTMAXSTEPSIZE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTMAXSTEPSIZE,inArgs_SETJOINTMAXSTEPSIZE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1556,7 +1458,7 @@ void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTMAXSTEPSIZE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1564,9 +1466,6 @@ void LUA_SETJOINTMAXSTEPSIZE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointDependency
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN "simIK.getJointDependency@IK"
-#define LUA_GETJOINTDEPENDENCY_COMMAND "simIK.getJointDependency"
-
 const int inArgs_GETJOINTDEPENDENCY[]={
     2,
     sim_script_arg_int32,0,
@@ -1580,7 +1479,7 @@ void LUA_GETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
     double offset=0.0;
     double mult=1.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTDEPENDENCY,inArgs_GETJOINTDEPENDENCY[0],LUA_GETJOINTDEPENDENCY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTDEPENDENCY,inArgs_GETJOINTDEPENDENCY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1598,7 +1497,7 @@ void LUA_GETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTDEPENDENCY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1646,9 +1545,6 @@ double jointDependencyCallback(int ikEnv,int slaveJoint,double masterPos)
 // --------------------------------------------------------------------------------------
 // simIK._setJointDependency
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN "simIK._setJointDependency@IK"
-#define LUA_SETJOINTDEPENDENCY_COMMAND "simIK._setJointDependency"
-
 const int inArgs_SETJOINTDEPENDENCY[]={
     7,
     sim_script_arg_int32,0,
@@ -1663,7 +1559,7 @@ const int inArgs_SETJOINTDEPENDENCY[]={
 void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTDEPENDENCY,inArgs_SETJOINTDEPENDENCY[0]-4,LUA_SETJOINTDEPENDENCY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTDEPENDENCY,inArgs_SETJOINTDEPENDENCY[0]-4,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1706,7 +1602,7 @@ void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTDEPENDENCY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1714,9 +1610,6 @@ void LUA_SETJOINTDEPENDENCY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointPosition
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTPOSITION_COMMAND_PLUGIN "simIK.getJointPosition@IK"
-#define LUA_GETJOINTPOSITION_COMMAND "simIK.getJointPosition"
-
 const int inArgs_GETJOINTPOSITION[]={
     2,
     sim_script_arg_int32,0,
@@ -1728,7 +1621,7 @@ void LUA_GETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double pos=0.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTPOSITION,inArgs_GETJOINTPOSITION[0],LUA_GETJOINTPOSITION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTPOSITION,inArgs_GETJOINTPOSITION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1746,7 +1639,7 @@ void LUA_GETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTPOSITION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1759,9 +1652,6 @@ void LUA_GETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setJointPosition
 // --------------------------------------------------------------------------------------
-#define LUA_SETJOINTPOSITION_COMMAND_PLUGIN "simIK.setJointPosition@IK"
-#define LUA_SETJOINTPOSITION_COMMAND "simIK.setJointPosition"
-
 const int inArgs_SETJOINTPOSITION[]={
     3,
     sim_script_arg_int32,0,
@@ -1772,7 +1662,7 @@ const int inArgs_SETJOINTPOSITION[]={
 void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTPOSITION,inArgs_SETJOINTPOSITION[0],LUA_SETJOINTPOSITION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTPOSITION,inArgs_SETJOINTPOSITION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1791,7 +1681,7 @@ void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETJOINTPOSITION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1799,9 +1689,6 @@ void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointMatrix
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTMATRIX_COMMAND_PLUGIN "simIK.getJointMatrix@IK"
-#define LUA_GETJOINTMATRIX_COMMAND "simIK.getJointMatrix"
-
 const int inArgs_GETJOINTMATRIX[]={
     2,
     sim_script_arg_int32,0,
@@ -1813,7 +1700,7 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double matrix[12];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMATRIX,inArgs_GETJOINTMATRIX[0],LUA_GETJOINTMATRIX_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTMATRIX,inArgs_GETJOINTMATRIX[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1834,7 +1721,7 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTMATRIX_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1848,9 +1735,6 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setSphericalJointMatrix
 // --------------------------------------------------------------------------------------
-#define LUA_SETSPHERICALJOINTMATRIX_COMMAND_PLUGIN "simIK.setSphericalJointMatrix@IK"
-#define LUA_SETSPHERICALJOINTMATRIX_COMMAND "simIK.setSphericalJointMatrix"
-
 const int inArgs_SETSPHERICALJOINTMATRIX[]={
     3,
     sim_script_arg_int32,0,
@@ -1861,7 +1745,7 @@ const int inArgs_SETSPHERICALJOINTMATRIX[]={
 void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETSPHERICALJOINTMATRIX,inArgs_SETSPHERICALJOINTMATRIX[0],LUA_SETSPHERICALJOINTMATRIX_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETSPHERICALJOINTMATRIX,inArgs_SETSPHERICALJOINTMATRIX[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1883,7 +1767,7 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETSPHERICALJOINTMATRIX_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -1891,9 +1775,6 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJointTransformation
 // --------------------------------------------------------------------------------------
-#define LUA_GETJOINTTRANSFORMATION_COMMAND_PLUGIN "simIK.getJointTransformation@IK"
-#define LUA_GETJOINTTRANSFORMATION_COMMAND "simIK.getJointTransformation"
-
 const int inArgs_GETJOINTTRANSFORMATION[]={
     2,
     sim_script_arg_int32,0,
@@ -1907,7 +1788,7 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
     double quat[4];
     double e[3];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTRANSFORMATION,inArgs_GETJOINTTRANSFORMATION[0],LUA_GETJOINTTRANSFORMATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTTRANSFORMATION,inArgs_GETJOINTTRANSFORMATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1936,7 +1817,7 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJOINTTRANSFORMATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -1954,9 +1835,6 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setSphericalJointRotation
 // --------------------------------------------------------------------------------------
-#define LUA_SETSPHERICALJOINTROTATION_COMMAND_PLUGIN "simIK.setSphericalJointRotation@IK"
-#define LUA_SETSPHERICALJOINTROTATION_COMMAND "simIK.setSphericalJointRotation"
-
 const int inArgs_SETSPHERICALJOINTROTATION[]={
     3,
     sim_script_arg_int32,0,
@@ -1967,7 +1845,7 @@ const int inArgs_SETSPHERICALJOINTROTATION[]={
 void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETSPHERICALJOINTROTATION,inArgs_SETSPHERICALJOINTROTATION[0],LUA_SETSPHERICALJOINTROTATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETSPHERICALJOINTROTATION,inArgs_SETSPHERICALJOINTROTATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -1997,7 +1875,7 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETSPHERICALJOINTROTATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2005,9 +1883,6 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getGroupHandle
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPHANDLE_COMMAND_PLUGIN "simIK.getGroupHandle@IK"
-#define LUA_GETIKGROUPHANDLE_COMMAND "simIK.getGroupHandle"
-
 const int inArgs_GETIKGROUPHANDLE[]={
     2,
     sim_script_arg_int32,0,
@@ -2019,7 +1894,7 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPHANDLE,inArgs_GETIKGROUPHANDLE[0],LUA_GETIKGROUPHANDLE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPHANDLE,inArgs_GETIKGROUPHANDLE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2036,7 +1911,7 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKGROUPHANDLE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2049,9 +1924,6 @@ void LUA_GETIKGROUPHANDLE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.doesGroupExist
 // --------------------------------------------------------------------------------------
-#define LUA_DOESIKGROUPEXIST_COMMAND_PLUGIN "simIK.doesGroupExist@IK"
-#define LUA_DOESIKGROUPEXIST_COMMAND "simIK.doesGroupExist"
-
 const int inArgs_DOESIKGROUPEXIST[]={
     2,
     sim_script_arg_int32,0,
@@ -2063,7 +1935,7 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     bool retVal=false;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_DOESIKGROUPEXIST,inArgs_DOESIKGROUPEXIST[0],LUA_DOESIKGROUPEXIST_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_DOESIKGROUPEXIST,inArgs_DOESIKGROUPEXIST[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2079,7 +1951,7 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_DOESIKGROUPEXIST_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2092,9 +1964,6 @@ void LUA_DOESIKGROUPEXIST_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.createGroup
 // --------------------------------------------------------------------------------------
-#define LUA_CREATEIKGROUP_COMMAND_PLUGIN "simIK.createGroup@IK"
-#define LUA_CREATEIKGROUP_COMMAND "simIK.createGroup"
-
 const int inArgs_CREATEIKGROUP[]={
     2,
     sim_script_arg_int32,0,
@@ -2106,7 +1975,7 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int retVal=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_CREATEIKGROUP,inArgs_CREATEIKGROUP[0]-1,LUA_CREATEIKGROUP_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_CREATEIKGROUP,inArgs_CREATEIKGROUP[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2126,7 +1995,7 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_CREATEIKGROUP_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2139,9 +2008,6 @@ void LUA_CREATEIKGROUP_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getGroupFlags
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.getGroupFlags@IK"
-#define LUA_GETIKGROUPFLAGS_COMMAND "simIK.getGroupFlags"
-
 const int inArgs_GETIKGROUPFLAGS[]={
     2,
     sim_script_arg_int32,0,
@@ -2153,7 +2019,7 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int flags=0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPFLAGS,inArgs_GETIKGROUPFLAGS[0],LUA_GETIKGROUPFLAGS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPFLAGS,inArgs_GETIKGROUPFLAGS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2171,7 +2037,7 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKGROUPFLAGS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2184,9 +2050,6 @@ void LUA_GETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setGroupFlags
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN "simIK.setGroupFlags@IK"
-#define LUA_SETIKGROUPFLAGS_COMMAND "simIK.setGroupFlags"
-
 const int inArgs_SETIKGROUPFLAGS[]={
     3,
     sim_script_arg_int32,0,
@@ -2197,7 +2060,7 @@ const int inArgs_SETIKGROUPFLAGS[]={
 void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKGROUPFLAGS,inArgs_SETIKGROUPFLAGS[0],LUA_SETIKGROUPFLAGS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKGROUPFLAGS,inArgs_SETIKGROUPFLAGS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2216,7 +2079,7 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKGROUPFLAGS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2224,9 +2087,6 @@ void LUA_SETIKGROUPFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getGroupJointLimitHits
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN "simIK.getGroupJointLimitHits@IK"
-#define LUA_GETIKGROUPJOINTLIMITHITS_COMMAND "simIK.getGroupJointLimitHits"
-
 const int inArgs_GETIKGROUPJOINTLIMITHITS[]={
     2,
     sim_script_arg_int32,0,
@@ -2239,7 +2099,7 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
     std::vector<int> handles;
     std::vector<double> overshots;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPJOINTLIMITHITS,inArgs_GETIKGROUPJOINTLIMITHITS[0],LUA_GETIKGROUPJOINTLIMITHITS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPJOINTLIMITHITS,inArgs_GETIKGROUPJOINTLIMITHITS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2257,7 +2117,7 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2271,9 +2131,6 @@ void LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getGroupJoints
 // --------------------------------------------------------------------------------------
-#define LUA_GETGROUPJOINTS_COMMAND_PLUGIN "simIK.getGroupJoints@IK"
-#define LUA_GETGROUPJOINTS_COMMAND "simIK.getGroupJoints"
-
 const int inArgs_GETGROUPJOINTS[]={
     2,
     sim_script_arg_int32,0,
@@ -2285,7 +2142,7 @@ void LUA_GETGROUPJOINTS_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     std::vector<int> handles;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETGROUPJOINTS,inArgs_GETGROUPJOINTS[0],LUA_GETGROUPJOINTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETGROUPJOINTS,inArgs_GETGROUPJOINTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2303,7 +2160,7 @@ void LUA_GETGROUPJOINTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETGROUPJOINTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2316,9 +2173,6 @@ void LUA_GETGROUPJOINTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getGroupCalculation
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.getGroupCalculation@IK"
-#define LUA_GETIKGROUPCALCULATION_COMMAND "simIK.getGroupCalculation"
-
 const int inArgs_GETIKGROUPCALCULATION[]={
     2,
     sim_script_arg_int32,0,
@@ -2332,7 +2186,7 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
     int iterations=0;
     double damping=0.0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPCALCULATION,inArgs_GETIKGROUPCALCULATION[0],LUA_GETIKGROUPCALCULATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKGROUPCALCULATION,inArgs_GETIKGROUPCALCULATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2350,7 +2204,7 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKGROUPCALCULATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2365,9 +2219,6 @@ void LUA_GETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setGroupCalculation
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN "simIK.setGroupCalculation@IK"
-#define LUA_SETIKGROUPCALCULATION_COMMAND "simIK.setGroupCalculation"
-
 const int inArgs_SETIKGROUPCALCULATION[]={
     5,
     sim_script_arg_int32,0,
@@ -2380,7 +2231,7 @@ const int inArgs_SETIKGROUPCALCULATION[]={
 void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKGROUPCALCULATION,inArgs_SETIKGROUPCALCULATION[0],LUA_SETIKGROUPCALCULATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKGROUPCALCULATION,inArgs_SETIKGROUPCALCULATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2401,7 +2252,7 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKGROUPCALCULATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2410,9 +2261,6 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.addElement
 // --------------------------------------------------------------------------------------
-#define LUA_ADDIKELEMENT_COMMAND_PLUGIN "simIK.addElement@IK"
-#define LUA_ADDIKELEMENT_COMMAND "simIK.addElement"
-
 const int inArgs_ADDIKELEMENT[]={
     3,
     sim_script_arg_int32,0,
@@ -2425,7 +2273,7 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int elementHandle=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_ADDIKELEMENT,inArgs_ADDIKELEMENT[0],LUA_ADDIKELEMENT_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_ADDIKELEMENT,inArgs_ADDIKELEMENT[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2444,7 +2292,7 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_ADDIKELEMENT_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2457,9 +2305,6 @@ void LUA_ADDIKELEMENT_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getElementFlags
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.getElementFlags@IK"
-#define LUA_GETIKELEMENTFLAGS_COMMAND "simIK.getElementFlags"
-
 const int inArgs_GETIKELEMENTFLAGS[]={
     3,
     sim_script_arg_int32,0,
@@ -2472,7 +2317,7 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int flags=0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTFLAGS,inArgs_GETIKELEMENTFLAGS[0],LUA_GETIKELEMENTFLAGS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTFLAGS,inArgs_GETIKELEMENTFLAGS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2491,7 +2336,7 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKELEMENTFLAGS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2504,9 +2349,6 @@ void LUA_GETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setElementFlags
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTFLAGS_COMMAND_PLUGIN "simIK.setElementFlags@IK"
-#define LUA_SETIKELEMENTFLAGS_COMMAND "simIK.setElementFlags"
-
 const int inArgs_SETIKELEMENTFLAGS[]={
     4,
     sim_script_arg_int32,0,
@@ -2518,7 +2360,7 @@ const int inArgs_SETIKELEMENTFLAGS[]={
 void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTFLAGS,inArgs_SETIKELEMENTFLAGS[0],LUA_SETIKELEMENTFLAGS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTFLAGS,inArgs_SETIKELEMENTFLAGS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2538,7 +2380,7 @@ void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKELEMENTFLAGS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2546,9 +2388,6 @@ void LUA_SETIKELEMENTFLAGS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getElementBase
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTBASE_COMMAND_PLUGIN "simIK.getElementBase@IK"
-#define LUA_GETIKELEMENTBASE_COMMAND "simIK.getElementBase"
-
 const int inArgs_GETIKELEMENTBASE[]={
     3,
     sim_script_arg_int32,0,
@@ -2562,7 +2401,7 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
     int baseHandle=-1;
     int constrBaseHandle=-1;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTBASE,inArgs_GETIKELEMENTBASE[0],LUA_GETIKELEMENTBASE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTBASE,inArgs_GETIKELEMENTBASE[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2581,7 +2420,7 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKELEMENTBASE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2595,9 +2434,6 @@ void LUA_GETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setElementBase
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTBASE_COMMAND_PLUGIN "simIK.setElementBase@IK"
-#define LUA_SETIKELEMENTBASE_COMMAND "simIK.setElementBase"
-
 const int inArgs_SETIKELEMENTBASE[]={
     5,
     sim_script_arg_int32,0,
@@ -2610,7 +2446,7 @@ const int inArgs_SETIKELEMENTBASE[]={
 void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTBASE,inArgs_SETIKELEMENTBASE[0]-1,LUA_SETIKELEMENTBASE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTBASE,inArgs_SETIKELEMENTBASE[0]-1,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2633,7 +2469,7 @@ void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKELEMENTBASE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2641,9 +2477,6 @@ void LUA_SETIKELEMENTBASE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getElementConstraints
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.getElementConstraints@IK"
-#define LUA_GETIKELEMENTCONSTRAINTS_COMMAND "simIK.getElementConstraints"
-
 const int inArgs_GETIKELEMENTCONSTRAINTS[]={
     3,
     sim_script_arg_int32,0,
@@ -2656,7 +2489,7 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     int constraints=0;
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTCONSTRAINTS,inArgs_GETIKELEMENTCONSTRAINTS[0],LUA_GETIKELEMENTCONSTRAINTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTCONSTRAINTS,inArgs_GETIKELEMENTCONSTRAINTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2675,7 +2508,7 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKELEMENTCONSTRAINTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2688,9 +2521,6 @@ void LUA_GETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setElementConstraints
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN "simIK.setElementConstraints@IK"
-#define LUA_SETIKELEMENTCONSTRAINTS_COMMAND "simIK.setElementConstraints"
-
 const int inArgs_SETIKELEMENTCONSTRAINTS[]={
     4,
     sim_script_arg_int32,0,
@@ -2702,7 +2532,7 @@ const int inArgs_SETIKELEMENTCONSTRAINTS[]={
 void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTCONSTRAINTS,inArgs_SETIKELEMENTCONSTRAINTS[0],LUA_SETIKELEMENTCONSTRAINTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTCONSTRAINTS,inArgs_SETIKELEMENTCONSTRAINTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2722,7 +2552,7 @@ void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKELEMENTCONSTRAINTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2730,9 +2560,6 @@ void LUA_SETIKELEMENTCONSTRAINTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getElementPrecision
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.getElementPrecision@IK"
-#define LUA_GETIKELEMENTPRECISION_COMMAND "simIK.getElementPrecision"
-
 const int inArgs_GETIKELEMENTPRECISION[]={
     3,
     sim_script_arg_int32,0,
@@ -2745,7 +2572,7 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double precision[2];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTPRECISION,inArgs_GETIKELEMENTPRECISION[0],LUA_GETIKELEMENTPRECISION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTPRECISION,inArgs_GETIKELEMENTPRECISION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2764,7 +2591,7 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKELEMENTPRECISION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2778,9 +2605,6 @@ void LUA_GETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setElementPrecision
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN "simIK.setElementPrecision@IK"
-#define LUA_SETIKELEMENTPRECISION_COMMAND "simIK.setElementPrecision"
-
 const int inArgs_SETIKELEMENTPRECISION[]={
     4,
     sim_script_arg_int32,0,
@@ -2792,7 +2616,7 @@ const int inArgs_SETIKELEMENTPRECISION[]={
 void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTPRECISION,inArgs_SETIKELEMENTPRECISION[0],LUA_SETIKELEMENTPRECISION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTPRECISION,inArgs_SETIKELEMENTPRECISION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2812,7 +2636,7 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKELEMENTPRECISION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2820,9 +2644,6 @@ void LUA_SETIKELEMENTPRECISION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getElementWeights
 // --------------------------------------------------------------------------------------
-#define LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.getElementWeights@IK"
-#define LUA_GETIKELEMENTWEIGHTS_COMMAND "simIK.getElementWeights"
-
 const int inArgs_GETIKELEMENTWEIGHTS[]={
     3,
     sim_script_arg_int32,0,
@@ -2835,7 +2656,7 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double weights[2];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTWEIGHTS,inArgs_GETIKELEMENTWEIGHTS[0],LUA_GETIKELEMENTWEIGHTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETIKELEMENTWEIGHTS,inArgs_GETIKELEMENTWEIGHTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2854,7 +2675,7 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETIKELEMENTWEIGHTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -2868,9 +2689,6 @@ void LUA_GETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setElementWeights
 // --------------------------------------------------------------------------------------
-#define LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN "simIK.setElementWeights@IK"
-#define LUA_SETIKELEMENTWEIGHTS_COMMAND "simIK.setElementWeights"
-
 const int inArgs_SETIKELEMENTWEIGHTS[]={
     4,
     sim_script_arg_int32,0,
@@ -2882,7 +2700,7 @@ const int inArgs_SETIKELEMENTWEIGHTS[]={
 void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTWEIGHTS,inArgs_SETIKELEMENTWEIGHTS[0],LUA_SETIKELEMENTWEIGHTS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETIKELEMENTWEIGHTS,inArgs_SETIKELEMENTWEIGHTS[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -2908,7 +2726,7 @@ void LUA_SETIKELEMENTWEIGHTS_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETIKELEMENTWEIGHTS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -2980,9 +2798,6 @@ int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowCo
 // --------------------------------------------------------------------------------------
 // simIK._handleGroups
 // --------------------------------------------------------------------------------------
-#define LUA_HANDLEIKGROUPS_COMMAND_PLUGIN "simIK._handleGroups@IK"
-#define LUA_HANDLEIKGROUPS_COMMAND "simIK._handleGroups"
-
 const int inArgs_HANDLEIKGROUPS[]={
     4,
     sim_script_arg_int32,0,
@@ -2997,7 +2812,7 @@ void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
     int ikRes=ik_result_not_performed;
     bool result=false;
     double precision[2]={0.0,0.0};
-    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUPS,inArgs_HANDLEIKGROUPS[0]-3,LUA_HANDLEIKGROUPS_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_HANDLEIKGROUPS,inArgs_HANDLEIKGROUPS[0]-3,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3025,7 +2840,7 @@ void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_HANDLEIKGROUPS_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -3066,9 +2881,6 @@ bool validationCallback(double* conf)
 // --------------------------------------------------------------------------------------
 // simIK._getConfigForTipPose // deprecated
 // --------------------------------------------------------------------------------------
-#define LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN "simIK._getConfigForTipPose@IK"
-#define LUA_GETCONFIGFORTIPPOSE_COMMAND "simIK._getConfigForTipPose"
-
 const int inArgs_GETCONFIGFORTIPPOSE[]={
     11,
     sim_script_arg_int32,0,
@@ -3090,7 +2902,7 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
     int calcResult=-1;
     double* retConfig=nullptr;
     size_t jointCnt=0;
-    if (D.readDataFromStack(p->stackID,inArgs_GETCONFIGFORTIPPOSE,inArgs_GETCONFIGFORTIPPOSE[0]-8,LUA_GETCONFIGFORTIPPOSE_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETCONFIGFORTIPPOSE,inArgs_GETCONFIGFORTIPPOSE[0]-8,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3145,7 +2957,7 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETCONFIGFORTIPPOSE_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (calcResult==1)
     {
@@ -3161,9 +2973,6 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK._findConfig
 // --------------------------------------------------------------------------------------
-#define LUA_FINDCONFIG_COMMAND_PLUGIN "simIK._findConfig@IK"
-#define LUA_FINDCONFIG_COMMAND "simIK._findConfig"
-
 const int inArgs_FINDCONFIG[]={
     8,
     sim_script_arg_int32,0,
@@ -3182,7 +2991,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
     int calcResult=-1;
     double* retConfig=nullptr;
     size_t jointCnt=0;
-    if (D.readDataFromStack(p->stackID,inArgs_FINDCONFIG,inArgs_FINDCONFIG[0]-5,LUA_FINDCONFIG_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_FINDCONFIG,inArgs_FINDCONFIG[0]-5,nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3228,7 +3037,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_FINDCONFIG_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (calcResult==1)
     {
@@ -3244,9 +3053,6 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjectTransformation
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN "simIK.getObjectTransformation@IK"
-#define LUA_GETOBJECTTRANSFORMATION_COMMAND "simIK.getObjectTransformation"
-
 const int inArgs_GETOBJECTTRANSFORMATION[]={
     3,
     sim_script_arg_int32,0,
@@ -3261,7 +3067,7 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
     double q[4];
     double e[3];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTRANSFORMATION,inArgs_GETOBJECTTRANSFORMATION[0],LUA_GETOBJECTTRANSFORMATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTTRANSFORMATION,inArgs_GETOBJECTTRANSFORMATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3291,7 +3097,7 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTTRANSFORMATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -3309,9 +3115,6 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setObjectTransformation
 // --------------------------------------------------------------------------------------
-#define LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN "simIK.setObjectTransformation@IK"
-#define LUA_SETOBJECTTRANSFORMATION_COMMAND "simIK.setObjectTransformation"
-
 const int inArgs_SETOBJECTTRANSFORMATION[]={
     5,
     sim_script_arg_int32,0,
@@ -3324,7 +3127,7 @@ const int inArgs_SETOBJECTTRANSFORMATION[]={
 void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTTRANSFORMATION,inArgs_SETOBJECTTRANSFORMATION[0],LUA_SETOBJECTTRANSFORMATION_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTTRANSFORMATION,inArgs_SETOBJECTTRANSFORMATION[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3357,7 +3160,7 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETOBJECTTRANSFORMATION_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -3365,9 +3168,6 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getObjectMatrix
 // --------------------------------------------------------------------------------------
-#define LUA_GETOBJECTMATRIX_COMMAND_PLUGIN "simIK.getObjectMatrix@IK"
-#define LUA_GETOBJECTMATRIX_COMMAND "simIK.getObjectMatrix"
-
 const int inArgs_GETOBJECTMATRIX[]={
     3,
     sim_script_arg_int32,0,
@@ -3380,7 +3180,7 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double matr[12];
     bool result=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTMATRIX,inArgs_GETOBJECTMATRIX[0],LUA_GETOBJECTMATRIX_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETOBJECTMATRIX,inArgs_GETOBJECTMATRIX[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3405,7 +3205,7 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETOBJECTMATRIX_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (result)
     {
@@ -3419,9 +3219,6 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.setObjectMatrix
 // --------------------------------------------------------------------------------------
-#define LUA_SETOBJECTMATRIX_COMMAND_PLUGIN "simIK.setObjectMatrix@IK"
-#define LUA_SETOBJECTMATRIX_COMMAND "simIK.setObjectMatrix"
-
 const int inArgs_SETOBJECTMATRIX[]={
     4,
     sim_script_arg_int32,0,
@@ -3433,7 +3230,7 @@ const int inArgs_SETOBJECTMATRIX[]={
 void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTMATRIX,inArgs_SETOBJECTMATRIX[0],LUA_SETOBJECTMATRIX_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_SETOBJECTMATRIX,inArgs_SETOBJECTMATRIX[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3456,7 +3253,7 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
                 err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_SETOBJECTMATRIX_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -3464,9 +3261,6 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.computeJacobian
 // --------------------------------------------------------------------------------------
-#define LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN "simIK.computeJacobian@IK"
-#define LUA_COMPUTEJACOBIAN_COMMAND "simIK.computeJacobian"
-
 const int inArgs_COMPUTEJACOBIAN[]={
     7,
     sim_script_arg_int32,0, // Ik env
@@ -3481,7 +3275,7 @@ const int inArgs_COMPUTEJACOBIAN[]={
 void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-4,LUA_COMPUTEJACOBIAN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-4,nullptr))
     {
         std::string err;
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
@@ -3587,7 +3381,7 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_COMPUTEJACOBIAN_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -3595,9 +3389,6 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.computeJacobian
 // --------------------------------------------------------------------------------------
-#define LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN "simIK.computeGroupJacobian@IK"
-#define LUA_COMPUTEGROUPJACOBIAN_COMMAND "simIK.computeGroupJacobian"
-
 const int inArgs_COMPUTEGROUPJACOBIAN[]={
     2,
     sim_script_arg_int32,0, // Ik env
@@ -3607,7 +3398,7 @@ const int inArgs_COMPUTEGROUPJACOBIAN[]={
 void LUA_COMPUTEGROUPJACOBIAN_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEGROUPJACOBIAN,inArgs_COMPUTEGROUPJACOBIAN[0],LUA_COMPUTEGROUPJACOBIAN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEGROUPJACOBIAN,inArgs_COMPUTEGROUPJACOBIAN[0],nullptr))
     {
         std::string err;
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
@@ -3630,7 +3421,7 @@ void LUA_COMPUTEGROUPJACOBIAN_CALLBACK(SScriptCallBack* p)
         else
             err=ikGetLastError();
         if (err.size()>0)
-            simSetLastError(LUA_COMPUTEGROUPJACOBIAN_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
 }
 // --------------------------------------------------------------------------------------
@@ -3638,9 +3429,6 @@ void LUA_COMPUTEGROUPJACOBIAN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 // simIK.getJacobian, deprecated on 25.10.2022
 // --------------------------------------------------------------------------------------
-#define LUA_GETJACOBIAN_COMMAND_PLUGIN "simIK.getJacobian@IK"
-#define LUA_GETJACOBIAN_COMMAND "simIK.getJacobian"
-
 const int inArgs_GETJACOBIAN[]={
     2,
     sim_script_arg_int32,0,
@@ -3652,7 +3440,7 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double* matr=nullptr;
     size_t matrSize[2];
-    if (D.readDataFromStack(p->stackID,inArgs_GETJACOBIAN,inArgs_GETJACOBIAN[0],LUA_GETJACOBIAN_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETJACOBIAN,inArgs_GETJACOBIAN[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3666,7 +3454,7 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETJACOBIAN_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (matr!=nullptr)
     {
@@ -3683,11 +3471,8 @@ void LUA_GETJACOBIAN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getManipulability
+// simIK.getManipulability, deprecated
 // --------------------------------------------------------------------------------------
-#define LUA_GETMANIPULABILITY_COMMAND_PLUGIN "simIK.getManipulability@IK"
-#define LUA_GETMANIPULABILITY_COMMAND "simIK.getManipulability"
-
 const int inArgs_GETMANIPULABILITY[]={
     2,
     sim_script_arg_int32,0,
@@ -3699,7 +3484,7 @@ void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
     CScriptFunctionData D;
     double retVal=0.0;
     bool success=false;
-    if (D.readDataFromStack(p->stackID,inArgs_GETMANIPULABILITY,inArgs_GETMANIPULABILITY[0],LUA_GETMANIPULABILITY_COMMAND))
+    if (D.readDataFromStack(p->stackID,inArgs_GETMANIPULABILITY,inArgs_GETMANIPULABILITY[0],nullptr))
     {
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
@@ -3717,7 +3502,7 @@ void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
                  err=ikGetLastError();
         }
         if (err.size()>0)
-            simSetLastError(LUA_GETMANIPULABILITY_COMMAND,err.c_str());
+            simSetLastError(nullptr,err.c_str());
     }
     if (success)
     {
@@ -3728,8 +3513,9 @@ void LUA_GETMANIPULABILITY_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 
-SIM_DLLEXPORT unsigned char simStart(void*,int)
+SIM_DLLEXPORT int simInit(const char* pluginName)
 {
+    _pluginName=pluginName;
     char curDirAndFile[1024];
 #ifdef _WIN32
     #ifdef QT_COMPIL
@@ -3756,156 +3542,154 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
     simLib=loadSimLibrary(temp.c_str());
     if (simLib==NULL)
     {
-        printf("simExtIK: error: could not find or correctly load the CoppeliaSim library. Cannot start the plugin.\n"); // cannot use simAddLog here.
+        simAddLog(pluginName,sim_verbosity_errors,"could not find or correctly load the CoppeliaSim library. Cannot start the plugin.");
         return(0);
     }
     if (getSimProcAddresses(simLib)==0)
     {
-        printf("simExtIK: error: could not find all required functions in the CoppeliaSim library. Cannot start the plugin.\n"); // cannot use simAddLog here.
+        simAddLog(pluginName,sim_verbosity_errors,"could not find all required functions in the CoppeliaSim library. Cannot start the plugin.");
         unloadSimLibrary(simLib);
         return(0);
     }
-    
-    simRegisterScriptVariable("simIK","require('simIK')",0);
 
     // Register the new Lua commands:
-    simRegisterScriptCallbackFunction(LUA_CREATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int environmentHandle=",LUA_CREATEENVIRONMENT_COMMAND,"(int flags=0)"),LUA_CREATEENVIRONMENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_ERASEENVIRONMENT_COMMAND_PLUGIN,nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_DUPLICATEENVIRONMENT_COMMAND_PLUGIN,strConCat("int duplicateEnvHandle=",LUA_DUPLICATEENVIRONMENT_COMMAND,"(int environmentHandle)"),LUA_DUPLICATEENVIRONMENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_LOAD_COMMAND_PLUGIN,strConCat("",LUA_LOAD_COMMAND,"(int environmentHandle,string data)"),LUA_LOAD_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SAVE_COMMAND_PLUGIN,strConCat("string data=",LUA_SAVE_COMMAND,"(int environmentHandle)"),LUA_SAVE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTS_COMMAND_PLUGIN,strConCat("int objectHandle,string objectName,bool isJoint,int jointType=",LUA_GETOBJECTS_COMMAND,"(int environmentHandle,int index)"),LUA_GETOBJECTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTHANDLE_COMMAND_PLUGIN,strConCat("int objectHandle=",LUA_GETOBJECTHANDLE_COMMAND,"(int environmentHandle,string objectName)"),LUA_GETOBJECTHANDLE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_DOESOBJECTEXIST_COMMAND_PLUGIN,strConCat("bool result=",LUA_DOESOBJECTEXIST_COMMAND,"(int environmentHandle,string objectName)"),LUA_DOESOBJECTEXIST_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_ERASEOBJECT_COMMAND_PLUGIN,strConCat("",LUA_ERASEOBJECT_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_ERASEOBJECT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTPARENT_COMMAND_PLUGIN,strConCat("int parentObjectHandle=",LUA_GETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_GETOBJECTPARENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETOBJECTPARENT_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTPARENT_COMMAND,"(int environmentHandle,int objectHandle,int parentObjectHandle, bool keepInPlace=true)"),LUA_SETOBJECTPARENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTTYPE_COMMAND_PLUGIN,strConCat("int objectType=",LUA_GETOBJECTTYPE_COMMAND,"(int environmentHandle,int objectHandle)"),LUA_GETOBJECTTYPE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_CREATEDUMMY_COMMAND_PLUGIN,strConCat("int dummyHandle=",LUA_CREATEDUMMY_COMMAND,"(int environmentHandle,string dummyName='')"),LUA_CREATEDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETTARGETDUMMY_COMMAND_PLUGIN,strConCat("int targetDummyHandle=",LUA_GETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle)"),LUA_GETTARGETDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETTARGETDUMMY_COMMAND_PLUGIN,strConCat("",LUA_SETTARGETDUMMY_COMMAND,"(int environmentHandle,int dummyHandle,int targetDummyHandle)"),LUA_SETTARGETDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_CREATEJOINT_COMMAND_PLUGIN,strConCat("int jointHandle=",LUA_CREATEJOINT_COMMAND,"(int environmentHandle,int jointType,string jointName='')"),LUA_CREATEJOINT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTTYPE_COMMAND_PLUGIN,strConCat("int jointType=",LUA_GETJOINTTYPE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTYPE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTMODE_COMMAND_PLUGIN,strConCat("int jointMode=",LUA_GETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMODE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTMODE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMODE_COMMAND,"(int environmentHandle,int jointHandle,int jointMode)"),LUA_SETJOINTMODE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("bool cyclic,float[2] interval=",LUA_GETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTINTERVAL_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTINTERVAL_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTINTERVAL_COMMAND,"(int environmentHandle,int jointHandle,bool cyclic,float[2] interval={})"),LUA_SETJOINTINTERVAL_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWLEAD_COMMAND_PLUGIN,strConCat("float lead=",LUA_GETJOINTSCREWLEAD_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTSCREWLEAD_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWLEAD_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTSCREWLEAD_COMMAND,"(int environmentHandle,int jointHandle,float lead)"),LUA_SETJOINTSCREWLEAD_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("float weight=",LUA_GETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTIKWEIGHT_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTIKWEIGHT_COMMAND,"(int environmentHandle,int jointHandle,float weight)"),LUA_SETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("float margin=",LUA_GETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTLIMITMARGIN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTLIMITMARGIN_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTLIMITMARGIN_COMMAND,"(int environmentHandle,int jointHandle,float margin)"),LUA_SETJOINTLIMITMARGIN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("float stepSize=",LUA_GETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTMAXSTEPSIZE_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTMAXSTEPSIZE_COMMAND,"(int environmentHandle,int jointHandle,float stepSize)"),LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTDEPENDENCY_COMMAND_PLUGIN,strConCat("int depJointHandle,float offset,float mult=",LUA_GETJOINTDEPENDENCY_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTDEPENDENCY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTDEPENDENCY_COMMAND_PLUGIN,nullptr,LUA_SETJOINTDEPENDENCY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTPOSITION_COMMAND_PLUGIN,strConCat("float position=",LUA_GETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTPOSITION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTPOSITION_COMMAND_PLUGIN,strConCat("",LUA_SETJOINTPOSITION_COMMAND,"(int environmentHandle,int jointHandle,float position)"),LUA_SETJOINTPOSITION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTMATRIX_COMMAND,"(int environmentHandle,int jointHandle,float[12] matrix)"),LUA_SETSPHERICALJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJOINTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETJOINTTRANSFORMATION_COMMAND,"(int environmentHandle,int jointHandle)"),LUA_GETJOINTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETSPHERICALJOINTROTATION_COMMAND_PLUGIN,strConCat("",LUA_SETSPHERICALJOINTROTATION_COMMAND,"(int environmentHandle,int jointHandle,float[] eulerOrQuaternion)"),LUA_SETSPHERICALJOINTROTATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPHANDLE_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_GETIKGROUPHANDLE_COMMAND,"(int environmentHandle,string ikGroupName)"),LUA_GETIKGROUPHANDLE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_DOESIKGROUPEXIST_COMMAND_PLUGIN,strConCat("bool result=",LUA_DOESIKGROUPEXIST_COMMAND,"(int environmentHandle,string ikGroupName)"),LUA_DOESIKGROUPEXIST_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_CREATEIKGROUP_COMMAND_PLUGIN,strConCat("int ikGroupHandle=",LUA_CREATEIKGROUP_COMMAND,"(int environmentHandle,string ikGroupName='')"),LUA_CREATEIKGROUP_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKGROUPFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int flags)"),LUA_SETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("int method,float damping,int maxIterations=",LUA_GETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKGROUPCALCULATION_COMMAND_PLUGIN,strConCat("",LUA_SETIKGROUPCALCULATION_COMMAND,"(int environmentHandle,int ikGroupHandle,int method,float damping,int maxIterations)"),LUA_SETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKGROUPJOINTLIMITHITS_COMMAND_PLUGIN,strConCat("int[] jointHandles,float[] underOrOvershots=",LUA_GETIKGROUPJOINTLIMITHITS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETGROUPJOINTS_COMMAND_PLUGIN,strConCat("int[] jointHandles=",LUA_GETGROUPJOINTS_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_GETGROUPJOINTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_ADDIKELEMENT_COMMAND_PLUGIN,strConCat("int elementHandle=",LUA_ADDIKELEMENT_COMMAND,"(int environmentHandle,int ikGroupHandle,int tipDummyHandle)"),LUA_ADDIKELEMENT_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTFLAGS_COMMAND_PLUGIN,strConCat("int flags=",LUA_GETIKELEMENTFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTFLAGS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTFLAGS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int flags)"),LUA_SETIKELEMENTFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTBASE_COMMAND_PLUGIN,strConCat("int baseHandle,int constraintsBaseHandle=",LUA_GETIKELEMENTBASE_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTBASE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTBASE_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTBASE_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int baseHandle,int constraintsBaseHandle=-1)"),LUA_SETIKELEMENTBASE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN,strConCat("int constraints=",LUA_GETIKELEMENTCONSTRAINTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTCONSTRAINTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTCONSTRAINTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,int constraints)"),LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("float[2] precision=",LUA_GETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTPRECISION_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTPRECISION_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] precision)"),LUA_SETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("float[2] weights=",LUA_GETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle)"),LUA_GETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETIKELEMENTWEIGHTS_COMMAND_PLUGIN,strConCat("",LUA_SETIKELEMENTWEIGHTS_COMMAND,"(int environmentHandle,int ikGroupHandle,int elementHandle,float[2] weights)"),LUA_SETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_HANDLEIKGROUPS_COMMAND_PLUGIN,nullptr,LUA_HANDLEIKGROUPS_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETCONFIGFORTIPPOSE_COMMAND_PLUGIN,nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_FINDCONFIG_COMMAND_PLUGIN,nullptr,LUA_FINDCONFIG_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("float[3] position,float[4] quaternion,float[3] euler=",LUA_GETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETOBJECTTRANSFORMATION_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTTRANSFORMATION_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[3] position,float[] eulerOrQuaternion)"),LUA_SETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("float[12] matrix=",LUA_GETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle)"),LUA_GETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETOBJECTMATRIX_COMMAND_PLUGIN,strConCat("",LUA_SETOBJECTMATRIX_COMMAND,"(int environmentHandle,int objectHandle,int relativeToObjectHandle,float[12] matrix)"),LUA_SETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEJACOBIAN_COMMAND,"(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)"),LUA_COMPUTEJACOBIAN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_COMPUTEGROUPJACOBIAN_COMMAND_PLUGIN,strConCat("float[] jacobian,float[] errorVector=",LUA_COMPUTEGROUPJACOBIAN_COMMAND,"(int environmentHandle,int ikGroupHandle)"),LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction("createEnvironment",nullptr,LUA_CREATEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("_eraseEnvironment",nullptr,LUA_ERASEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("duplicateEnvironment",nullptr,LUA_DUPLICATEENVIRONMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("load",nullptr,LUA_LOAD_CALLBACK);
+    simRegisterScriptCallbackFunction("save",nullptr,LUA_SAVE_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjects",nullptr,LUA_GETOBJECTS_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectHandle",nullptr,LUA_GETOBJECTHANDLE_CALLBACK);
+    simRegisterScriptCallbackFunction("doesObjectExist",nullptr,LUA_DOESOBJECTEXIST_CALLBACK);
+    simRegisterScriptCallbackFunction("eraseObject",nullptr,LUA_ERASEOBJECT_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectParent",nullptr,LUA_GETOBJECTPARENT_CALLBACK);
+    simRegisterScriptCallbackFunction("setObjectParent",nullptr,LUA_SETOBJECTPARENT_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectType",nullptr,LUA_GETOBJECTTYPE_CALLBACK);
+    simRegisterScriptCallbackFunction("createDummy",nullptr,LUA_CREATEDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction("getTargetDummy",nullptr,LUA_GETTARGETDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction("setTargetDummy",nullptr,LUA_SETTARGETDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction("createJoint",nullptr,LUA_CREATEJOINT_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointType",nullptr,LUA_GETJOINTTYPE_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointMode",nullptr,LUA_GETJOINTMODE_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointMode",nullptr,LUA_SETJOINTMODE_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointInterval",nullptr,LUA_GETJOINTINTERVAL_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointInterval",nullptr,LUA_SETJOINTINTERVAL_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointScrewLead",nullptr,LUA_GETJOINTSCREWLEAD_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointScrewLead",nullptr,LUA_SETJOINTSCREWLEAD_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointWeight",nullptr,LUA_GETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointWeight",nullptr,LUA_SETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointLimitMargin",nullptr,LUA_GETJOINTLIMITMARGIN_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointLimitMargin",nullptr,LUA_SETJOINTLIMITMARGIN_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointMaxStepSize",nullptr,LUA_GETJOINTMAXSTEPSIZE_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointMaxStepSize",nullptr,LUA_SETJOINTMAXSTEPSIZE_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointDependency",nullptr,LUA_GETJOINTDEPENDENCY_CALLBACK);
+    simRegisterScriptCallbackFunction("_setJointDependency",nullptr,LUA_SETJOINTDEPENDENCY_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointPosition",nullptr,LUA_GETJOINTPOSITION_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointPosition",nullptr,LUA_SETJOINTPOSITION_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointMatrix",nullptr,LUA_GETJOINTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction("setSphericalJointMatrix",nullptr,LUA_SETSPHERICALJOINTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointTransformation",nullptr,LUA_GETJOINTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction("setSphericalJointRotation",nullptr,LUA_SETSPHERICALJOINTROTATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupHandle",nullptr,LUA_GETIKGROUPHANDLE_CALLBACK);
+    simRegisterScriptCallbackFunction("doesGroupExist",nullptr,LUA_DOESIKGROUPEXIST_CALLBACK);
+    simRegisterScriptCallbackFunction("createGroup",nullptr,LUA_CREATEIKGROUP_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupFlags",nullptr,LUA_GETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("setGroupFlags",nullptr,LUA_SETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupCalculation",nullptr,LUA_GETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("setGroupCalculation",nullptr,LUA_SETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupJointLimitHits",nullptr,LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupJoints",nullptr,LUA_GETGROUPJOINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("addElement",nullptr,LUA_ADDIKELEMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("getElementFlags",nullptr,LUA_GETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("setElementFlags",nullptr,LUA_SETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("getElementBase",nullptr,LUA_GETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("setElementBase",nullptr,LUA_SETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("getElementConstraints",nullptr,LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("setElementConstraints",nullptr,LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("getElementPrecision",nullptr,LUA_GETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("setElementPrecision",nullptr,LUA_SETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("getElementWeights",nullptr,LUA_GETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction("setElementWeights",nullptr,LUA_SETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction("_handleGroups",nullptr,LUA_HANDLEIKGROUPS_CALLBACK);
+    simRegisterScriptCallbackFunction("_findConfig",nullptr,LUA_FINDCONFIG_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectTransformation",nullptr,LUA_GETOBJECTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction("setObjectTransformation",nullptr,LUA_SETOBJECTTRANSFORMATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectMatrix",nullptr,LUA_GETOBJECTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction("setObjectMatrix",nullptr,LUA_SETOBJECTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction("computeJacobian",nullptr,LUA_COMPUTEJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction("computeGroupJacobian",nullptr,LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
 
-    simRegisterScriptVariable("simIK.handleflag_tipdummy@simExtIK",std::to_string(ik_handleflag_tipdummy).c_str(),0);
-    simRegisterScriptVariable("simIK.objecttype_joint@simExtIK",std::to_string(ik_objecttype_joint).c_str(),0);
-    simRegisterScriptVariable("simIK.objecttype_dummy@simExtIK",std::to_string(ik_objecttype_dummy).c_str(),0);
-    simRegisterScriptVariable("simIK.jointmode_passive@simExtIK",std::to_string(ik_jointmode_passive).c_str(),0);
-    simRegisterScriptVariable("simIK.jointmode_ik@simExtIK",std::to_string(ik_jointmode_ik).c_str(),0);
-    simRegisterScriptVariable("simIK.jointtype_revolute@simExtIK",std::to_string(ik_jointtype_revolute).c_str(),0);
-    simRegisterScriptVariable("simIK.jointtype_prismatic@simExtIK",std::to_string(ik_jointtype_prismatic).c_str(),0);
-    simRegisterScriptVariable("simIK.jointtype_spherical@simExtIK",std::to_string(ik_jointtype_spherical).c_str(),0);
-    simRegisterScriptVariable("simIK.handle_all@simExtIK",std::to_string(ik_handle_all).c_str(),0);
-    simRegisterScriptVariable("simIK.handle_parent@simExtIK",std::to_string(ik_handle_parent).c_str(),0);
-    simRegisterScriptVariable("simIK.handle_world@simExtIK",std::to_string(ik_handle_world).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_x@simExtIK",std::to_string(ik_constraint_x).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_y@simExtIK",std::to_string(ik_constraint_y).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_z@simExtIK",std::to_string(ik_constraint_z).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_alpha_beta@simExtIK",std::to_string(ik_constraint_alpha_beta).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_gamma@simExtIK",std::to_string(ik_constraint_gamma).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_position@simExtIK",std::to_string(ik_constraint_position).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_orientation@simExtIK",std::to_string(ik_constraint_orientation).c_str(),0);
-    simRegisterScriptVariable("simIK.constraint_pose@simExtIK",std::to_string(ik_constraint_pose).c_str(),0);
-    simRegisterScriptVariable("simIK.method_pseudo_inverse@simExtIK",std::to_string(ik_method_pseudo_inverse).c_str(),0);
-    simRegisterScriptVariable("simIK.method_damped_least_squares@simExtIK",std::to_string(ik_method_damped_least_squares).c_str(),0);
-    simRegisterScriptVariable("simIK.method_jacobian_transpose@simExtIK",std::to_string(ik_method_jacobian_transpose).c_str(),0);
-    simRegisterScriptVariable("simIK.method_undamped_pseudo_inverse@simExtIK",std::to_string(ik_method_undamped_pseudo_inverse).c_str(),0);
+    simRegisterScriptVariable("handleflag_tipdummy",std::to_string(ik_handleflag_tipdummy).c_str(),0);
+    simRegisterScriptVariable("objecttype_joint",std::to_string(ik_objecttype_joint).c_str(),0);
+    simRegisterScriptVariable("objecttype_dummy",std::to_string(ik_objecttype_dummy).c_str(),0);
+    simRegisterScriptVariable("jointmode_passive",std::to_string(ik_jointmode_passive).c_str(),0);
+    simRegisterScriptVariable("jointmode_ik",std::to_string(ik_jointmode_ik).c_str(),0);
+    simRegisterScriptVariable("jointtype_revolute",std::to_string(ik_jointtype_revolute).c_str(),0);
+    simRegisterScriptVariable("jointtype_prismatic",std::to_string(ik_jointtype_prismatic).c_str(),0);
+    simRegisterScriptVariable("jointtype_spherical",std::to_string(ik_jointtype_spherical).c_str(),0);
+    simRegisterScriptVariable("handle_all",std::to_string(ik_handle_all).c_str(),0);
+    simRegisterScriptVariable("handle_parent",std::to_string(ik_handle_parent).c_str(),0);
+    simRegisterScriptVariable("handle_world",std::to_string(ik_handle_world).c_str(),0);
+    simRegisterScriptVariable("constraint_x",std::to_string(ik_constraint_x).c_str(),0);
+    simRegisterScriptVariable("constraint_y",std::to_string(ik_constraint_y).c_str(),0);
+    simRegisterScriptVariable("constraint_z",std::to_string(ik_constraint_z).c_str(),0);
+    simRegisterScriptVariable("constraint_alpha_beta",std::to_string(ik_constraint_alpha_beta).c_str(),0);
+    simRegisterScriptVariable("constraint_gamma",std::to_string(ik_constraint_gamma).c_str(),0);
+    simRegisterScriptVariable("constraint_position",std::to_string(ik_constraint_position).c_str(),0);
+    simRegisterScriptVariable("constraint_orientation",std::to_string(ik_constraint_orientation).c_str(),0);
+    simRegisterScriptVariable("constraint_pose",std::to_string(ik_constraint_pose).c_str(),0);
+    simRegisterScriptVariable("method_pseudo_inverse",std::to_string(ik_method_pseudo_inverse).c_str(),0);
+    simRegisterScriptVariable("method_damped_least_squares",std::to_string(ik_method_damped_least_squares).c_str(),0);
+    simRegisterScriptVariable("method_jacobian_transpose",std::to_string(ik_method_jacobian_transpose).c_str(),0);
+    simRegisterScriptVariable("method_undamped_pseudo_inverse",std::to_string(ik_method_undamped_pseudo_inverse).c_str(),0);
 
-    simRegisterScriptVariable("simIK.result_not_performed@simExtIK",std::to_string(ik_result_not_performed).c_str(),0);
-    simRegisterScriptVariable("simIK.result_success@simExtIK",std::to_string(ik_result_success).c_str(),0);
-    simRegisterScriptVariable("simIK.result_fail@simExtIK",std::to_string(ik_result_fail).c_str(),0);
+    simRegisterScriptVariable("result_not_performed",std::to_string(ik_result_not_performed).c_str(),0);
+    simRegisterScriptVariable("result_success",std::to_string(ik_result_success).c_str(),0);
+    simRegisterScriptVariable("result_fail",std::to_string(ik_result_fail).c_str(),0);
 
-    simRegisterScriptVariable("simIK.calc_notperformed@simExtIK",std::to_string(ik_calc_notperformed).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_cannotinvert@simExtIK",std::to_string(ik_calc_cannotinvert).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_notwithintolerance@simExtIK",std::to_string(ik_calc_notwithintolerance).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_stepstoobig@simExtIK",std::to_string(ik_calc_stepstoobig).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_limithit@simExtIK",std::to_string(ik_calc_limithit).c_str(),0);
-    simRegisterScriptVariable("simIK.calc_invalidcallbackdata@simExtIK",std::to_string(ik_calc_invalidcallbackdata).c_str(),0);
+    simRegisterScriptVariable("calc_notperformed",std::to_string(ik_calc_notperformed).c_str(),0);
+    simRegisterScriptVariable("calc_cannotinvert",std::to_string(ik_calc_cannotinvert).c_str(),0);
+    simRegisterScriptVariable("calc_notwithintolerance",std::to_string(ik_calc_notwithintolerance).c_str(),0);
+    simRegisterScriptVariable("calc_stepstoobig",std::to_string(ik_calc_stepstoobig).c_str(),0);
+    simRegisterScriptVariable("calc_limithit",std::to_string(ik_calc_limithit).c_str(),0);
+    simRegisterScriptVariable("calc_invalidcallbackdata",std::to_string(ik_calc_invalidcallbackdata).c_str(),0);
 
-    simRegisterScriptVariable("simIK.group_enabled@simExtIK",std::to_string(ik_group_enabled).c_str(),0);
-    simRegisterScriptVariable("simIK.group_ignoremaxsteps@simExtIK",std::to_string(ik_group_ignoremaxsteps).c_str(),0);
-    simRegisterScriptVariable("simIK.group_restoreonbadlintol@simExtIK",std::to_string(ik_group_restoreonbadlintol).c_str(),0);
-    simRegisterScriptVariable("simIK.group_restoreonbadangtol@simExtIK",std::to_string(ik_group_restoreonbadangtol).c_str(),0);
-    simRegisterScriptVariable("simIK.group_stoponlimithit@simExtIK",std::to_string(ik_group_stoponlimithit).c_str(),0);
-    simRegisterScriptVariable("simIK.group_avoidlimits@simExtIK",std::to_string(ik_group_avoidlimits).c_str(),0);
+    simRegisterScriptVariable("group_enabled",std::to_string(ik_group_enabled).c_str(),0);
+    simRegisterScriptVariable("group_ignoremaxsteps",std::to_string(ik_group_ignoremaxsteps).c_str(),0);
+    simRegisterScriptVariable("group_restoreonbadlintol",std::to_string(ik_group_restoreonbadlintol).c_str(),0);
+    simRegisterScriptVariable("group_restoreonbadangtol",std::to_string(ik_group_restoreonbadangtol).c_str(),0);
+    simRegisterScriptVariable("group_stoponlimithit",std::to_string(ik_group_stoponlimithit).c_str(),0);
+    simRegisterScriptVariable("group_avoidlimits",std::to_string(ik_group_avoidlimits).c_str(),0);
 
     // deprecated:
-    simRegisterScriptCallbackFunction(LUA_GETJOINTSCREWPITCH_COMMAND_PLUGIN,nullptr,LUA_GETJOINTSCREWPITCH_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETJOINTSCREWPITCH_COMMAND_PLUGIN,nullptr,LUA_SETJOINTSCREWPITCH_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_GETLINKEDDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_SETLINKEDDUMMY_COMMAND_PLUGIN,nullptr,LUA_SETLINKEDDUMMY_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETJACOBIAN_COMMAND_PLUGIN,nullptr,LUA_GETJACOBIAN_CALLBACK);
-    simRegisterScriptCallbackFunction(LUA_GETMANIPULABILITY_COMMAND_PLUGIN,nullptr,LUA_GETMANIPULABILITY_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getJointIkWeight@IK",nullptr,LUA_GETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setJointIkWeight@IK",nullptr,LUA_SETJOINTIKWEIGHT_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkGroupHandle@IK",nullptr,LUA_GETIKGROUPHANDLE_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.doesIkGroupExist@IK",nullptr,LUA_DOESIKGROUPEXIST_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.createIkGroup@IK",nullptr,LUA_CREATEIKGROUP_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkGroupFlags@IK",nullptr,LUA_GETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkGroupFlags@IK",nullptr,LUA_SETIKGROUPFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkGroupCalculation@IK",nullptr,LUA_GETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkGroupCalculation@IK",nullptr,LUA_SETIKGROUPCALCULATION_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkGroupJointLimitHits@IK",nullptr,LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.addIkElement@IK",nullptr,LUA_ADDIKELEMENT_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkElementFlags@IK",nullptr,LUA_GETIKELEMENTFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkElementFlags@IK",nullptr,LUA_SETIKELEMENTFLAGS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkElementBase@IK",nullptr,LUA_GETIKELEMENTBASE_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkElementBase@IK",nullptr,LUA_SETIKELEMENTBASE_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkElementConstraints@IK",nullptr,LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkElementConstraints@IK",nullptr,LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkElementPrecision@IK",nullptr,LUA_GETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkElementPrecision@IK",nullptr,LUA_SETIKELEMENTPRECISION_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.getIkElementWeights@IK",nullptr,LUA_GETIKELEMENTWEIGHTS_CALLBACK);
-    simRegisterScriptCallbackFunction("simIK.setIkElementWeights@IK",nullptr,LUA_SETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction("_getConfigForTipPose",nullptr,LUA_GETCONFIGFORTIPPOSE_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointScrewPitch",nullptr,LUA_GETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointScrewPitch",nullptr,LUA_SETJOINTSCREWPITCH_CALLBACK);
+    simRegisterScriptCallbackFunction("getLinkedDummy",nullptr,LUA_GETLINKEDDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction("setLinkedDummy",nullptr,LUA_SETLINKEDDUMMY_CALLBACK);
+    simRegisterScriptCallbackFunction("getJacobian",nullptr,LUA_GETJACOBIAN_CALLBACK);
+    simRegisterScriptCallbackFunction("getManipulability",nullptr,LUA_GETMANIPULABILITY_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointIkWeight",nullptr,LUA_GETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("setJointIkWeight",nullptr,LUA_SETJOINTIKWEIGHT_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkGroupHandle",nullptr,LUA_GETIKGROUPHANDLE_CALLBACK);
+    simRegisterScriptCallbackFunction("doesIkGroupExist",nullptr,LUA_DOESIKGROUPEXIST_CALLBACK);
+    simRegisterScriptCallbackFunction("createIkGroup",nullptr,LUA_CREATEIKGROUP_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkGroupFlags",nullptr,LUA_GETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkGroupFlags",nullptr,LUA_SETIKGROUPFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkGroupCalculation",nullptr,LUA_GETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkGroupCalculation",nullptr,LUA_SETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkGroupJointLimitHits",nullptr,LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
+    simRegisterScriptCallbackFunction("addIkElement",nullptr,LUA_ADDIKELEMENT_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkElementFlags",nullptr,LUA_GETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkElementFlags",nullptr,LUA_SETIKELEMENTFLAGS_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkElementBase",nullptr,LUA_GETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkElementBase",nullptr,LUA_SETIKELEMENTBASE_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkElementConstraints",nullptr,LUA_GETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkElementConstraints",nullptr,LUA_SETIKELEMENTCONSTRAINTS_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkElementPrecision",nullptr,LUA_GETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkElementPrecision",nullptr,LUA_SETIKELEMENTPRECISION_CALLBACK);
+    simRegisterScriptCallbackFunction("getIkElementWeights",nullptr,LUA_GETIKELEMENTWEIGHTS_CALLBACK);
+    simRegisterScriptCallbackFunction("setIkElementWeights",nullptr,LUA_SETIKELEMENTWEIGHTS_CALLBACK);
 
     ikSetLogCallback(_logCallback);
 
@@ -3917,10 +3701,10 @@ SIM_DLLEXPORT unsigned char simStart(void*,int)
 
     _allEnvironments=new CEnvCont();
 
-    return(2); // 2 since V4.3.0
+    return(3); // 3 since V4.6.0
 }
 
-SIM_DLLEXPORT void simEnd()
+SIM_DLLEXPORT void simCleanup()
 {
     delete _allEnvironments;
 #ifdef _WIN32
@@ -3930,20 +3714,20 @@ SIM_DLLEXPORT void simEnd()
 #endif
 }
 
-SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
+SIM_DLLEXPORT void simMsg(int message,int* auxData,void* auxPointer)
 {
     if (message==sim_message_eventcallback_scriptstatedestroyed)
     {
-        int env=_allEnvironments->removeOneFromScriptHandle(auxiliaryData[0]);
+        int env=_allEnvironments->removeOneFromScriptHandle(auxData[0]);
         while (env>=0)
         {
             if (ikSwitchEnvironment(env))
                 ikEraseEnvironment();
-            env=_allEnvironments->removeOneFromScriptHandle(auxiliaryData[0]);
+            env=_allEnvironments->removeOneFromScriptHandle(auxData[0]);
 
             for (int i=0;i<int(jointDependInfo.size());i++)
             {
-                if (jointDependInfo[i].scriptHandle==auxiliaryData[0])
+                if (jointDependInfo[i].scriptHandle==auxData[0])
                 {
                     jointDependInfo.erase(jointDependInfo.begin()+i);
                     i--;
@@ -3956,8 +3740,8 @@ SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
     {
         int consoleV=sim_verbosity_none;
         int statusbarV=sim_verbosity_none;
-        simGetModuleInfo("IK",sim_moduleinfo_verbosity,nullptr,&consoleV);
-        simGetModuleInfo("IK",sim_moduleinfo_statusbarverbosity,nullptr,&statusbarV);
+        simGetModuleInfo(nullptr,sim_moduleinfo_verbosity,nullptr,&consoleV);
+        simGetModuleInfo(nullptr,sim_moduleinfo_statusbarverbosity,nullptr,&statusbarV);
         if ( (consoleV>sim_verbosity_none)||(statusbarV>sim_verbosity_none) )
         {
             if ( (consoleV>=sim_verbosity_trace)||(statusbarV>=sim_verbosity_trace) )
@@ -3973,7 +3757,6 @@ SIM_DLLEXPORT void* simMessage(int message,int* auxiliaryData,void*,int*)
         else
             ikSetVerbosity(0);
     }
-    return(nullptr);
 }
 
 //---------------------------------------------------------------------
