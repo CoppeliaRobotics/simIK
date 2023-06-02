@@ -1,4 +1,4 @@
-local simIK=loadPlugin('simIK')
+local simIK=loadPlugin'simIK';
 
 function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
     if index>#jointHandles then
