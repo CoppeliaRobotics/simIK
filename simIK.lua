@@ -1,4 +1,4 @@
-local simIK=loadPlugin'simIK';
+local simIK=loadPlugin('simIK')
 
 function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
     if index>#jointHandles then
@@ -405,6 +405,8 @@ end
 function simIK.debugJacobianDisplay(inData)
     local groupData=_S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
     local groupIdStr=string.format('env:%d/group:%d',_S.currentIkEnv,inData.groupHandle)
+    local res
+    res,simQML=pcall(require,'simQML')
     if simQML then
         if groupData.jacobianDebug==nil then
             groupData.jacobianDebug={

@@ -27,9 +27,6 @@
     typedef pthread_mutex_t WMutex;
 #endif
 
-#define CONCAT(x,y,z) x y z
-#define strConCat(x,y,z)    CONCAT(x,y,z)
-
 static LIBRARY simLib;
 static WMutex _simpleMutex;
 static CEnvCont* _allEnvironments;
