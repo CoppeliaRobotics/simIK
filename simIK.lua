@@ -405,8 +405,9 @@ end
 function simIK.debugJacobianDisplay(inData)
     local groupData=_S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
     local groupIdStr=string.format('env:%d/group:%d',_S.currentIkEnv,inData.groupHandle)
-    local res
-    res,simQML=pcall(require,'simQML')
+    pcall(function()
+        simQML=require'simQML'
+    end)
     if simQML then
         if groupData.jacobianDebug==nil then
             groupData.jacobianDebug={
