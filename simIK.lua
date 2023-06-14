@@ -1,5 +1,47 @@
 local simIK=loadPlugin('simIK')
 
+_S.simIKgetObjectTransformation=simIK.getObjectTransformation
+function simIK.getObjectTransformation(env,handle,rel)
+    rel=rel or simIK.handle_world
+    return _S.simIKgetObjectTransformation(env,handle,rel)
+end
+
+_S.simIKsetObjectTransformation=simIK.setObjectTransformation
+function simIK.setObjectTransformation(env,handle,pos,orient,rel)
+    if type(pos)=='table' then
+        rel=rel or simIK.handle_world
+        return _S.simIKsetObjectTransformation(env,handle,pos,orient,rel)
+    else
+        return _S.simIKsetObjectTransformation(env,handle,orient,rel,pos) -- deprecated
+    end
+end
+
+_S.simIKgetObjectMatrix=simIK.getObjectMatrix
+function simIK.getObjectMatrix(env,handle,rel)
+    rel=rel or simIK.handle_world
+    return _S.simIKgetObjectMatrix(env,handle,rel)
+end
+
+_S.simIKsetObjectMatrix=simIK.setObjectMatrix
+function simIK.setObjectMatrix(env,handle,matr,rel)
+    if type(matr)=='table' then
+        rel=rel or simIK.handle_world
+        return _S.simIKsetObjectMatrix(env,handle,matr,rel)
+    else
+        return _S.simIKsetObjectMatrix(env,handle,rel,matr) -- deprecated
+    end
+end
+
+function simIK.getObjectPose(ikEnv,obj,relObj)
+    local pos,quat=simIK.getObjectTransformation(ikEnv,obj,relObj)
+    return {pos[1],pos[2],pos[3],quat[1],quat[2],quat[3],quat[4]}
+end
+
+function simIK.setObjectPose(ikEnv,obj,pose,relObj)
+    simIK.setObjectTransformationsimIK.setObjectTransformation(ikEnv,obj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]},relObj)
+end
+
+
 function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
     if index>#jointHandles then
         return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
@@ -148,7 +190,7 @@ function simIK.syncFromSim(...)
         end
         for i=1,#groupData.targetTipBaseTriplets,1 do
             -- Make sure target relative to base is in sync too:
-            simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][4],groupData.targetTipBaseTriplets[i][6],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][1],groupData.targetTipBaseTriplets[i][3]))
+            simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][4],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][1],groupData.targetTipBaseTriplets[i][3]),groupData.targetTipBaseTriplets[i][6])
         end
     end
     sim.setThreadAutomaticSwitch(lb)
@@ -274,7 +316,7 @@ function simIK.addElementFromScene(...)
                 end
                 simToIkMap[simIterator]=ikIterator
                 ikToSimMap[ikIterator]=simIterator
-                simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
+                simIK.setObjectMatrix(ikEnv,ikIterator,sim.getObjectMatrix(simIterator))
             end 
             if sim.getObjectType(simIterator)==sim.object_joint_type then
                 groupData.joints[simIterator]=ikIterator
@@ -337,14 +379,14 @@ function simIK.addElementFromScene(...)
             ikJo_s=createIkJointFromSimJoint(ikEnv,slave)
             simToIkMap[slave]=ikJo_s
             ikToSimMap[ikJo_s]=slave
-            simIK.setObjectMatrix(ikEnv,ikJo_s,-1,sim.getObjectMatrix(slave,-1))
+            simIK.setObjectMatrix(ikEnv,ikJo_s,sim.getObjectMatrix(slave))
             groupData.joints[slave]=ikJo_s
         end
         if ikJo_m==nil then
             ikJo_m=createIkJointFromSimJoint(ikEnv,master)
             simToIkMap[master]=ikJo_m
             ikToSimMap[ikJo_m]=master
-            simIK.setObjectMatrix(ikEnv,ikJo_m,-1,sim.getObjectMatrix(master,-1))
+            simIK.setObjectMatrix(ikEnv,ikJo_m,sim.getObjectMatrix(master))
             groupData.joints[master]=ikJo_m
         end
         local dep,off,mult=sim.getJointDependency(slave)
@@ -676,8 +718,8 @@ function simIK.generatePath(...)
 
     local env=simIK.duplicateEnvironment(ikEnv)
     local targetHandle=simIK.getTargetDummy(env,tip)
-    local startMatrix=simIK.getObjectMatrix(env,tip,-1)
-    local goalMatrix=simIK.getObjectMatrix(env,targetHandle,-1)
+    local startMatrix=simIK.getObjectMatrix(env,tip)
+    local goalMatrix=simIK.getObjectMatrix(env,targetHandle)
     local retPath={{}}
     for i=1,#ikJoints,1 do
         retPath[1][i]=simIK.getJointPosition(env,ikJoints[i])
@@ -694,7 +736,7 @@ function simIK.generatePath(...)
         for j=1,ptCnt-1,1 do
             local t=j/(ptCnt-1)
             local m=sim.interpolateMatrices(startMatrix,goalMatrix,t)
-            simIK.setObjectMatrix(env,targetHandle,-1,m)
+            simIK.setObjectMatrix(env,targetHandle,m)
             success=simIK.handleGroups(env,{ikGroup})==simIK.result_success
             if not success then
                 break
@@ -726,17 +768,6 @@ function simIK.generatePath(...)
     return retPath
 end
 
-function simIK.getObjectPose(...)
-    local ikEnv,obj,relObj=checkargs({{type='int'},{type='int'},{type='int'}},...)
-    local pos,quat=simIK.getObjectTransformation(ikEnv,obj,relObj)
-    return {pos[1],pos[2],pos[3],quat[1],quat[2],quat[3],quat[4]}
-end
-
-function simIK.setObjectPose(...)
-    local ikEnv,obj,relObj,pose=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=7,item_type='float'}},...)
-    simIK.setObjectTransformation(ikEnv,obj,relObj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]})
-end
-
 function simIK.createDebugOverlay(...)
     local ikEnv,ikTip,ikBase=checkargs({{type='int'},{type='int'},{type='int',default=-1}},...)
     if not _S.ikDebug then
@@ -755,11 +786,11 @@ function simIK.createDebugOverlay(...)
     if drawingConts.targetCont==nil then
         drawingConts.targetCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay|sim.drawing_cyclic,0.012,0,-1,1,{1,0,0})
     end
-    sim.addDrawingObjectItem(drawingConts.targetCont,simIK.getObjectPose(ikEnv,ikTarget,simIK.handle_world))
+    sim.addDrawingObjectItem(drawingConts.targetCont,simIK.getObjectPose(ikEnv,ikTarget))
     if drawingConts.tipCont==nil then
         drawingConts.tipCont=sim.addDrawingObject(sim.drawing_spherepts|sim.drawing_overlay|sim.drawing_cyclic,0.01,0,-1,1,{0,1,0})
     end
-    sim.addDrawingObjectItem(drawingConts.tipCont,simIK.getObjectPose(ikEnv,ikTip,simIK.handle_world))
+    sim.addDrawingObjectItem(drawingConts.tipCont,simIK.getObjectPose(ikEnv,ikTip))
     if drawingConts.linkCont==nil then
         drawingConts.linkCont=sim.addDrawingObject(sim.drawing_lines|sim.drawing_overlay,2,0,-1,0,{0,0,0})
     else
@@ -775,7 +806,7 @@ function simIK.createDebugOverlay(...)
     end
     local w={0,0,0,1,0,0,0}
     if ikBase~=-1 then
-        w=simIK.getObjectPose(ikEnv,ikBase,simIK.handle_world)
+        w=simIK.getObjectPose(ikEnv,ikBase)
     end
     sim.addDrawingObjectItem(drawingConts.baseCont,w)
     if drawingConts.jointCont==nil then
@@ -799,8 +830,8 @@ function simIK.createDebugOverlay(...)
     while obj~=-1 and obj~=ikBase do
         local t=simIK.getObjectType(ikEnv,obj)
         if t==simIK.objecttype_joint then
-            local p=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
-            local m1=simIK.getObjectMatrix(ikEnv,obj,sim.handle_world)
+            local p=simIK.getObjectPose(ikEnv,prevObj)
+            local m1=simIK.getObjectMatrix(ikEnv,obj)
             local m2=simIK.getJointMatrix(ikEnv,obj)
             m1=sim.multiplyMatrices(m1,m2)
             p[4]=m1[4]
@@ -823,7 +854,7 @@ function simIK.createDebugOverlay(...)
             elseif m==simIK.jointmode_passive then
                 ind2=3
             end
-            local m=simIK.getObjectMatrix(ikEnv,obj,simIK.handle_world)
+            local m=simIK.getObjectMatrix(ikEnv,obj)
             if spherical then
                 sim.addDrawingObjectItem(drawingConts.jointCont[ind1+ind2],{m[4],m[8],m[12]})
             else
@@ -831,8 +862,8 @@ function simIK.createDebugOverlay(...)
             end
         else
             if prevObj~=obj then
-                local p=simIK.getObjectPose(ikEnv,obj,sim.handle_world)
-                local p2=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
+                local p=simIK.getObjectPose(ikEnv,obj)
+                local p2=simIK.getObjectPose(ikEnv,prevObj)
                 p[4]=p2[1]
                 p[5]=p2[2]
                 p[6]=p2[3]
@@ -844,12 +875,12 @@ function simIK.createDebugOverlay(...)
         obj=simIK.getObjectParent(ikEnv,obj)
     end
     
-    local p=simIK.getObjectPose(ikEnv,prevObj,sim.handle_world)
+    local p=simIK.getObjectPose(ikEnv,prevObj)
     p[4]=0
     p[5]=0
     p[6]=0
     if ikBase~=-1 then
-        local p2=simIK.getObjectPose(ikEnv,ikBase,sim.handle_world)
+        local p2=simIK.getObjectPose(ikEnv,ikBase)
         p[4]=p2[1]
         p[5]=p2[2]
         p[6]=p2[3]
@@ -929,10 +960,10 @@ function simIK.solvePath(...)
         local pose=sim.getPathInterpolatedConfig(pathData,pathLengths,posAlongPath,nil,{0,0,0,2,2,2,2})
         -- re-fetch path pose, should path be part of the IK chain:
         if ikPath~=-1 then
-            local pathPose=simIK.getObjectPose(ikEnv,ikPath,-1)
+            local pathPose=simIK.getObjectPose(ikEnv,ikPath)
             pose=sim.multiplyPoses(pathPose,pose)
         end
-        simIK.setObjectPose(ikEnv,ikTarget,-1,pose)
+        simIK.setObjectPose(ikEnv,ikTarget,pose)
     end
     local getConfig=opts.getConfig or partial(map,sim.getJointPosition,simJoints)
     local setConfig=opts.setConfig or partial(foreach,sim.setJointPosition,simJoints)

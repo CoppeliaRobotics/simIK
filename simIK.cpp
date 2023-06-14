@@ -3116,9 +3116,9 @@ const int inArgs_SETOBJECTTRANSFORMATION[]={
     5,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
+    sim_script_arg_double|sim_script_arg_table,3,
+    sim_script_arg_double|sim_script_arg_table,3,
     sim_script_arg_int32,0,
-    sim_script_arg_double|sim_script_arg_table,3,
-    sim_script_arg_double|sim_script_arg_table,3,
 };
 
 void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
@@ -3129,14 +3129,14 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
-        int relHandle=inData->at(2).int32Data[0];
+        int relHandle=inData->at(4).int32Data[0];
         double* quat=nullptr;
         double* euler=nullptr;
-        double* pos=&inData->at(3).doubleData[0];
-        if (inData->at(4).doubleData.size()==3)
-            euler=&inData->at(4).doubleData[0];
+        double* pos=&inData->at(2).doubleData[0];
+        if (inData->at(3).doubleData.size()==3)
+            euler=&inData->at(3).doubleData[0];
         else
-            quat=&inData->at(4).doubleData[0];
+            quat=&inData->at(3).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -3220,8 +3220,8 @@ const int inArgs_SETOBJECTMATRIX[]={
     4,
     sim_script_arg_int32,0,
     sim_script_arg_int32,0,
-    sim_script_arg_int32,0,
     sim_script_arg_double|sim_script_arg_table,12,
+    sim_script_arg_int32,0,
 };
 
 void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
@@ -3232,8 +3232,8 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
         int envId=inData->at(0).int32Data[0];
         int objHandle=inData->at(1).int32Data[0];
-        int relHandle=inData->at(2).int32Data[0];
-        double* m=&inData->at(3).doubleData[0];
+        int relHandle=inData->at(3).int32Data[0];
+        double* m=&inData->at(2).doubleData[0];
         std::string err;
         {
             CLockInterface lock; // actually required to correctly support CoppeliaSim's old GUI-based IK
