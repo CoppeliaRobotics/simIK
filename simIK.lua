@@ -38,7 +38,7 @@ function simIK.getObjectPose(ikEnv,obj,relObj)
 end
 
 function simIK.setObjectPose(ikEnv,obj,pose,relObj)
-    simIK.setObjectTransformationsimIK.setObjectTransformation(ikEnv,obj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]},relObj)
+    simIK.setObjectTransformation(ikEnv,obj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]},relObj)
 end
 
 
