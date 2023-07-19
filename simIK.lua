@@ -38,9 +38,12 @@ function simIK.getObjectPose(ikEnv,obj,relObj)
 end
 
 function simIK.setObjectPose(ikEnv,obj,pose,relObj)
-    simIK.setObjectTransformation(ikEnv,obj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]},relObj)
+    if type(pose)=='table' then
+        simIK.setObjectTransformation(ikEnv,obj,{pose[1],pose[2],pose[3]},{pose[4],pose[5],pose[6],pose[7]},relObj)
+    else
+        simIK.setObjectTransformation(ikEnv,obj,{relObj[1],relObj[2],relObj[3]},{relObj[4],relObj[5],relObj[6],relObj[7]},pose) -- deprecated
+    end
 end
-
 
 function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
     if index>#jointHandles then
