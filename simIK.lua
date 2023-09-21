@@ -72,7 +72,7 @@ function simIK.getAlternateConfigs(...)
         error("Bad table size.")
     end
 
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
 
     local retVal={}
     local ikEnv=simIK.duplicateEnvironment(ikEnvironment)
@@ -162,7 +162,7 @@ function simIK.getAlternateConfigs(...)
         configs=_S.simIKLoopThroughAltConfigSolutions(ikEnv,jointHandles,desiredPose,confS,x,1)
     end
     simIK.eraseEnvironment(ikEnv)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     
     if next(configs)~=nil then
         configs=Matrix:fromtable(configs)
@@ -173,7 +173,7 @@ end
 
 function simIK.syncFromSim(...)
     local ikEnv,ikGroups=checkargs({{type='int'},{type='table'}},...)
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     for g=1,#ikGroups,1 do
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k,v in pairs(groupData.joints) do
@@ -196,12 +196,12 @@ function simIK.syncFromSim(...)
             simIK.setObjectMatrix(ikEnv,groupData.targetTipBaseTriplets[i][4],sim.getObjectMatrix(groupData.targetTipBaseTriplets[i][1],groupData.targetTipBaseTriplets[i][3]),groupData.targetTipBaseTriplets[i][6])
         end
     end
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
 end
 
 function simIK.syncToSim(...)
     local ikEnv,ikGroups=checkargs({{type='int'},{type='table'}},...)
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     for g=1,#ikGroups,1 do
         local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k,v in pairs(groupData.joints) do
@@ -226,7 +226,7 @@ function simIK.syncToSim(...)
             end
         end
     end
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
@@ -237,13 +237,13 @@ function simIK.debugGroupIfNeeded(ikEnv,ikGroup,debugFlags)
     if _S.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
         local p=sim.getNamedInt32Param('simIK.debug_world')
         if (p and (p&1)~=0) or ((debugFlags&1)~=0) then
-            local lb=sim.setThreadAutomaticSwitch(false)
+            local lb=sim.setAutoYield(false)
             local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
             groupData.visualDebug={}
             for i=1,#groupData.targetTipBaseTriplets,1 do
                 groupData.visualDebug[i]=simIK.createDebugOverlay(ikEnv,groupData.targetTipBaseTriplets[i][5],groupData.targetTipBaseTriplets[i][6])
             end
-            sim.setThreadAutomaticSwitch(lb)
+            sim.setAutoYield(lb)
         else
             local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
             if groupData.visualDebug then
@@ -259,7 +259,7 @@ end
 function simIK.addElementFromScene(...)
     local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
     
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     
     if not _S.ikEnvs then
         _S.ikEnvs={}
@@ -399,26 +399,26 @@ function simIK.addElementFromScene(...)
     local ikElement=simIK.addElement(ikEnv,ikGroup,ikTip)
     simIK.setElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
     simIK.setElementConstraints(ikEnv,ikGroup,ikElement,constraints)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     return ikElement,simToIkMap,ikToSimMap
 end
 
 function simIK.eraseEnvironment(...)
     local ikEnv=checkargs({{type='int'}},...)
     
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     
     if _S.ikEnvs then
         _S.ikEnvs[ikEnv]=nil
     end
     simIK._eraseEnvironment(ikEnv)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
 end
 
 function simIK.findConfig(...)
     local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='any',default=NIL,nullable=true},{type='any',default=NIL,nullable=true}},...)
     local dof=#joints
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
 
     --local env=simIK.duplicateEnvironment(ikEnv)
     local env=ikEnv
@@ -437,7 +437,7 @@ function simIK.findConfig(...)
     end
     local retVal=simIK._findConfig(env,ikGroup,joints,thresholdDist,maxTime*1000,metric,funcNm,t)
     --simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     return retVal
 end
 
@@ -584,7 +584,7 @@ end
 
 function simIK.handleGroups(...)
     local ikEnv,ikGroups,options=checkargs({{type='int'},{type='table'},{type='table',default={}}},...)
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     _S.currentIkEnv=ikEnv
     local debugFlags=0
     if options.debug then
@@ -671,7 +671,7 @@ function simIK.handleGroups(...)
     for i=1,#ikGroups,1 do
         simIK.debugGroupIfNeeded(ikEnv,ikGroups[i],debugFlags)
     end
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     return retVal,reason,prec
 end
 
@@ -717,7 +717,7 @@ end
 function simIK.generatePath(...)
     local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{type='int'},{type='any',default=NIL,nullable=true},{type='any',default=NIL}},...)
 
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
 
     local env=simIK.duplicateEnvironment(ikEnv)
     local targetHandle=simIK.getTargetDummy(env,tip)
@@ -761,7 +761,7 @@ function simIK.generatePath(...)
         end
     end
     simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     if not success then
         retPath={}
     else
@@ -1056,7 +1056,7 @@ end
 function simIK.applyIkEnvironmentToScene(...)
     -- deprecated
     local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
     
     simIK.syncFromSim(ikEnv,{ikGroup})
     local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
@@ -1064,7 +1064,7 @@ function simIK.applyIkEnvironmentToScene(...)
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         simIK.syncToSim(ikEnv,{ikGroup})
     end
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     return res,reason,prec
 end
 
@@ -1077,7 +1077,7 @@ function simIK.getConfigForTipPose(...)
         error("Bad table size.")
     end
 
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setAutoYield(false)
 
     local env=simIK.duplicateEnvironment(ikEnv)
     if metric==nil then metric={1,1,1,0.1} end
@@ -1104,7 +1104,7 @@ function simIK.getConfigForTipPose(...)
         retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
     end
     simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(lb)
+    sim.setAutoYield(lb)
     return retVal
 end
 
