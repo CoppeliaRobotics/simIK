@@ -451,16 +451,24 @@ function simIK.findConfig(...)
     -- local env=simIK.duplicateEnvironment(ikEnv)
     local env = ikEnv
     if metric == nil then metric = {1, 1, 1, 0.1} end
-    function __cb(config)
-        if type(callback) == 'string' then
-            return _G[callback](config, auxData)
+    local __callback
+    function __ikcb(config)
+        local fun = _G
+        if string.find(__callback, "%.") then
+            for w in __callback:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
+                if fun[w] then fun = fun[w] end
+            end
         else
-            return callback(config, auxData)
+            fun = fun[__callback]
+        end
+        if type(fun) == 'function' then
+            return fun(config, auxData)
         end
     end
     local funcNm, t
     if callback then
-        funcNm = '__cb'
+        __callback = reify(callback)
+        funcNm = '__ikcb'
         t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_handle)
     end
     local retVal = simIK._findConfig(
