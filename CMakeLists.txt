@@ -24,8 +24,8 @@ coppeliasim_add_plugin(
     simIK
     LEGACY
     SOURCES
-    simIK.cpp
-    envCont.cpp
+    sourceCode/simIK.cpp
+    sourceCode/envCont.cpp
     ../coppeliaKinematicsRoutines/ik.cpp
     ../coppeliaKinematicsRoutines/environment.cpp
     ../coppeliaKinematicsRoutines/serialization.cpp
@@ -50,7 +50,7 @@ target_compile_definitions(simIK PRIVATE SIM_MATH_DOUBLE)
 target_include_directories(simIK PRIVATE ../coppeliaKinematicsRoutines)
 target_include_directories(simIK PRIVATE ${COPPELIASIM_INCLUDE_DIR}/simMath)
 target_link_libraries(simIK PRIVATE Eigen3::Eigen)
-coppeliasim_add_lua(simIK.lua)
-coppeliasim_add_lua(simIK-ce.lua)
-coppeliasim_add_helpfile(simIK.htm)
-coppeliasim_add_helpfile(simIK.json SUBDIR index)
+coppeliasim_add_lua(lua/simIK.lua)
+coppeliasim_add_lua(lua/simIK-ce.lua)
+coppeliasim_add_helpfile(helpFiles/simIK.htm)
+coppeliasim_add_helpfile(helpFiles/index/simIK.json SUBDIR index)
