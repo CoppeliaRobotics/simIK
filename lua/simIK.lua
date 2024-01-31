@@ -785,9 +785,9 @@ function simIK.generatePath(...)
     local success = true
     if callback then
         if type(callback) == 'string' then
-            success = _G[callback](retPath[1])
+            success = _G[callback](retPath[1], auxData)
         else
-            success = callback(retPath[1])
+            success = callback(retPath[1], auxData)
         end
     end
     if success then
@@ -803,9 +803,9 @@ function simIK.generatePath(...)
             end
             if callback then
                 if type(callback) == 'string' then
-                    success = _G[callback](retPath[j + 1])
+                    success = _G[callback](retPath[j + 1], auxData)
                 else
-                    success = callback(retPath[j + 1])
+                    success = callback(retPath[j + 1], auxData)
                 end
             end
             if not success then break end
