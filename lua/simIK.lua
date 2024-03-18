@@ -1052,7 +1052,7 @@ function simIK.solvePath(...)
     if math.type(simPath) == 'integer' and sim.isHandle(simPath) then
         -- read path data inside path object:
         pathData = sim.readCustomDataBlock(simPath, 'PATH')
-        assert(pathData ~= nil, 'object does not contain PATH data')
+        assert(pathData ~= nil and #pathData > 0, 'object does not contain PATH data')
         pathData = sim.unpackDoubleTable(pathData)
     end
     local m = Matrix(#pathData // 7, 7, pathData)
