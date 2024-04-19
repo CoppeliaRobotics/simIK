@@ -60,8 +60,7 @@ function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desi
         local solutions = {}
         while c[index] <= x[index][2] do
             local s = _S.simIKLoopThroughAltConfigSolutions(
-                          ikEnvironment, jointHandles, desiredPose, c, x, index + 1, tipHandle
-                      )
+                          ikEnvironment, jointHandles, desiredPose, c, x, index + 1)
             for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
             c[index] = c[index] + math.pi * 2
         end
@@ -70,7 +69,7 @@ function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desi
 end
 
 function simIK.getAlternateConfigs(...)
-    local ikEnvironment, jointHandles, lowLimits, ranges = checkargs({
+    local ikEnv, jointHandles, lowLimits, ranges = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
         {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
@@ -85,7 +84,6 @@ function simIK.getAlternateConfigs(...)
     local lb = sim.setStepping(true)
 
     local retVal = {}
-    local ikEnv = simIK.duplicateEnvironment(ikEnvironment)
     local x = {}
     local confS = {}
     local err = false
@@ -159,15 +157,11 @@ function simIK.getAlternateConfigs(...)
     end
     local configs = {}
     if not err then
-        for i = 1, #jointHandles, 1 do
-            simIK.setJointPosition(ikEnv, jointHandles[i], inputConfig[i])
-        end
         local desiredPose = 0
         configs = _S.simIKLoopThroughAltConfigSolutions(
                       ikEnv, jointHandles, desiredPose, confS, x, 1
                   )
     end
-    simIK.eraseEnvironment(ikEnv)
     sim.setStepping(lb)
 
     if next(configs) ~= nil then
@@ -434,6 +428,7 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.findConfig(...)
+    -- deprecated. Use simIK.findConfigs instead
     local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -1087,10 +1082,12 @@ function simIK.solvePath(...)
 
     -- find initial config:
     moveIkTarget(0)
-    local cfg = simIK.findConfig(ikEnv, ikGroup, ikJoints)
-    if not cfg then
+    local cfg = simIK.findConfigs(ikEnv, ikGroup, ikJoints)
+    if #cfg == 0 then
         reportError('Failed to find initial config')
         goto fail
+    else
+        cfg = cfg[1]
     end
 
     -- apply config in ik world:
@@ -1248,6 +1245,143 @@ function simIK.getConfigForTipPose(...)
     simIK.eraseEnvironment(env)
     sim.setStepping(lb)
     return retVal
+end
+
+function simIK.findConfigs(...)
+    local ikEnv, ikGroup, ikJoints, params, otherConfigs = checkargs({
+        {type = 'int'},
+        {type = 'int'},
+        {type = 'table', size = '1..*', item_type = 'int'},
+        {type = 'table', default = NIL, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'int', default = NIL, nullable = true},
+    }, ...)
+    params = params or {}
+    -- params.findMultiple 
+    if params.findAlt == nil then params.findAlt = true end 
+    params.maxDist = params.maxDist or 0.3
+    params.maxTime = params.maxTime or 0.2
+    params.pMetric = params.pMetric or {1.0, 1.0, 1.0, 0.1}
+    params.cMetric = params.cMetric or table.rep(1.0, #ikJoints)
+    otherConfigs = otherConfigs or {}
+    local lb = sim.setStepping(true)
+    local retConfs = {}
+    
+    local st = sim.getSystemTime()
+    while true do
+        local ct = sim.getSystemTime()
+        local conf = simIK.findConfig(ikEnv, ikGroup, ikJoints, params.maxDist, math.max(params.maxTime - (ct - st), 0.01), params.pMetric, params.cb, params.auxData)
+        if conf then
+            if #retConfs == 0 then
+                retConfs = otherConfigs
+            end
+            local altConfigs = {}
+            if params.findAlt then
+                -- find all alternate, valid configs:
+                altConfigs = _S.simIKGetAltConfigs(ikEnv, ikJoints, conf)
+                if params.cb then
+                    local cnt = 1
+                    while cnt <= #altConfigs do
+                        if params.cb(altConfigs[cnt], params.auxData) then
+                            cnt = cnt + 1
+                        else
+                            table.remove(altConfigs, cnt)
+                        end
+                    end
+                end
+            end
+            retConfs[#retConfs + 1] = conf
+            for i = 1, #altConfigs do
+                retConfs[#retConfs + 1] = altConfigs[i]
+            end
+        end
+        if (not params.findMultiple) or (ct - st >= params.maxTime) then
+            break
+        end
+    end
+        
+    if #retConfs == 0 then
+        -- Order configs according to proximity to current config:
+        local cc = simIK.getConfig(ikEnv, ikJoints)
+        if #retConfs > 1 then
+            local configs = {}
+            local dists = {}
+            for i = 1, #retConfs do
+                local d = sim.getConfigDistance(cc, retConfs[i], params.cMetric)
+                dists[i] = d
+                configs[d] = retConfs[i]
+            end
+            retConfs = {}
+            table.sort(dists)
+            for i = 1, #dists do
+                retConfs[#retConfs + 1] = configs[dists[i]]
+            end
+        end
+    end
+    sim.setStepping(lb)
+    return retConfs
+end
+
+function simIK.getConfig(ikEnv, jh)
+    local retVal = {}
+    for i = 1, #jh do
+        retVal[i] = simIK.getJointPosition(ikEnv, jh[i])
+    end
+    return retVal
+end
+
+function simIK.setConfig(ikEnv, jh, config)
+    for i = 1, #jh do
+        simIK.setJointPosition(ikEnv, jh[i], config[i])
+    end
+end
+
+function _S.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
+    local dof = #jointHandles
+    local retVal = {}
+    local x = {}
+    local confS = {}
+    local err = false
+    for i = 1, #jointHandles, 1 do
+        local c, interv = simIK.getJointInterval(ikEnv, jointHandles[i])
+        local t = simIK.getJointType(ikEnv, jointHandles[i])
+        local sp = simIK.getJointScrewLead(ikEnv, jointHandles[i])
+        if t == simIK.jointtype_revolute and not c then
+            if sp == 0 then
+                if inputConfig[i] - math.pi * 2 >= interv[1] or inputConfig[i] + math.pi * 2 <=
+                    interv[1] + interv[2] then
+                    -- We use the low and range values from the joint's settings
+                    local y = inputConfig[i]
+                    while y - math.pi * 2 >= interv[1] do y = y - math.pi * 2 end
+                    x[i] = {y, interv[1] + interv[2]}
+                end
+            end
+        end
+        if not x[i] then
+            -- there's no alternative position for this joint
+            x[i] = {inputConfig[i], inputConfig[i]}
+        end
+        confS[i] = x[i][1]
+    end
+    local configs = {}
+    if not err then
+        local desiredPose = 0
+        configs = _S.simIKLoopThroughAltConfigSolutions(
+                      ikEnv, jointHandles, desiredPose, confS, x, 1)
+    end
+    
+    -- Exclude the input config:
+    for j = 1, #configs do
+        local distSq = 0.0
+        for i = 1, #inputConfig do
+            local d = inputConfig[i] - configs[j][i]
+            distSq = distSq + d * d
+        end
+        if distSq < 0.1 then
+            table.remove(configs, j)
+            break
+        end
+    end
+    return configs
 end
 
 return simIK
