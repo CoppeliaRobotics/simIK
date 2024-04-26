@@ -422,7 +422,19 @@ function simIK.eraseEnvironment(...)
 
     local lb = sim.setStepping(true)
 
-    if _S.ikEnvs then _S.ikEnvs[ikEnv] = nil end
+    if _S.ikEnvs and _S.ikEnvs[ikEnv] then
+        local env = _S.ikEnvs[ikEnv]
+        if env.ikGroups then
+            for k, v in pairs(env.ikGroups) do
+                if v.visualDebug then
+                    for i = 1, #v.visualDebug do
+                        simIK.eraseDebugOverlay(v.visualDebug[i])
+                    end
+                end
+            end
+        end
+        _S.ikEnvs[ikEnv] = nil
+    end
     simIK._eraseEnvironment(ikEnv)
     sim.setStepping(lb)
 end
