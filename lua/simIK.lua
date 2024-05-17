@@ -1058,7 +1058,7 @@ function simIK.solvePath(...)
     local pathData = simPath
     if math.type(simPath) == 'integer' and sim.isHandle(simPath) then
         -- read path data inside path object:
-        pathData = sim.readCustomDataBlock(simPath, 'PATH')
+        pathData = sim.readCustomBufferData(simPath, 'PATH')
         assert(pathData ~= nil and #pathData > 0, 'object does not contain PATH data')
         pathData = sim.unpackDoubleTable(pathData)
     end
