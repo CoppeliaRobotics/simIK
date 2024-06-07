@@ -2806,7 +2806,7 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
                     double* lowLimits=nullptr;
                     double* ranges=nullptr;
                     bool(*cb)(double*)=nullptr;
-                    int scriptType=sim_scripttype_childscript;
+                    int scriptType=sim_scripttype_simulation;
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         iterations=inData->at(4).int32Data[0];
                     if ( (inData->size()>8)&&(inData->at(8).int32Data.size()>=jointCnt) )
@@ -2891,7 +2891,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
                     int timeInMs=100;
                     double* metric=nullptr;
                     bool(*cb)(double*)=nullptr;
-                    int scriptType=sim_scripttype_childscript;
+                    int scriptType=sim_scripttype_simulation;
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         timeInMs=inData->at(4).int32Data[0];
                     if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
