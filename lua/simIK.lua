@@ -476,7 +476,7 @@ function simIK.findConfig(...)
     if callback then
         __callback = reify(callback)
         funcNm = '__ikcb'
-        t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_handle)
+        t = sim.getScript(sim.handle_self)
     end
     local retVal = simIK._findConfig(
                        env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t
@@ -715,7 +715,7 @@ function simIK.handleGroups(...)
     local funcNm, t
     if options.callback or debugJacobian then
         funcNm = '__cb'
-        t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_handle)
+        t = sim.getScript(sim.handle_self)
     end
     if options.syncWorlds then simIK.syncFromSim(ikEnv, ikGroups) end
     local retVal, reason, prec = simIK._handleGroups(ikEnv, ikGroups, funcNm, t)
@@ -764,7 +764,7 @@ function simIK.setJointDependency(...)
     local funcNm, t
     if callback then
         funcNm = '__depcb'
-        t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_handle)
+        t = sim.getScript(sim.handle_self)
     end
     simIK._setJointDependency(ikEnv, slaveJoint, masterJoint, offset, mult, funcNm, t)
     return retVal
@@ -1247,7 +1247,7 @@ function simIK.getConfigForTipPose(...)
         local funcNm, t
         if callback then
             funcNm = '__cb'
-            t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_handle)
+            t = sim.getScript(sim.handle_self)
         end
         retVal = simIK._getConfigForTipPose(
                      env, ikGroup, joints, thresholdDist, -maxTime * 1000, metric, funcNm, t,
