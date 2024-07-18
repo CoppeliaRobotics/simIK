@@ -182,7 +182,7 @@ function simIK.syncFromSim(...)
         local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k, v in pairs(groupData.joints) do
             if sim.isHandle(k) then
-                if sim.getJointType(k) == sim.joint_spherical_subtype then
+                if sim.getJointType(k) == sim.joint_spherical then
                     simIK.setSphericalJointMatrix(ikEnv, v, sim.getJointMatrix(k))
                 else
                     simIK.setJointPosition(ikEnv, v, sim.getJointPosition(k))
@@ -218,7 +218,7 @@ function simIK.syncToSim(...)
         local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k, v in pairs(groupData.joints) do
             if sim.isHandle(k) then
-                if sim.getJointType(k) == sim.joint_spherical_subtype then
+                if sim.getJointType(k) == sim.joint_spherical then
                     if sim.getJointMode(k) ~= sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
                         sim.setSphericalJointMatrix(k, simIK.getJointMatrix(ikEnv, v))
                     end
@@ -311,7 +311,7 @@ function simIK.addElementFromScene(...)
         simIK.setJointMaxStepSize(ikEnv, ikJoint, sp)
         local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_ik_weight)
         simIK.setJointWeight(ikEnv, ikJoint, sp)
-        if t == sim.joint_spherical_subtype then
+        if t == sim.joint_spherical then
             simIK.setSphericalJointMatrix(ikEnv, ikJoint, sim.getJointMatrix(simJoint))
         else
             simIK.setJointPosition(ikEnv, ikJoint, sim.getJointPosition(simJoint))
@@ -328,7 +328,7 @@ function simIK.addElementFromScene(...)
                 -- object already added (but maybe parenting not done yet, e.g. with master joints in dependency relationship)
                 ikIterator = simToIkMap[simIterator]
             else
-                if sim.getObjectType(simIterator) ~= sim.object_joint_type then
+                if sim.getObjectType(simIterator) ~= sim.sceneobject_joint then
                     ikIterator = simIK.createDummy(ikEnv)
                 else
                     ikIterator = createIkJointFromSimJoint(ikEnv, simIterator)
@@ -337,7 +337,7 @@ function simIK.addElementFromScene(...)
                 ikToSimMap[ikIterator] = simIterator
                 simIK.setObjectMatrix(ikEnv, ikIterator, sim.getObjectMatrix(simIterator))
             end
-            if sim.getObjectType(simIterator) == sim.object_joint_type then
+            if sim.getObjectType(simIterator) == sim.sceneobject_joint then
                 groupData.joints[simIterator] = ikIterator
             end
             if ikPrevIterator ~= -1 then
@@ -365,7 +365,7 @@ function simIK.addElementFromScene(...)
     -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have complex daisy chains)
     -- We will however have to be careful, and always first check if a joint is still valid (e.g. we could remove a joint from the scene
     -- in an unrelated model)
-    local simJoints = sim.getObjectsInTree(sim.handle_scene, sim.object_joint_type)
+    local simJoints = sim.getObjectsInTree(sim.handle_scene, sim.sceneobject_joint)
     local slaves = {}
     local masters = {}
     local passives = {}
