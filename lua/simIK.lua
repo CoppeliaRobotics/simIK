@@ -1311,22 +1311,20 @@ function simIK.findConfigs(...)
         end
     end
         
-    if #retConfs == 0 then
+    if #retConfs > 1 then
         -- Order configs according to proximity to current config:
         local cc = simIK.getConfig(ikEnv, ikJoints)
-        if #retConfs > 1 then
-            local configs = {}
-            local dists = {}
-            for i = 1, #retConfs do
-                local d = sim.getConfigDistance(cc, retConfs[i], params.cMetric)
-                dists[i] = d
-                configs[d] = retConfs[i]
-            end
-            retConfs = {}
-            table.sort(dists)
-            for i = 1, #dists do
-                retConfs[#retConfs + 1] = configs[dists[i]]
-            end
+        local configs = {}
+        local dists = {}
+        for i = 1, #retConfs do
+            local d = sim.getConfigDistance(cc, retConfs[i], params.cMetric)
+            dists[i] = d
+            configs[d] = retConfs[i]
+        end
+        retConfs = {}
+        table.sort(dists)
+        for i = 1, #dists do
+            retConfs[#retConfs + 1] = configs[dists[i]]
         end
     end
     sim.setStepping(lb)
