@@ -649,14 +649,19 @@ function simIK.handleGroups(...)
     if options.debug then debugFlags = options.debug end
     local p = sim.getNamedInt32Param('simIK.debug_world')
     local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0)) and _S.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
-
+    local pythonCallback = false
     function __cb(rows_constr, rows_ikEl, cols_handles, cols_dofIndex, jacobian, errorVect, groupId,
                   iteration)
         local data = {}
-        data.jacobian = Matrix({data = jacobian, dims = {#rows_constr, #cols_handles}})
         data.rows = {}
         data.cols = {}
-        data.e = Matrix({data = errorVect, dims = {#rows_constr, 1}})
+        if pythonCallback then
+            data.jacobian = jacobian
+            data.e = errorVect
+        else
+            data.jacobian = Matrix({data = jacobian, dims = {#rows_constr, #cols_handles}})
+            data.e = Matrix({data = errorVect, dims = {#rows_constr, 1}})
+        end
         for i = 1, #rows_constr, 1 do
             data.rows[i] = {constraint = rows_constr[i], element = rows_ikEl[i]}
         end
@@ -678,34 +683,65 @@ function simIK.handleGroups(...)
                 outData = options.callback(data, options.auxData)
             end
             if outData then
-                if outData.jacobian then
-                    if outData.jacobian:cols() == #cols_handles and outData.jacobian:rows() ==
-                        #rows_constr then
-                        j = outData.jacobian:data()
-                    else
-                        error("invalid jacobian matrix size")
+                if pythonCallback then
+                    if outData.jacobian then
+                        if #outData.jacobian == #cols_handles * #rows_constr then
+                            j = outData.jacobian
+                        else
+                            error("invalid jacobian matrix size")
+                        end
                     end
-                end
-                if outData.e then
-                    if outData.e:rows() == #rows_constr and outData.e:cols() == 1 then
-                        e = outData.e:data()
-                    else
-                        error("invalid e vector size")
+                    if outData.e then
+                        if #outData.e == #rows_constr then
+                            e = outData.e
+                        else
+                            error("invalid e vector size")
+                        end
                     end
-                end
-                if outData.dq then
-                    if outData.dq:rows() == #cols_handles and outData.dq:cols() == 1 then
-                        dq = outData.dq:data()
-                    else
-                        error("invalid dq vector size")
+                    if outData.dq then
+                        if #outData.dq == #cols_handles then
+                            dq = outData.dq
+                        else
+                            error("invalid dq vector size")
+                        end
                     end
-                end
-                if outData.jacobianPinv then
-                    if outData.jacobianPinv:rows() == #cols_handles and outData.jacobianPinv:cols() ==
-                        #rows_constr then
-                        jpinv = outData.jacobianPinv:data()
-                    else
-                        error("invalid jacobian pseudo-inverse matrix size")
+                    if outData.jacobianPinv then
+                        if #outData.jacobianPinv == #cols_handles * #rows_constr then
+                            jpinv = outData.jacobianPinv
+                        else
+                            error("invalid jacobian pseudo-inverse matrix size")
+                        end
+                    end
+                else
+                    if outData.jacobian then
+                        if outData.jacobian:cols() == #cols_handles and outData.jacobian:rows() ==
+                            #rows_constr then
+                            j = outData.jacobian:data()
+                        else
+                            error("invalid jacobian matrix size")
+                        end
+                    end
+                    if outData.e then
+                        if outData.e:rows() == #rows_constr and outData.e:cols() == 1 then
+                            e = outData.e:data()
+                        else
+                            error("invalid e vector size")
+                        end
+                    end
+                    if outData.dq then
+                        if outData.dq:rows() == #cols_handles and outData.dq:cols() == 1 then
+                            dq = outData.dq:data()
+                        else
+                            error("invalid dq vector size")
+                        end
+                    end
+                    if outData.jacobianPinv then
+                        if outData.jacobianPinv:rows() == #cols_handles and outData.jacobianPinv:cols() ==
+                            #rows_constr then
+                            jpinv = outData.jacobianPinv:data()
+                        else
+                            error("invalid jacobian pseudo-inverse matrix size")
+                        end
                     end
                 end
             end
@@ -716,6 +752,9 @@ function simIK.handleGroups(...)
     if options.callback or debugJacobian then
         funcNm = '__cb'
         t = sim.getScript(sim.handle_self)
+        if _S.pythonCallbacks and _S.pythonCallbacks[options.callback] then
+            pythonCallback = true
+        end
     end
     if options.syncWorlds then simIK.syncFromSim(ikEnv, ikGroups) end
     local retVal, reason, prec = simIK._handleGroups(ikEnv, ikGroups, funcNm, t)

@@ -2677,6 +2677,8 @@ int jacobianCallback(const int jacobianSize[2],double* jacobian,const int* rowCo
                 simGetStackDoubleTable(stack,jacobian,cnt);
             simPopStackItem(stack,1);
         }
+        else
+            simDebugStack(stack, -1);
     }
     simReleaseStack(stack);
     ikSwitchEnvironment(jacobianCallback_envId); // actually required to correctly support CoppeliaSim's old GUI-based IK
