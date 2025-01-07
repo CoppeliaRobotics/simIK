@@ -7,7 +7,7 @@ under the same terms of the files in the parent directory otherwise.
 -------------------------------------------------------------------
 KINEMATICS PLUGIN source code files
 
-Copyright (C) 2020-2024 Coppelia Robotics AG
+Copyright (C) 2020-2025 Coppelia Robotics AG
 
 All rights reserved.
 
