@@ -2747,8 +2747,8 @@ void LUA_HANDLEIKGROUPS_CALLBACK(SScriptCallBack* p)
 }
 // --------------------------------------------------------------------------------------
 
-static std::string validationCallback_funcNameAtScriptName;
-static int validationCallback_scriptType;
+static std::string validationCallback_funcName;
+static int validationCallback_scriptHandle;
 static int validationCallback_envId;
 static size_t validationCallback_jointCnt;
 
@@ -2757,7 +2757,7 @@ bool validationCallback(double* conf)
     bool retVal=1;
     int stack=simCreateStack();
     simPushDoubleTableOntoStack(stack,conf,int(validationCallback_jointCnt));
-    if (simCallScriptFunctionEx(validationCallback_scriptType,validationCallback_funcNameAtScriptName.c_str(),stack)!=-1)
+    if (simCallScriptFunctionEx(validationCallback_scriptHandle, validationCallback_funcName.c_str(), stack) != -1)
         simGetStackBoolValue(stack,&retVal);
     simReleaseStack(stack);
     ikSwitchEnvironment(validationCallback_envId); // actually required to correctly support CoppeliaSim's old GUI-based IK
@@ -2808,17 +2808,17 @@ void LUA_GETCONFIGFORTIPPOSE_CALLBACK(SScriptCallBack* p)
                     double* lowLimits=nullptr;
                     double* ranges=nullptr;
                     bool(*cb)(double*)=nullptr;
-                    int scriptType=sim_scripttype_simulation;
+                    int scriptHandle = -1; // targets the sandbox
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         iterations=inData->at(4).int32Data[0];
                     if ( (inData->size()>8)&&(inData->at(8).int32Data.size()>=jointCnt) )
                         jointOptions=&inData->at(8).int32Data[0];
                     if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
-                        scriptType=inData->at(7).int32Data[0];
+                        scriptHandle=inData->at(7).int32Data[0];
                     if ( (inData->size()>6)&&(inData->at(6).stringData.size()==1)&&(inData->at(6).stringData[0].size()>0) )
                     {
-                        validationCallback_funcNameAtScriptName=inData->at(6).stringData[0];
-                        validationCallback_scriptType=scriptType;
+                        validationCallback_funcName=inData->at(6).stringData[0];
+                        validationCallback_scriptHandle=scriptHandle;
                         validationCallback_jointCnt=jointCnt;
                         validationCallback_envId=envId;
                         cb=validationCallback;
@@ -2893,15 +2893,15 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
                     int timeInMs=100;
                     double* metric=nullptr;
                     bool(*cb)(double*)=nullptr;
-                    int scriptType=sim_scripttype_simulation;
+                    int scriptHandle = -1; // targets the sandbox
                     if ( (inData->size()>4)&&(inData->at(4).int32Data.size()==1) )
                         timeInMs=inData->at(4).int32Data[0];
                     if ( (inData->size()>7)&&(inData->at(7).int32Data.size()==1) )
-                        scriptType=inData->at(7).int32Data[0];
+                        scriptHandle=inData->at(7).int32Data[0];
                     if ( (inData->size()>6)&&(inData->at(6).stringData.size()==1)&&(inData->at(6).stringData[0].size()>0) )
                     {
-                        validationCallback_funcNameAtScriptName=inData->at(6).stringData[0];
-                        validationCallback_scriptType=scriptType;
+                        validationCallback_funcName=inData->at(6).stringData[0];
+                        validationCallback_scriptHandle=scriptHandle;
                         validationCallback_jointCnt=jointCnt;
                         validationCallback_envId=envId;
                         cb=validationCallback;

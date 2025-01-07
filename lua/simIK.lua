@@ -478,9 +478,7 @@ function simIK.findConfig(...)
         funcNm = '__ikcb'
         t = sim.getScript(sim.handle_self)
     end
-    local retVal = simIK._findConfig(
-                       env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t
-                   )
+    local retVal = simIK._findConfig(env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t)
     -- simIK.eraseEnvironment(env)
     sim.setStepping(lb)
     return retVal
