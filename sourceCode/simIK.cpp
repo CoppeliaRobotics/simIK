@@ -3148,14 +3148,14 @@ const int inArgs_COMPUTEJACOBIAN[]={
     sim_script_arg_int32,0, // last joint handle (prev. options)
     sim_script_arg_int32,0, // constraints
     sim_script_arg_double|sim_script_arg_table,7, // tip pose
-    sim_script_arg_double|sim_script_arg_table,7, // target pose, optional
-    sim_script_arg_double|sim_script_arg_table,7, // altBase pose, optional
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // target pose, optional
+    sim_script_arg_double|sim_script_arg_table|SIM_SCRIPT_ARG_NULL_ALLOWED,0, // altBase pose, optional
 };
 
 void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 {
     CScriptFunctionData D;
-    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-4,nullptr))
+    if (D.readDataFromStack(p->stackID,inArgs_COMPUTEJACOBIAN,inArgs_COMPUTEJACOBIAN[0]-2,nullptr))
     {
         std::string err;
         std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
@@ -3165,7 +3165,7 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
             int baseHandle=inData->at(1).int32Data[0];
             int jointHandle=inData->at(2).int32Data[0];
             if ( (inData->size()>=5)&&(inData->at(3).int32Data.size()==1)&&(inData->at(4).doubleData.size()>=7) )
-            {
+            { // tip arg, required
                 int constraints=inData->at(3).int32Data[0];
                 C7Vector tipPose;
                 if (inData->at(4).doubleData.size()<12)
@@ -3181,31 +3181,37 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                 C7Vector* _altBase=nullptr;
                 bool ok=true;
                 if (inData->size()>=6)
-                {
-                    if (inData->at(5).doubleData.size()>=7)
+                { // target arg, optional
+                    if ((inData->at(5).doubleData.size()>=7) || (inData->at(5).getType()==-1))
                     {
-                        if (inData->at(5).doubleData.size()<12)
-                            targetPose.setData(inData->at(5).doubleData.data(),true);
-                        else
+                        if (inData->at(5).getType()!=-1)
                         {
-                            C4X4Matrix m;
-                            m.setData(inData->at(5).doubleData.data());
-                            targetPose=m.getTransformation();
+                            if (inData->at(5).doubleData.size()<12)
+                                targetPose.setData(inData->at(5).doubleData.data(),true);
+                            else
+                            {
+                                C4X4Matrix m;
+                                m.setData(inData->at(5).doubleData.data());
+                                targetPose=m.getTransformation();
+                            }
                         }
                         if (inData->size()>=7)
-                        {
+                        { // altbase arg, optional
 
-                            if (inData->at(6).doubleData.size()>=7)
+                            if ((inData->at(6).doubleData.size()>=7) || (inData->at(6).getType()==-1))
                             {
-                                if (inData->at(6).doubleData.size()<12)
-                                    altBase.setData(inData->at(6).doubleData.data(),true);
-                                else
+                                if (inData->at(6).getType()!=-1)
                                 {
-                                    C4X4Matrix m;
-                                    m.setData(inData->at(6).doubleData.data());
-                                    altBase=m.getTransformation();
+                                    if (inData->at(6).doubleData.size()<12)
+                                        altBase.setData(inData->at(6).doubleData.data(),true);
+                                    else
+                                    {
+                                        C4X4Matrix m;
+                                        m.setData(inData->at(6).doubleData.data());
+                                        altBase=m.getTransformation();
+                                    }
+                                    _altBase=&altBase;
                                 }
-                                _altBase=&altBase;
                             }
                             else
                                 ok=false;
