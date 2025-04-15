@@ -860,8 +860,7 @@ function simIK.generatePath(...)
     if not success then
         retPath = {}
     else
-        retPath = Matrix:fromtable(retPath)
-        retPath = retPath:data()
+        retPath = table.collapse(retPath)
     end
     return retPath
 end
