@@ -657,8 +657,8 @@ function simIK.handleGroups(...)
             data.jacobian = jacobian
             data.e = errorVect
         else
-            data.jacobian = Matrix({data = jacobian, dims = {#rows_constr, #cols_handles}})
-            data.e = Matrix({data = errorVect, dims = {#rows_constr, 1}})
+            data.jacobian = Matrix(#rows_constr, #cols_handles, jacobian)
+            data.e = Matrix(#rows_constr, 1, errorVect)
         end
         for i = 1, #rows_constr, 1 do
             data.rows[i] = {constraint = rows_constr[i], element = rows_ikEl[i]}
