@@ -72,8 +72,8 @@ function simIK.getAlternateConfigs(...)
     local ikEnv, jointHandles, lowLimits, ranges = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
-        {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
     }, ...)
 
     local dof = #jointHandles
@@ -448,8 +448,8 @@ function simIK.findConfig(...)
         {type = 'float', default = 0.1},
         {type = 'float', default = 0.5},
         {type = 'table', size = 4, item_type = 'float', default = {1, 1, 1, 0.1}, nullable = true},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'any', default = NIL, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
     }, ...)
 
     local dof = #joints
@@ -788,7 +788,7 @@ function simIK.setJointDependency(...)
         {type = 'int'},
         {type = 'float', default = 0.0},
         {type = 'float', default = 1.0},
-        {type = 'any', default = NIL, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
     }, ...)
 
     function __depcb(ikEnv, slaveJoint, masterPos)
@@ -814,8 +814,8 @@ function simIK.generatePath(...)
         {type = 'table', size = '1..*', item_type = 'int'},
         {type = 'int'},
         {type = 'int'},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'any', default = NIL},
+        {type = 'any', default_nil = true, nullable = true},
+        {type = 'any', default_nil = true},
     }, ...)
 
     local lb = sim.setStepping(true)
@@ -1246,11 +1246,11 @@ function simIK.getConfigForTipPose(...)
         {type = 'float', default = 0.1},
         {type = 'float', default = 0.5},
         {type = 'table', size = 4, item_type = 'float', default = {1, 1, 1, 0.1}, nullable = true},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'int', default = NIL, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'int', default_nil = true, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
     }, ...)
 
     local dof = #joints
@@ -1300,8 +1300,8 @@ function simIK.findConfigs(...)
         {type = 'int'},
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
-        {type = 'table', default = NIL, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'int', default = NIL, nullable = true},
+        {type = 'table', default_nil = true, nullable = true},
+        {type = 'table', size = '1..*', item_type = 'int', default_nil = true, nullable = true},
     }, ...)
     params = params or {}
     -- params.findMultiple 
