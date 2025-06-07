@@ -1,34 +1,35 @@
 local simIK = loadPlugin('simIK')
+simIK.__ = {}
 
-_S.simIKgetObjectTransformation = simIK.getObjectTransformation
+simIK.__.simIKgetObjectTransformation = simIK.getObjectTransformation
 function simIK.getObjectTransformation(env, handle, rel)
     rel = rel or simIK.handle_world
-    return _S.simIKgetObjectTransformation(env, handle, rel)
+    return simIK.__.simIKgetObjectTransformation(env, handle, rel)
 end
 
-_S.simIKsetObjectTransformation = simIK.setObjectTransformation
+simIK.__.simIKsetObjectTransformation = simIK.setObjectTransformation
 function simIK.setObjectTransformation(env, handle, pos, orient, rel)
     if type(pos) == 'table' then
         rel = rel or simIK.handle_world
-        return _S.simIKsetObjectTransformation(env, handle, pos, orient, rel)
+        return simIK.__.simIKsetObjectTransformation(env, handle, pos, orient, rel)
     else
-        return _S.simIKsetObjectTransformation(env, handle, orient, rel, pos) -- deprecated
+        return simIK.__.simIKsetObjectTransformation(env, handle, orient, rel, pos) -- deprecated
     end
 end
 
-_S.simIKgetObjectMatrix = simIK.getObjectMatrix
+simIK.__.simIKgetObjectMatrix = simIK.getObjectMatrix
 function simIK.getObjectMatrix(env, handle, rel)
     rel = rel or simIK.handle_world
-    return _S.simIKgetObjectMatrix(env, handle, rel)
+    return simIK.__.simIKgetObjectMatrix(env, handle, rel)
 end
 
-_S.simIKsetObjectMatrix = simIK.setObjectMatrix
+simIK.__.simIKsetObjectMatrix = simIK.setObjectMatrix
 function simIK.setObjectMatrix(env, handle, matr, rel)
     if type(matr) == 'table' then
         rel = rel or simIK.handle_world
-        return _S.simIKsetObjectMatrix(env, handle, matr, rel)
+        return simIK.__.simIKsetObjectMatrix(env, handle, matr, rel)
     else
-        return _S.simIKsetObjectMatrix(env, handle, rel, matr) -- deprecated
+        return simIK.__.simIKsetObjectMatrix(env, handle, rel, matr) -- deprecated
     end
 end
 
@@ -50,8 +51,7 @@ function simIK.setObjectPose(ikEnv, obj, pose, relObj)
     end
 end
 
-function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x,
-                                               index)
+function simIK.__.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
     if index > #jointHandles then
         return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
     else
@@ -59,7 +59,7 @@ function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desi
         for i = 1, #jointHandles, 1 do c[i] = confS[i] end
         local solutions = {}
         while c[index] <= x[index][2] do
-            local s = _S.simIKLoopThroughAltConfigSolutions(
+            local s = simIK.__.simIKLoopThroughAltConfigSolutions(
                           ikEnvironment, jointHandles, desiredPose, c, x, index + 1)
             for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
             c[index] = c[index] + math.pi * 2
@@ -158,14 +158,15 @@ function simIK.getAlternateConfigs(...)
     local configs = {}
     if not err then
         local desiredPose = 0
-        configs = _S.simIKLoopThroughAltConfigSolutions(
+        configs = simIK.__.simIKLoopThroughAltConfigSolutions(
                       ikEnv, jointHandles, desiredPose, confS, x, 1
                   )
     end
     sim.setStepping(lb)
 
     if next(configs) ~= nil then
-        configs = Matrix:fromtable(configs)
+        local simEigen = require('simEigen')
+        configs = simEigen.Matrix:fromtable(configs)
         configs = configs:data()
     end
     return configs
@@ -179,7 +180,7 @@ function simIK.syncFromSim(...)
 
     local lb = sim.setStepping(true)
     for g = 1, #ikGroups, 1 do
-        local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
+        local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k, v in pairs(groupData.joints) do
             if sim.isHandle(k) then
                 if sim.getJointType(k) == sim.joint_spherical then
@@ -191,8 +192,8 @@ function simIK.syncFromSim(...)
                 -- that is probably a joint in a dependency relation, that was removed
                 simIK.eraseObject(ikEnv, v)
                 groupData.joints[k] = nil
-                _S.ikEnvs[ikEnv].simToIkMap[k] = nil
-                _S.ikEnvs[ikEnv].ikToSimMap[v] = nil
+                simIK.__.ikEnvs[ikEnv].simToIkMap[k] = nil
+                simIK.__.ikEnvs[ikEnv].ikToSimMap[v] = nil
             end
         end
         for i = 1, #groupData.targetTipBaseTriplets, 1 do
@@ -215,7 +216,7 @@ function simIK.syncToSim(...)
 
     local lb = sim.setStepping(true)
     for g = 1, #ikGroups, 1 do
-        local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
+        local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
         for k, v in pairs(groupData.joints) do
             if sim.isHandle(k) then
                 if sim.getJointType(k) == sim.joint_spherical then
@@ -233,8 +234,8 @@ function simIK.syncToSim(...)
                 -- that is probably a joint in a dependency relation, that was removed
                 simIK.eraseObject(ikEnv, v)
                 groupData.joints[k] = nil
-                _S.ikEnvs[ikEnv].simToIkMap[k] = nil
-                _S.ikEnvs[ikEnv].ikToSimMap[v] = nil
+                simIK.__.ikEnvs[ikEnv].simToIkMap[k] = nil
+                simIK.__.ikEnvs[ikEnv].ikToSimMap[v] = nil
             end
         end
     end
@@ -242,13 +243,13 @@ function simIK.syncToSim(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
-    if not _S.ikEnvs then _S.ikEnvs = {} end
+    if not simIK.__.ikEnvs then simIK.__.ikEnvs = {} end
 
-    if _S.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
+    if simIK.__.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in simIK.__.ikEnvs...
         local p = sim.getNamedInt32Param('simIK.debug_world')
         if (p and (p & 1) ~= 0) or ((debugFlags & 1) ~= 0) then
             local lb = sim.setStepping(true)
-            local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroup]
+            local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup]
             groupData.visualDebug = {}
             for i = 1, #groupData.targetTipBaseTriplets, 1 do
                 groupData.visualDebug[i] = simIK.createDebugOverlay(
@@ -258,7 +259,7 @@ function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
             end
             sim.setStepping(lb)
         else
-            local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroup]
+            local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup]
             if groupData.visualDebug then
                 for i = 1, #groupData.visualDebug, 1 do
                     simIK.eraseDebugOverlay(groupData.visualDebug[i])
@@ -281,23 +282,23 @@ function simIK.addElementFromScene(...)
 
     local lb = sim.setStepping(true)
 
-    if not _S.ikEnvs then _S.ikEnvs = {} end
-    if not _S.ikEnvs[ikEnv] then _S.ikEnvs[ikEnv] = {} end
-    if not _S.ikEnvs[ikEnv].ikGroups then
-        _S.ikEnvs[ikEnv].ikGroups = {}
-        _S.ikEnvs[ikEnv].simToIkMap = {}
-        _S.ikEnvs[ikEnv].ikToSimMap = {}
+    if not simIK.__.ikEnvs then simIK.__.ikEnvs = {} end
+    if not simIK.__.ikEnvs[ikEnv] then simIK.__.ikEnvs[ikEnv] = {} end
+    if not simIK.__.ikEnvs[ikEnv].ikGroups then
+        simIK.__.ikEnvs[ikEnv].ikGroups = {}
+        simIK.__.ikEnvs[ikEnv].simToIkMap = {}
+        simIK.__.ikEnvs[ikEnv].ikToSimMap = {}
     end
-    local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup]
     -- simToIkMap and ikToSimMap, need to be scoped by ik env, and not ik group,
     -- otherwise we may have duplicates:
-    local simToIkMap = _S.ikEnvs[ikEnv].simToIkMap
-    local ikToSimMap = _S.ikEnvs[ikEnv].ikToSimMap
+    local simToIkMap = simIK.__.ikEnvs[ikEnv].simToIkMap
+    local ikToSimMap = simIK.__.ikEnvs[ikEnv].ikToSimMap
     if not groupData then
         groupData = {}
         groupData.joints = {}
         groupData.targetTipBaseTriplets = {}
-        _S.ikEnvs[ikEnv].ikGroups[ikGroup] = groupData
+        simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup] = groupData
     end
 
     function createIkJointFromSimJoint(ikEnv, simJoint)
@@ -422,8 +423,8 @@ function simIK.eraseEnvironment(...)
 
     local lb = sim.setStepping(true)
 
-    if _S.ikEnvs and _S.ikEnvs[ikEnv] then
-        local env = _S.ikEnvs[ikEnv]
+    if simIK.__.ikEnvs and simIK.__.ikEnvs[ikEnv] then
+        local env = simIK.__.ikEnvs[ikEnv]
         if env.ikGroups then
             for k, v in pairs(env.ikGroups) do
                 if v.visualDebug then
@@ -433,7 +434,7 @@ function simIK.eraseEnvironment(...)
                 end
             end
         end
-        _S.ikEnvs[ikEnv] = nil
+        simIK.__.ikEnvs[ikEnv] = nil
     end
     simIK._eraseEnvironment(ikEnv)
     sim.setStepping(lb)
@@ -495,8 +496,9 @@ function simIK.handleGroup(...) -- convenience function
 end
 
 function simIK.debugJacobianDisplay(inData)
-    local groupData = _S.ikEnvs[_S.currentIkEnv].ikGroups[inData.groupHandle]
-    local groupIdStr = string.format('env:%d/group:%d', _S.currentIkEnv, inData.groupHandle)
+    local groupData = simIK.__.ikEnvs[simIK.__.currentIkEnv].ikGroups[inData.groupHandle]
+    local groupIdStr = string.format('env:%d/group:%d', simIK.__.currentIkEnv, inData.groupHandle)
+    local simQML
     pcall(
         function()
             simQML = require 'simQML'
@@ -642,14 +644,14 @@ function simIK.handleGroups(...)
     }, ...)
 
     local lb = sim.setStepping(true)
-    _S.currentIkEnv = ikEnv
+    simIK.__.currentIkEnv = ikEnv
     local debugFlags = 0
     if options.debug then debugFlags = options.debug end
     local p = sim.getNamedInt32Param('simIK.debug_world')
-    local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0)) and _S.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in _S.ikEnvs...
+    local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0)) and simIK.__.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in simIK.__.ikEnvs...
     local pythonCallback = false
-    function __cb(rows_constr, rows_ikEl, cols_handles, cols_dofIndex, jacobian, errorVect, groupId,
-                  iteration)
+    function __cb(rows_constr, rows_ikEl, cols_handles, cols_dofIndex, jacobian, errorVect, groupId, iteration)
+        local simEigen = require('simEigen')
         local data = {}
         data.rows = {}
         data.cols = {}
@@ -657,8 +659,8 @@ function simIK.handleGroups(...)
             data.jacobian = jacobian
             data.e = errorVect
         else
-            data.jacobian = Matrix(#rows_constr, #cols_handles, jacobian)
-            data.e = Matrix(#rows_constr, 1, errorVect)
+            data.jacobian = simEigen.Matrix(#rows_constr, #cols_handles, jacobian)
+            data.e = simEigen.Matrix(#rows_constr, 1, errorVect)
         end
         for i = 1, #rows_constr, 1 do
             data.rows[i] = {constraint = rows_constr[i], element = rows_ikEl[i]}
@@ -750,7 +752,7 @@ function simIK.handleGroups(...)
     if options.callback or debugJacobian then
         funcNm = '__cb'
         t = sim.getScript(sim.handle_self)
-        if _S.pythonCallbacks and _S.pythonCallbacks[options.callback] then
+        if simIK.__.pythonCallbacks and simIK.__.pythonCallbacks[options.callback] then
             pythonCallback = true
         end
     end
@@ -872,13 +874,13 @@ function simIK.createDebugOverlay(...)
         {type = 'int', default = -1},
     }, ...)
 
-    if not _S.ikDebug then _S.ikDebug = {ikEnv = {}, ikDebugId = 0} end
-    if not _S.ikDebug.ikEnv[ikEnv] then _S.ikDebug.ikEnv[ikEnv] = {} end
-    if not _S.ikDebug.ikEnv[ikEnv][ikTip] then
-        _S.ikDebug.ikEnv[ikEnv][ikTip] = {drawingConts = {}, id = _S.ikDebug.ikDebugId}
-        _S.ikDebug.ikDebugId = _S.ikDebug.ikDebugId + 1
+    if not simIK.__.ikDebug then simIK.__.ikDebug = {ikEnv = {}, ikDebugId = 0} end
+    if not simIK.__.ikDebug.ikEnv[ikEnv] then simIK.__.ikDebug.ikEnv[ikEnv] = {} end
+    if not simIK.__.ikDebug.ikEnv[ikEnv][ikTip] then
+        simIK.__.ikDebug.ikEnv[ikEnv][ikTip] = {drawingConts = {}, id = simIK.__.ikDebug.ikDebugId}
+        simIK.__.ikDebug.ikDebugId = simIK.__.ikDebug.ikDebugId + 1
     end
-    local drawingConts = _S.ikDebug.ikEnv[ikEnv][ikTip].drawingConts
+    local drawingConts = simIK.__.ikDebug.ikEnv[ikEnv][ikTip].drawingConts
 
     local ikTarget = simIK.getTargetDummy(ikEnv, ikTip)
     if drawingConts.targetCont == nil then
@@ -1015,7 +1017,7 @@ function simIK.createDebugOverlay(...)
     end
     sim.addDrawingObjectItem(drawingConts.linkCont, p)
 
-    return _S.ikDebug.ikEnv[ikEnv][ikTip].id
+    return simIK.__.ikDebug.ikEnv[ikEnv][ikTip].id
 end
 
 function simIK.eraseDebugOverlay(...)
@@ -1023,8 +1025,8 @@ function simIK.eraseDebugOverlay(...)
         {type = 'int'},
     }, ...)
 
-    if _S.ikDebug then
-        for k, env in pairs(_S.ikDebug.ikEnv) do
+    if simIK.__.ikDebug then
+        for k, env in pairs(simIK.__.ikDebug.ikEnv) do
             for l, tip in pairs(env) do
                 if tip.id == id then
                     if tip.drawingConts.targetCont ~= nil then
@@ -1079,6 +1081,7 @@ function simIK.solvePath(...)
             {type = 'table', default = {}},
         }, ...)
 
+    local simEigen = require('simEigen')
     collisionPairs = collisionPairs or {}
     local delta = opts.delta or 0.005
     local errorCallback = opts.errorCallback or function(e)
@@ -1098,7 +1101,7 @@ function simIK.solvePath(...)
         assert(pathData ~= nil and #pathData > 0, 'object does not contain PATH data')
         pathData = sim.unpackDoubleTable(pathData)
     end
-    local m = Matrix(#pathData // 7, 7, pathData)
+    local m = simEigen.Matrix(#pathData // 7, 7, pathData)
     local pathPositions = m:slice(1, 1, m:rows(), 3):data()
     local pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
     local pathLengths, totalLength = sim.getPathLengths(pathPositions, 3)
@@ -1227,7 +1230,7 @@ function simIK.applyIkEnvironmentToScene(...)
     local lb = sim.setStepping(true)
 
     simIK.syncFromSim(ikEnv, {ikGroup})
-    local groupData = _S.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup]
     local res, reason, prec = simIK.handleGroups(ikEnv, {ikGroup})
     if res == simIK.result_success or not applyOnlyWhenSuccessful then
         simIK.syncToSim(ikEnv, {ikGroup})
@@ -1325,7 +1328,7 @@ function simIK.findConfigs(...)
             local altConfigs = {}
             if params.findAlt then
                 -- find all alternate, valid configs:
-                altConfigs = _S.simIKGetAltConfigs(ikEnv, ikJoints, conf)
+                altConfigs = simIK.__.simIKGetAltConfigs(ikEnv, ikJoints, conf)
                 if params.cb then
                     local cnt = 1
                     while cnt <= #altConfigs do
@@ -1381,7 +1384,7 @@ function simIK.setConfig(ikEnv, jh, config)
     end
 end
 
-function _S.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
+function simIK.__.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
     local dof = #jointHandles
     local retVal = {}
     local x = {}
@@ -1411,7 +1414,7 @@ function _S.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
     local configs = {}
     if not err then
         local desiredPose = 0
-        configs = _S.simIKLoopThroughAltConfigSolutions(
+        configs = simIK.__.simIKLoopThroughAltConfigSolutions(
                       ikEnv, jointHandles, desiredPose, confS, x, 1)
     end
     
