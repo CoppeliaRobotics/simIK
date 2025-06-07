@@ -52,6 +52,7 @@ function simIK.setObjectPose(ikEnv, obj, pose, relObj)
 end
 
 function simIK.__.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
+    local sim = require('sim-2')
     if index > #jointHandles then
         return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
     else
@@ -69,6 +70,7 @@ function simIK.__.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles
 end
 
 function simIK.getAlternateConfigs(...)
+    local sim = require('sim-2')
     local ikEnv, jointHandles, lowLimits, ranges = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
@@ -173,6 +175,7 @@ function simIK.getAlternateConfigs(...)
 end
 
 function simIK.syncFromSim(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroups = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -209,6 +212,7 @@ function simIK.syncFromSim(...)
 end
 
 function simIK.syncToSim(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroups = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -243,6 +247,7 @@ function simIK.syncToSim(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
+    local sim = require('sim-2')
     if not simIK.__.ikEnvs then simIK.__.ikEnvs = {} end
 
     if simIK.__.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in simIK.__.ikEnvs...
@@ -271,6 +276,7 @@ function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
 end
 
 function simIK.addElementFromScene(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroup, simBase, simTip, simTarget, constraints = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -417,6 +423,7 @@ function simIK.addElementFromScene(...)
 end
 
 function simIK.eraseEnvironment(...)
+    local sim = require('sim-2')
     local ikEnv = checkargs({
         {type = 'int'},
     }, ...)
@@ -441,6 +448,7 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.findConfig(...)
+    local sim = require('sim-2')
     -- deprecated. Use simIK.findConfigs instead
     local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData = checkargs({
         {type = 'int'},
@@ -637,6 +645,7 @@ function simIK.debugJacobianDisplay(inData)
 end
 
 function simIK.handleGroups(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroups, options = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -784,6 +793,7 @@ function simIK.getFailureDescription(reason)
 end
 
 function simIK.setJointDependency(...)
+    local sim = require('sim-2')
     local ikEnv, slaveJoint, masterJoint, offset, mult, callback = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -810,6 +820,7 @@ function simIK.setJointDependency(...)
 end
 
 function simIK.generatePath(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroup, ikJoints, tip, ptCnt, callback, auxData = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -868,6 +879,7 @@ function simIK.generatePath(...)
 end
 
 function simIK.createDebugOverlay(...)
+    local sim = require('sim-2')
     local ikEnv, ikTip, ikBase = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -1021,6 +1033,7 @@ function simIK.createDebugOverlay(...)
 end
 
 function simIK.eraseDebugOverlay(...)
+    local sim = require('sim-2')
     local id = checkargs({
         {type = 'int'},
     }, ...)
@@ -1065,6 +1078,7 @@ function simIK.eraseDebugOverlay(...)
 end
 
 function simIK.solvePath(...)
+    local sim = require('sim-2')
     -- undocumented (for now) function
     -- simPath can be a Path object handle, or the path data itself
     -- ikPath a dummy with a pose and parent consistent with simPath
@@ -1102,8 +1116,10 @@ function simIK.solvePath(...)
         pathData = sim.unpackDoubleTable(pathData)
     end
     local m = simEigen.Matrix(#pathData // 7, 7, pathData)
-    local pathPositions = m:slice(1, 1, m:rows(), 3):data()
-    local pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
+    --local pathPositions = m:slice(1, 1, m:rows(), 3):data()
+    --local pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
+    local pathPositions = m:block(1, 1, m:rows(), 3):data()
+    local pathQuaternions = m:block(1, 4, m:rows(), 4):data()
     local pathLengths, totalLength = sim.getPathLengths(pathPositions, 3)
 
     local moveIkTarget = opts.moveIkTarget or function(posAlongPath)
@@ -1221,6 +1237,7 @@ end
 
 function simIK.applyIkEnvironmentToScene(...)
     -- deprecated
+    local sim = require('sim-2')
     local ikEnv, ikGroup, applyOnlyWhenSuccessful = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -1241,6 +1258,7 @@ end
 
 function simIK.getConfigForTipPose(...)
     -- deprecated
+    local sim = require('sim-2')
     local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData, jointOptions,
           lowLimits, ranges = checkargs({
         {type = 'int'},
@@ -1299,6 +1317,7 @@ function simIK.getConfigForTipPose(...)
 end
 
 function simIK.findConfigs(...)
+    local sim = require('sim-2')
     local ikEnv, ikGroup, ikJoints, params, otherConfigs = checkargs({
         {type = 'int'},
         {type = 'int'},
