@@ -1,5 +1,6 @@
 local simIK = loadPlugin('simIK')
 simIK.__ = {}
+local sim = require('sim-2')
 
 simIK.__.simIKgetObjectTransformation = simIK.getObjectTransformation
 function simIK.getObjectTransformation(env, handle, rel)
@@ -52,7 +53,6 @@ function simIK.setObjectPose(ikEnv, obj, pose, relObj)
 end
 
 function simIK.__.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
-    local sim = require('sim-2')
     if index > #jointHandles then
         return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
     else
@@ -70,7 +70,6 @@ function simIK.__.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles
 end
 
 function simIK.getAlternateConfigs(...)
-    local sim = require('sim-2')
     local ikEnv, jointHandles, lowLimits, ranges = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
@@ -175,7 +174,6 @@ function simIK.getAlternateConfigs(...)
 end
 
 function simIK.syncFromSim(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroups = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -212,7 +210,6 @@ function simIK.syncFromSim(...)
 end
 
 function simIK.syncToSim(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroups = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -224,11 +221,11 @@ function simIK.syncToSim(...)
         for k, v in pairs(groupData.joints) do
             if sim.isHandle(k) then
                 if sim.getJointType(k) == sim.joint_spherical then
-                    if sim.getJointMode(k) ~= sim.jointmode_force or not sim.isDynamicallyEnabled(k) then
+                    if sim.getJointMode(k) ~= sim.jointmode_dynamic or not sim.isDynamicallyEnabled(k) then
                         sim.setSphericalJointMatrix(k, simIK.getJointMatrix(ikEnv, v))
                     end
                 else
-                    if sim.getJointMode(k) == sim.jointmode_force and sim.isDynamicallyEnabled(k) then
+                    if sim.getJointMode(k) == sim.jointmode_dynamic and sim.isDynamicallyEnabled(k) then
                         sim.setJointTargetPosition(k, simIK.getJointPosition(ikEnv, v))
                     else
                         sim.setJointPosition(k, simIK.getJointPosition(ikEnv, v))
@@ -247,11 +244,10 @@ function simIK.syncToSim(...)
 end
 
 function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
-    local sim = require('sim-2')
     if not simIK.__.ikEnvs then simIK.__.ikEnvs = {} end
 
     if simIK.__.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in simIK.__.ikEnvs...
-        local p = sim.getNamedInt32Param('simIK.debug_world')
+        local p = sim.getIntProperty(sim.handle_app, 'signal.simIK.debug_world', {noError = true})
         if (p and (p & 1) ~= 0) or ((debugFlags & 1) ~= 0) then
             local lb = sim.setStepping(true)
             local groupData = simIK.__.ikEnvs[ikEnv].ikGroups[ikGroup]
@@ -276,7 +272,6 @@ function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
 end
 
 function simIK.addElementFromScene(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroup, simBase, simTip, simTarget, constraints = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -312,12 +307,14 @@ function simIK.addElementFromScene(...)
         local ikJoint = simIK.createJoint(ikEnv, t)
         local c, interv = sim.getJointInterval(simJoint)
         simIK.setJointInterval(ikEnv, ikJoint, c, interv)
-        local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_screwlead)
+        local sp = sim.getFloatProperty(simJoint, 'screwLead')
         simIK.setJointScrewLead(ikEnv, ikJoint, sp)
+        --[[
         local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_step_size)
         simIK.setJointMaxStepSize(ikEnv, ikJoint, sp)
         local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_ik_weight)
         simIK.setJointWeight(ikEnv, ikJoint, sp)
+        --]]
         if t == sim.joint_spherical then
             simIK.setSphericalJointMatrix(ikEnv, ikJoint, sim.getJointMatrix(simJoint))
         else
@@ -423,7 +420,6 @@ function simIK.addElementFromScene(...)
 end
 
 function simIK.eraseEnvironment(...)
-    local sim = require('sim-2')
     local ikEnv = checkargs({
         {type = 'int'},
     }, ...)
@@ -448,7 +444,6 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.findConfig(...)
-    local sim = require('sim-2')
     -- deprecated. Use simIK.findConfigs instead
     local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData = checkargs({
         {type = 'int'},
@@ -645,7 +640,6 @@ function simIK.debugJacobianDisplay(inData)
 end
 
 function simIK.handleGroups(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroups, options = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -656,7 +650,7 @@ function simIK.handleGroups(...)
     simIK.__.currentIkEnv = ikEnv
     local debugFlags = 0
     if options.debug then debugFlags = options.debug end
-    local p = sim.getNamedInt32Param('simIK.debug_world')
+    local p = sim.getIntProperty(sim.handle_app, 'signal.simIK.debug_world', {noError = true})
     local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0)) and simIK.__.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in simIK.__.ikEnvs...
     local pythonCallback = false
     function __cb(rows_constr, rows_ikEl, cols_handles, cols_dofIndex, jacobian, errorVect, groupId, iteration)
@@ -793,7 +787,6 @@ function simIK.getFailureDescription(reason)
 end
 
 function simIK.setJointDependency(...)
-    local sim = require('sim-2')
     local ikEnv, slaveJoint, masterJoint, offset, mult, callback = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -820,7 +813,6 @@ function simIK.setJointDependency(...)
 end
 
 function simIK.generatePath(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroup, ikJoints, tip, ptCnt, callback, auxData = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -879,7 +871,6 @@ function simIK.generatePath(...)
 end
 
 function simIK.createDebugOverlay(...)
-    local sim = require('sim-2')
     local ikEnv, ikTip, ikBase = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -1033,7 +1024,6 @@ function simIK.createDebugOverlay(...)
 end
 
 function simIK.eraseDebugOverlay(...)
-    local sim = require('sim-2')
     local id = checkargs({
         {type = 'int'},
     }, ...)
@@ -1078,7 +1068,6 @@ function simIK.eraseDebugOverlay(...)
 end
 
 function simIK.solvePath(...)
-    local sim = require('sim-2')
     -- undocumented (for now) function
     -- simPath can be a Path object handle, or the path data itself
     -- ikPath a dummy with a pose and parent consistent with simPath
@@ -1237,7 +1226,6 @@ end
 
 function simIK.applyIkEnvironmentToScene(...)
     -- deprecated
-    local sim = require('sim-2')
     local ikEnv, ikGroup, applyOnlyWhenSuccessful = checkargs({
         {type = 'int'},
         {type = 'int'},
@@ -1258,7 +1246,6 @@ end
 
 function simIK.getConfigForTipPose(...)
     -- deprecated
-    local sim = require('sim-2')
     local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData, jointOptions,
           lowLimits, ranges = checkargs({
         {type = 'int'},
@@ -1317,7 +1304,6 @@ function simIK.getConfigForTipPose(...)
 end
 
 function simIK.findConfigs(...)
-    local sim = require('sim-2')
     local ikEnv, ikGroup, ikJoints, params, otherConfigs = checkargs({
         {type = 'int'},
         {type = 'int'},
