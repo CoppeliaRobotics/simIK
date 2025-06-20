@@ -1,6 +1,6 @@
 #include "simIK.h"
 #include "envCont.h"
-#include <simLib/simLib.h>
+#include <simLib/simLib-2.h>
 #include <ik.h>
 #include <simMath/4X4Matrix.h>
 #include <simMath/mathFuncs.h>
@@ -3587,8 +3587,8 @@ SIM_DLLEXPORT void simMsg(SSimMsg* info)
     {
         int consoleV=sim_verbosity_none;
         int statusbarV=sim_verbosity_none;
-        simGetModuleInfo(nullptr,sim_moduleinfo_verbosity,nullptr,&consoleV);
-        simGetModuleInfo(nullptr,sim_moduleinfo_statusbarverbosity,nullptr,&statusbarV);
+        simGetPluginInfo(nullptr,sim_moduleinfo_verbosity,nullptr,&consoleV);
+        simGetPluginInfo(nullptr,sim_moduleinfo_statusbarverbosity,nullptr,&statusbarV);
         if ( (consoleV>sim_verbosity_none)||(statusbarV>sim_verbosity_none) )
         {
             if ( (consoleV>=sim_verbosity_trace)||(statusbarV>=sim_verbosity_trace) )
