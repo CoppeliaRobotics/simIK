@@ -43,8 +43,8 @@ coppeliasim_add_plugin(
     ${COPPELIASIM_INCLUDE_DIR}/simMath/3X3Matrix.cpp
     ${COPPELIASIM_INCLUDE_DIR}/simMath/4X4Matrix.cpp
     ${COPPELIASIM_INCLUDE_DIR}/simMath/mXnMatrix.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simLib/scriptFunctionData.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simLib/scriptFunctionDataItem.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simLib-2/scriptFunctionData.cpp
+    ${COPPELIASIM_INCLUDE_DIR}/simLib-2/scriptFunctionDataItem.cpp
 )
 target_compile_definitions(simIK PRIVATE SIM_MATH_DOUBLE)
 target_include_directories(simIK PRIVATE ../coppeliaKinematicsRoutines)

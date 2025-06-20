@@ -1,12 +1,12 @@
 #include "simIK.h"
 #include "envCont.h"
-#include <simLib/simLib-2.h>
+#include <simLib-2/simLib.h>
 #include <ik.h>
 #include <simMath/4X4Matrix.h>
 #include <simMath/mathFuncs.h>
 #include <iostream>
 #include <cstdio>
-#include <simLib/scriptFunctionData.h>
+#include <simLib-2/scriptFunctionData.h>
 #include <algorithm>
 
 #ifdef _WIN32
