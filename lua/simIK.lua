@@ -1,6 +1,7 @@
 local simIK = loadPlugin('simIK')
 local __ = {}
 local sim = require('sim-2')
+local checkargs = require('checkargs')
 
 __.simIKgetObjectTransformation = simIK.getObjectTransformation
 function simIK.getObjectTransformation(env, handle, rel)
