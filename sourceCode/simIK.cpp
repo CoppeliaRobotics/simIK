@@ -1600,7 +1600,7 @@ void LUA_SETJOINTPOSITION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getJointMatrix
+// simIK.getJointMatrix, deprecated (see simIK.getJointPose)
 // --------------------------------------------------------------------------------------
 const int inArgs_GETJOINTMATRIX[]={
     2,
@@ -1645,7 +1645,52 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setSphericalJointMatrix
+// simIK.getJointPose
+// --------------------------------------------------------------------------------------
+const int inArgs_GETJOINTPOSE[]={
+    2,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+};
+
+void LUA_GETJOINTPOSE_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    double pose[7];
+    bool result=false;
+    if (D.readDataFromStack(p->stackID,inArgs_GETJOINTPOSE,inArgs_GETJOINTPOSE[0],nullptr))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        std::string err;
+        {
+            if (ikSwitchEnvironment(envId))
+            {
+                C7Vector tr;
+                result=ikGetJointTransformation(jointHandle, &tr);
+                if (result)
+                    tr.getData(pose);
+                else
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(nullptr,err.c_str());
+    }
+    if (result)
+    {
+        std::vector<double> pp(pose, pose + 7);
+        D.pushOutData(CScriptFunctionDataItem(pp));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.setSphericalJointMatrix (deprecated, see simIK.setJointQuaternion)
 // --------------------------------------------------------------------------------------
 const int inArgs_SETSPHERICALJOINTMATRIX[]={
     3,
@@ -1684,7 +1729,45 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getJointTransformation
+// simIK.setJointQuaternion)
+// --------------------------------------------------------------------------------------
+const int inArgs_SETJOINTQUATERNION[]={
+    3,
+    sim_script_arg_int32,0,
+    sim_script_arg_int32,0,
+    sim_script_arg_double|sim_script_arg_table,4,
+};
+
+void LUA_SETJOINTQUATERNION_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    if (D.readDataFromStack(p->stackID,inArgs_SETJOINTQUATERNION,inArgs_SETJOINTQUATERNION[0],nullptr))
+    {
+        std::vector<CScriptFunctionDataItem>* inData=D.getInDataPtr();
+        int envId=inData->at(0).int32Data[0];
+        int jointHandle=inData->at(1).int32Data[0];
+        double* _q=&inData->at(2).doubleData[0];
+        std::string err;
+        {
+            if (ikSwitchEnvironment(envId))
+            {
+                C4Vector q;
+                q.setData(_q);
+                bool result=ikSetSphericalJointQuaternion(jointHandle, &q);
+                if (!result)
+                     err=ikGetLastError();
+            }
+            else
+                 err=ikGetLastError();
+        }
+        if (err.size()>0)
+            simSetLastError(nullptr,err.c_str());
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
+// simIK.getJointTransformation, deprecated (see simIK.getJointPose)
 // --------------------------------------------------------------------------------------
 const int inArgs_GETJOINTTRANSFORMATION[]={
     2,
@@ -1743,7 +1826,7 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setSphericalJointRotation
+// simIK.setSphericalJointRotation, deprecated
 // --------------------------------------------------------------------------------------
 const int inArgs_SETSPHERICALJOINTROTATION[]={
     3,
@@ -3444,10 +3527,12 @@ SIM_DLLEXPORT int simInit(SSimInit* info)
     simRegisterScriptCallbackFunction("_setJointDependency",nullptr,LUA_SETJOINTDEPENDENCY_CALLBACK);
     simRegisterScriptCallbackFunction("getJointPosition",nullptr,LUA_GETJOINTPOSITION_CALLBACK);
     simRegisterScriptCallbackFunction("setJointPosition",nullptr,LUA_SETJOINTPOSITION_CALLBACK);
-    simRegisterScriptCallbackFunction("getJointMatrix",nullptr,LUA_GETJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction("setSphericalJointMatrix",nullptr,LUA_SETSPHERICALJOINTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction("getJointTransformation",nullptr,LUA_GETJOINTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction("setSphericalJointRotation",nullptr,LUA_SETSPHERICALJOINTROTATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointMatrix",nullptr,LUA_GETJOINTMATRIX_CALLBACK); // deprecated in simIK-2
+    simRegisterScriptCallbackFunction("getJointPose",nullptr,LUA_GETJOINTPOSE_CALLBACK);
+    simRegisterScriptCallbackFunction("setSphericalJointMatrix",nullptr,LUA_SETSPHERICALJOINTMATRIX_CALLBACK); // deprecated in simIK-2
+    simRegisterScriptCallbackFunction("setJointQuaternion",nullptr,LUA_SETJOINTQUATERNION_CALLBACK);
+    simRegisterScriptCallbackFunction("getJointTransformation",nullptr,LUA_GETJOINTTRANSFORMATION_CALLBACK); // deprecated in simIK-2
+    simRegisterScriptCallbackFunction("setSphericalJointRotation",nullptr,LUA_SETSPHERICALJOINTROTATION_CALLBACK); // deprecated in simIK-2
     simRegisterScriptCallbackFunction("getGroupHandle",nullptr,LUA_GETIKGROUPHANDLE_CALLBACK);
     simRegisterScriptCallbackFunction("doesGroupExist",nullptr,LUA_DOESIKGROUPEXIST_CALLBACK);
     simRegisterScriptCallbackFunction("createGroup",nullptr,LUA_CREATEIKGROUP_CALLBACK);

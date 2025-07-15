@@ -22,7 +22,7 @@ td.section { margin: 0; padding: 0; }
 <body>
 <div align="center"><table class="allEncompassingTable">
 
-<tr><td id="title" class="section"><h1>IK plugin API reference</h1></td></tr>
+<tr><td id="title" class="section"><h1>IK-2 plugin API reference</h1></td></tr>
 <tr><td id="info" class="section"><p class="warningBox">API functions for creating kinematics tasks. All units, unless otherwise indicated, are specified in meters and radians.</p></td></tr>
 
 <tr><td id="alphabetical" class="section"><pre class="apiList">
@@ -57,7 +57,9 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getJointDependency">simIK.getJointDependency</a>
 <a href="?#simIK.getJointInterval">simIK.getJointInterval</a>
 <a href="?#simIK.getJointLimitMargin">simIK.getJointLimitMargin</a>
-<a href="?#simIK.getJointMatrix">simIK.getJointMatrix</a>
+<a href="?#simIK.getJointPose">simIK.getJointPose</a>
+<a href="?#simIK.getJointQuaternion">simIK.getJointQuaternion</a>
+<a href="?#simIK.setJointQuaternion">simIK.setJointQuaternion</a>
 <a href="?#simIK.getJointMaxStepSize">simIK.getJointMaxStepSize</a>
 <a href="?#simIK.getJointMode">simIK.getJointMode</a>
 <a href="?#simIK.getJointPosition">simIK.getJointPosition</a>
@@ -66,14 +68,18 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getJointType">simIK.getJointType</a>
 <a href="?#simIK.getJointWeight">simIK.getJointWeight</a>
 <a href="?#simIK.getObjectHandle">simIK.getObjectHandle</a>
-<a href="?#simIK.getObjectMatrix">simIK.getObjectMatrix</a>
 <a href="?#simIK.getObjectParent">simIK.getObjectParent</a>
 <a href="?#simIK.getObjectPose">simIK.getObjectPose</a>
+<a href="?#simIK.setObjectPose">simIK.setObjectPose</a>
+<a href="?#simIK.getObjectMatrix">simIK.getObjectMatrix</a>
+<a href="?#simIK.setObjectMatrix">simIK.setObjectMatrix</a>
+<a href="?#simIK.getObjectPosition">simIK.getObjectPosition</a>
+<a href="?#simIK.setObjectPosition">simIK.setObjectPosition</a>
+<a href="?#simIK.getObjectQuaternion">simIK.getObjectQuaternion</a>
+<a href="?#simIK.setObjectQuaternion">simIK.setObjectQuaternion</a>
 <a href="?#simIK.getObjects">simIK.getObjects</a>
-<a href="?#simIK.getObjectTransformation">simIK.getObjectTransformation</a>
 <a href="?#simIK.getObjectType">simIK.getObjectType</a>
 <a href="?#simIK.getTargetDummy">simIK.getTargetDummy</a>
-<a href="?#simIK.handleGroup">simIK.handleGroup</a>
 <a href="?#simIK.handleGroups">simIK.handleGroups</a>
 <a href="?#simIK.load">simIK.load</a>
 <a href="?#simIK.save">simIK.save</a>
@@ -96,8 +102,6 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.setObjectParent">simIK.setObjectParent</a>
 <a href="?#simIK.setObjectPose">simIK.setObjectPose</a>
 <a href="?#simIK.setObjectTransformation">simIK.setObjectTransformation</a>
-<a href="?#simIK.setSphericalJointMatrix">simIK.setSphericalJointMatrix</a>
-<a href="?#simIK.setSphericalJointRotation">simIK.setSphericalJointRotation</a>
 <a href="?#simIK.setTargetDummy">simIK.setTargetDummy</a>
 <a href="?#simIK.syncToSim">simIK.syncToSim</a>
 <a href="?#simIK.syncFromSim">simIK.syncFromSim</a>
@@ -128,13 +132,15 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.eraseObject">simIK.eraseObject</a>
 <a href="?#simIK.getObjectParent">simIK.getObjectParent</a>
 <a href="?#simIK.setObjectParent">simIK.setObjectParent</a>
+<a href="?#simIK.getObjectType">simIK.getObjectType</a>
 <a href="?#simIK.getObjectPose">simIK.getObjectPose</a>
 <a href="?#simIK.setObjectPose">simIK.setObjectPose</a>
-<a href="?#simIK.getObjectTransformation">simIK.getObjectTransformation</a>
-<a href="?#simIK.setObjectTransformation">simIK.setObjectTransformation</a>
-<a href="?#simIK.getObjectType">simIK.getObjectType</a>
 <a href="?#simIK.getObjectMatrix">simIK.getObjectMatrix</a>
 <a href="?#simIK.setObjectMatrix">simIK.setObjectMatrix</a>
+<a href="?#simIK.getObjectPosition">simIK.getObjectPosition</a>
+<a href="?#simIK.setObjectPosition">simIK.setObjectPosition</a>
+<a href="?#simIK.getObjectQuaternion">simIK.getObjectQuaternion</a>
+<a href="?#simIK.setObjectQuaternion">simIK.setObjectQuaternion</a>
 </pre>
 
 
@@ -168,10 +174,10 @@ td.section { margin: 0; padding: 0; }
 <a href="?#simIK.getJointScrewLead">simIK.getJointScrewLead</a>
 <a href="?#simIK.setJointScrewLead">simIK.setJointScrewLead</a>
 <a href="?#simIK.getJointTransformation">simIK.getJointTransformation</a>
-<a href="?#simIK.setSphericalJointRotation">simIK.setSphericalJointRotation</a>
 <a href="?#simIK.getJointType">simIK.getJointType</a>
-<a href="?#simIK.getJointMatrix">simIK.getJointMatrix</a>
-<a href="?#simIK.setSphericalJointMatrix">simIK.setSphericalJointMatrix</a>
+<a href="?#simIK.getJointPose">simIK.getJointPose</a>
+<a href="?#simIK.getJointQuaternion">simIK.getJointQuaternion</a>
+<a href="?#simIK.setJointQuaternion">simIK.setJointQuaternion</a>
 <a href="?#simIK.getGroupJoints">simIK.getGroupJoints</a>
 </pre>
 
@@ -209,7 +215,6 @@ td.section { margin: 0; padding: 0; }
 
 <h2><a name="ikCalculation"></a>IK calculation</h2>
 <pre class="apiList">
-<a href="?#simIK.handleGroup">simIK.handleGroup</a>
 <a href="?#simIK.handleGroups">simIK.handleGroups</a>
 <a href="?#simIK.findConfigs">simIK.findConfigs</a>
 <a href="?#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>
@@ -259,6 +264,7 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
 <p class="subsectionBar">
 <a name="simIK.addIkElementFromScene" id="simIK.addIkElementFromScene"></a><a name="simIK.addElementFromScene" id="simIK.addElementFromScene"></a>simIK.addElementFromScene</p>
 <table class="apiTable">
@@ -302,79 +308,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.applyIkEnvironmentToScene" id="simIK.applyIkEnvironmentToScene"></a>simIK.applyIkEnvironmentToScene</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Deprecated. Use <a href="#simIK.syncToSim">simIK.syncToSim</a>.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int result,int reason=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=false)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the IK environment.</div>
-<div><strong>ikGroup</strong>: the handle of the IK group.</div>
-<div><strong>applyOnlyWhenSuccessful</strong>: whether computed values should only be applied if computation result is simIK.result_success.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>result</strong>: simIK.result_success if successfull</div>
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int result=simIK.applyIkEnvironmentToScene(int environmentHandle,int ikGroup,bool applyOnlyWhenSuccessful=False)</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"></td>
-</tr>
-</table>
-<br>
 
-<p class="subsectionBar">
-<a name="simIK.applySceneToIkEnvironment" id="simIK.applySceneToIkEnvironment"></a>simIK.applySceneToIkEnvironment</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Deprecated. Use <a href="#simIK.syncFromSim">simIK.syncFromSim</a> instead</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.applySceneToIkEnvironment(int environmentHandle,int ikGroup)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the IK environment.</div>
-<div><strong>ikGroup</strong>: the handle of the IK group.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.applySceneToIkEnvironment(int environmentHandle,int ikGroup)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"></td>
-</tr>
-</table>
-<br>
 
 <p class="subsectionBar">
 <a name="simIK.computeGroupJacobian" id="simIK.computeGroupJacobian"></a>simIK.computeGroupJacobian</p>
@@ -385,7 +322,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeGroupJacobian(int environmentHandle,int ikGroupHandle)</td>
+<td class="apiTableRightLSyn">Matrix jacobian,Vector errorVector=simIK.computeGroupJacobian(int environmentHandle,int ikGroupHandle)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -404,12 +341,12 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeGroupJacobian(<span class="apiTableRightLSyn">int environmentHandle,int ikGroupHandle)</span></td>
+<td class="apiTableRightPSyn">Matrix jacobian,Vector errorVector=simIK.computeGroupJacobian(<span class="apiTableRightLSyn">int environmentHandle,int ikGroupHandle)</span></td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroup">simIK.handleGroup</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroups">simIK.handleGroups</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
 </tr>
 </table>
 <br>
@@ -425,7 +362,7 @@ td.section { margin: 0; padding: 0; }
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jacobian,float[] errorVector=simIK.computeJacobian(int environmentHandle,int baseObject,int lastJoint,int constraints,float[7..12] tipMatrix,float[7..12] targetMatrix=nil,float[7..12] constrBaseMatrix=nil)</td>
+<td class="apiTableRightLSyn">Matrix jacobian,Vector errorVector=simIK.computeJacobian(int environmentHandle,int baseObject,int lastJoint,int constraints,Pose tipPose,Pose targetPose=nil,Pose constrBasePose=nil)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -434,9 +371,9 @@ td.section { margin: 0; padding: 0; }
 <div><strong>baseObject</strong>: the handle of the base of the kinematic chain, or -1 for the world</div>
 <div><strong>lastJoint</strong>: the handle of the last joint in the kinematic chain, when going from base to tip</div>
 <div><strong>constraints</strong>: a combination of following is possible: simIK.constraint_x, simIK.constraint_y, simIK.constraint_z, simIK.constraint_alpha_beta, simIK.constraint_gamma. For convenience we also have simIK.constraint_position=simIK.constraint_x|simIK.constraint_y|simIK.constraint_z, simIK.constraint_orientation=simIK.constraint_alpha_beta|simIK.constraint_gamma, and simIK.constraint_pose=simIK.constraint_position|simIK.constraint_orientation</div>
-<div><strong>tipMatrix</strong>: the transformation matrix or pose of the tip object, relative to the world</div>
-<div><strong>targetMatrix</strong>: the transformation matrix or pose of the target object, relative to the world. Can be nil, in which case the targetPose is the same as the tipPose</div>
-<div><strong>constrMaseMatrix</strong>: the transformation matrix or pose that should serve as the reference frame for positional constraints, or nil to use baseHandle as reference frame</div>
+<div><strong>tipPose</strong>: the pose of the tip object, relative to the world</div>
+<div><strong>targetPose</strong>: the pose of the target object, relative to the world. Can be nil, in which case the targetPose is the same as the tipPose</div>
+<div><strong>constrBasePose</strong>: the pose that should serve as the reference frame for positional constraints, or nil to use baseHandle as reference frame</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -449,12 +386,12 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jacobian,list errorVector=simIK.computeJacobian(<span class="apiTableRightLSyn">int environmentHandle,int baseObject,int lastJoint,int constraints,list tipMatrix,list targetMatrix=None,list constrBaseMatrix=None)</span></td>
+<td class="apiTableRightPSyn">Matrix jacobian,Vector errorVector=simIK.computeJacobian(<span class="apiTableRightLSyn">int environmentHandle,int baseObject,int lastJoint,int constraints,Pose tipPose,Pose targetPose=None,Pose constrBasePose=None)</span></td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroup">simIK.handleGroup</a>, <a href="#simIK.computeGroupJacobian">simIK.computeGroupJacobian</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.handleGroups">simIK.handleGroups</a>, <a href="#simIK.computeGroupJacobian">simIK.computeGroupJacobian</a></td>
 </tr>
 </table>
 <br>
@@ -871,6 +808,7 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
 <p class="subsectionBar">
 <a name="simIK.findConfigs" id="simIK.findConfigs"></a>simIK.findConfigs</p>
 <table class="apiTable">
@@ -922,53 +860,6 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
-
-
-
-
-<p class="subsectionBar">
-<a name="simIK.findConfig" id="simIK.findConfig"></a>simIK.findConfig</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Deprecated. See simIK.findConfigs instead.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},func/string validationCallback=nil,auxData=nil)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-<div><strong>jointHandles</strong>: a table that specifies the joint handles for the joints we wish to retrieve the values calculated by the IK.</div>
-<div><strong>thresholdDist</strong>: a distance indicating when IK should be computed in order to try to bring the tip onto the target: since the search algorithm proceeds by generating random configurations, many of them produce a tip pose that is too far from the target pose to run IK successfully. Choosing a large value will result in slow calculations, choosing a small value might produce a smaller subset of solutions. Distance between two poses is calculated using a metric (see metric argument below).</div>
-<div><strong>maxTime</strong>: the upper time limit, in seconds, after which the function returns.</div>
-<div><strong>metric</strong>: a table to 4 values indicating a metric used to compute pose-pose distances: distance=sqrt((dx*metric[1])^2+(dy*metric[2])^2+(dz*metric[3])^2+(angle*metric[4])^2).</div>
-<div><strong>validationCallback</strong>: an optional callback function expressed as a function or a string. The callback function takes as input arguments the proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
-<div><strong>auxData</strong>: auxiliary data that will be handed to the validation callback.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>jointPositions</strong>: a table that contains the IK calculated joint values, as specified by the jointHandles table, if a valid configuration was found.</div>
-</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jointPositions=simIK.findConfig(int environmentHandle,int ikGroupHandle,list jointHandles,float thresholdDist=0.1,float maxTime=0.5,list metric=[1,1,1,0.1],function/string validationCallback=None,auxData=None)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.findConfigs">simIK.findConfigs</a></td>
-</tr>
-</table>
-<br>
-
 
 
 
@@ -1054,51 +945,11 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.getConfigForTipPose" id="simIK.getConfigForTipPose"></a>simIK.getConfigForTipPose</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Deprecated. See simIK.findConfigs instead.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[] jointPositions=simIK.getConfigForTipPose(int environmentHandle,int ikGroupHandle,int[] jointHandles,float thresholdDist=0.1,float maxTime=0.5,float[4] metric={1,1,1,0.1},function validationCallback=nil,auxData=nil,int[] jointOptions={},float[] lowLimits={},float[] ranges={})</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group.</div>
-<div><strong>jointHandles</strong>: a table that specifies the joint handles for the joints we wish to retrieve the values calculated by the IK.</div>
-<div><strong>thresholdDist</strong>: a distance indicating when IK should be computed in order to try to bring the tip onto the target: since the search algorithm proceeds by generating random configurations, many of them produce a tip pose that is too far from the target pose to run IK successfully. Choosing a large value will result in slow calculations, choosing a small value might produce a smaller subset of solutions. Distance between two poses is calculated using a metric (see metric argument below).</div>
-<div><strong>maxTime</strong>: the upper time limit, in seconds, after which the function returns.</div>
-<div><strong>metric</strong>: a table to 4 values indicating a metric used to compute pose-pose distances: distance=sqrt((dx*metric[1])^2+(dy*metric[2])^2+(dz*metric[3])^2+(angle*metric[4])^2).</div>
-<div><strong>validationCallback</strong>: an optional callback function. The callback function takes as input arguments the proposed joint values (i.e. a configuration) and  <strong>auxData</strong>, and as return value whether the configuration is valid (e.g. is not colliding).</div>
-<div><strong>auxData</strong>: auxiliary data that will be handed to the validation callback.</div>
-<div><strong>jointOptions</strong>: a table with bit-coded values corresponding to each specified joint handle. Bit 0 (i.e. 1) indicates the corresponding joint is dependent of another joint.</div>
-<div><strong>lowLimits</strong>: a table with joint low limit values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals.</div>
-<div><strong>ranges</strong>: a table with joint range values for each specified joint. This can be useful when you wish to explore a sub-set of the joint's intervals. If the range value is 0, then the lowLimit and range values are taken from the joint's properties. If the range value is negative, then the search interval will be centered around the current linear/angular joint position, with an extent of (-range).</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>jointPositions</strong>: a table that contains the IK calculated joint values, as specified by the jointHandles table, if a valid configuration was found.</div>
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list jointPositions=simIK.getConfigForTipPose(int environmentHandle,int ikGroupHandle,list jointHandles,float thresholdDist=0.1,float maxTime=0.5,list metric=[1,1,1,0.1],function validationCallback=None,auxData=None,list jointOptions=[],list lowLimits=[],list ranges=[])</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.duplicateEnvironment">simIK.duplicateEnvironment</a>, <a href="#simIK.getAlternateConfigs">simIK.getAlternateConfigs</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a></td>
-</tr>
-</table>
-<br>
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.getIkElementBase" id="simIK.getIkElementBase"></a><a name="simIK.getElementBase" id="simIK.getElementBase"></a>simIK.getElementBase</p>
@@ -1641,16 +1492,18 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
 <p class="subsectionBar">
-<a name="simIK.getJointMatrix" id="simIK.getJointMatrix"></a>simIK.getJointMatrix</p>
+<a name="simIK.getJointPose" id="simIK.getJointPose"></a>simIK.getJointPose</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the intrinsic transformation matrix of a joint.</td>
+<td class="apiTableRightDescr">Retrieves the intrinsic pose of a joint.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[12] matrix=simIK.getJointMatrix(int environmentHandle,int jointHandle)</td>
+<td class="apiTableRightLSyn">Pose pose=simIK.getJointPose(int environmentHandle,int jointHandle)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -1662,21 +1515,65 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>matrix</strong>: a table of 12 numbers representing the transformation matrix (the last row of the 4x4 matrix (0,0,0,1) is not returned).</div>
+<div><strong>pose</strong>: a pose</div>
 </td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list matrix=simIK.getJointMatrix(int environmentHandle,int jointHandle)</td>
+<td class="apiTableRightPSyn">Pose pose=simIK.getJointPose(int environmentHandle,int jointHandle)</td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setSphericalJointMatrix">simIK.setSphericalJointMatrix</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointQuaternion">simIK.getJointQuaternion</a>, <a href="#simIK.setJointQuaternion">simIK.setJointQuaternion</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
+
+
+
+
+<p class="subsectionBar">
+<a name="simIK.getJointQuaternion" id="simIK.getJointQuaternion"></a>simIK.getJointQuaternion</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Retrieves the intrinsic quaternion of a joint</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">Quaternion quat=simIK.getJointQuaternion(int environmentHandle,int jointHandle)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>jointHandle</strong>: the handle of the joint.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>quat</strong>: a quaternion</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">Quaternion quat=simIK.getJointPose(int environmentHandle,int jointHandle)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setJointQuaternion">simIK.setJointQuaternion</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.getJointMaxStepSize" id="simIK.getJointMaxStepSize"></a>simIK.getJointMaxStepSize</p>
@@ -1784,13 +1681,13 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getJointMatrix">simIK.getJointMatrix</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getJointPose">simIK.getJointPose</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
 
 <p class="subsectionBar">
-<a name="simIK.getJointScrewLead" id="simIK.getJointScrewLead"></a><a name="simIK.getJointScrewPitch" id="simIK.getJointScrewPitch"></a>simIK.getJointScrewLead</p>
+<a name="simIK.getJointScrewLead" id="simIK.getJointScrewLead"></a>simIK.getJointScrewLead</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
@@ -1860,7 +1757,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setSphericalJointRotation">simIK.setSphericalJointRotation</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.getJointMatrix">simIK.getJointMatrix</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.getJointPose">simIK.getJointPose</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
@@ -1976,43 +1873,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.getObjectMatrix" id="simIK.getObjectMatrix"></a>simIK.getObjectMatrix</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the transformation matrix of an object. If the object is a joint object, the matrix does not include the joint's intrinsic transformation.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[12] matrix=simIK.getObjectMatrix(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>objectHandle</strong>: the handle of the object.</div>
-<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which we want the matrix expressed. Otherwise, specify simIK.handle_world if you want the absolute matrix, or simIK.handle_parent if you want the matrix relative to the parent object.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>matrix</strong>: a table of 12 numbers representing the transformation matrix (the last row of the 4x4 matrix (0,0,0,1) is not returned)</div>
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list matrix=simIK.getObjectMatrix(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectMatrix">simIK.setObjectMatrix</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>,<a href="#simIK.getObjectTransformation">simIK.getObjectTransformation</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
-</tr>
-</table>
-<br>
+
+
 
 <p class="subsectionBar">
 <a name="simIK.getObjectParent" id="simIK.getObjectParent"></a>simIK.getObjectParent</p>
@@ -2052,16 +1916,18 @@ td.section { margin: 0; padding: 0; }
 <br>
 
 
+
+
 <p class="subsectionBar">
 <a name="simIK.getObjectPose" id="simIK.getObjectPose"></a>simIK.getObjectPose</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the pose (position and quaternion) of an object. If the object is a joint object, the pose does not include the joint's intrinsic transformation.</td>
+<td class="apiTableRightDescr">Retrieves the pose of an object. If the object is a joint object, the pose does not include the joint's intrinsic transformation.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[7] pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightLSyn">Pose pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
@@ -2074,21 +1940,145 @@ td.section { margin: 0; padding: 0; }
 <tr class="apiTableTr">
 <td class="apiTableLeftLRet">Lua return values</td>
 <td class="apiTableRightLRet">
-<div><strong>pose</strong>: the position and quaternion of the object (x,y,z,qx,qy,qz,qw).</div>
+<div><strong>pose</strong>: the pose</div>
 </td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightPSyn">Pose pose=simIK.getObjectPose(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectPose">simIK.setObjectPose</a>, <a href="#simIK.getObjectTransformation">simIK.getObjectTransformation</a>, <a href="#simIK.getObjectMatrix">simIK.getObjectMatrix</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectPose">simIK.setObjectPose</a>, <a href="#simIK.getJointPose">simIK.getJointPose</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
+
+
+
+
+<p class="subsectionBar">
+<a name="simIK.getObjectMatrix" id="simIK.getObjectMatrix"></a>simIK.getObjectMatrix</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Retrieves the transformation matrix of an object. If the object is a joint object, the matrix does not include the joint's intrinsic transformation.</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">Matrix4x4 m=simIK.getObjectMatrix(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>objectHandle</strong>: the handle of the object.</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which we want the matrix expressed. Otherwise, specify simIK.handle_world if you want the absolute matrix, or simIK.handle_parent if you want the matrix relative to the parent object.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>m</strong>: the matrix</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">Matrix4x4 m=simIK.getObjectMatrix(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectMatrix">simIK.setObjectMatrix</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+
+
+
+
+<p class="subsectionBar">
+<a name="simIK.getObjectPosition" id="simIK.getObjectPosition"></a>simIK.getObjectPosition</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Retrieves the position of an object. If the object is a joint object, the position does not include the joint's intrinsic transformation.</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">Vector3 pos=simIK.getObjectPosition(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>objectHandle</strong>: the handle of the object.</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which we want the position expressed. Otherwise, specify simIK.handle_world if you want the absolute position, or simIK.handle_parent if you want the position relative to the parent object.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>pos</strong>: the position</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">Vector3 pos=simIK.getObjectPosition(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectPosition">simIK.setObjectPosition</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+
+
+<p class="subsectionBar">
+<a name="simIK.getObjectQuaternion" id="simIK.getObjectQuaternion"></a>simIK.getObjectQuaternion</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Retrieves the quaternion of an object. If the object is a joint object, the quaternion does not include the joint's intrinsic transformation.</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">Quaternion quat=simIK.getObjectQuaternion(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>objectHandle</strong>: the handle of the object.</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which we want the quaternion expressed. Otherwise, specify simIK.handle_world if you want the absolute quaternion, or simIK.handle_parent if you want the quaternion relative to the parent object.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+<div><strong>quat</strong>: the quaternion</div>
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">Quaternion quat=simIK.getObjectQuaternion(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectPosition">simIK.setObjectPosition</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
 
 
 
@@ -2132,45 +2122,7 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.getObjectTransformation" id="simIK.getObjectTransformation"></a>simIK.getObjectTransformation</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Retrieves the transformation (position and quaternion/euler angles) of an object. If the object is a joint object, the transformation does not include the joint's intrinsic transformation.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">float[3] position,float[4] quaternion,float[3] euler=simIK.getObjectTransformation(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>objectHandle</strong>: the handle of the object.</div>
-<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which we want the transformation expressed. Otherwise, specify simIK.handle_world if you want the absolute transformation, or simIK.handle_parent if you want the transformation relative to the parent object.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>position</strong>: the position of the object.</div>
-<div><strong>quaternion</strong>: the orientation of the object, expressed as quaternion (x,y,z,w).</div>
-<div><strong>euler</strong>: the orientation of the object, expressed as Euler angles (alpha,beta,gamma).</div>
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">list position,list quaternion,list euler=simIK.getObjectTransformation(int environmentHandle,int objectHandle,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.setObjectTransformation">simIK.setObjectTransformation</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>, <a href="#simIK.getObjectMatrix">simIK.getObjectMatrix</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
-</tr>
-</table>
-<br>
 
 
 
@@ -2251,69 +2203,6 @@ td.section { margin: 0; padding: 0; }
 
 
 
-<p class="subsectionBar">
-<a name="simIK.handleIkGroup" id="simIK.handleIkGroup"></a><a name="simIK.handleGroup" id="simIK.handleGroup"></a>simIK.handleGroup</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Handles (i.e. computes/resolves) an IK group. Convenience function for simIK.handleIkGroups(ikEnv,{ikGroupHandle},..)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">int result,int flags,float[2] precision=simIK.handleGroup(int environmentHandle,int ikGroupHandle,map options={})</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment</div>
-<div><strong>ikGroupHandle</strong>: the handle of the IK group</div>
-<div><strong>options</strong>: options:</div>
-<div class=tabTab>options.syncWorlds: if true, then calculation will be preceeded by simIK.syncFromSim and followed by simIK.syncToSim</div>
-<div class=tabTab>options.allowError: if true, and options.syncWorlds is true too, then calculation result will be applied to the scene, even if tip/target pairs are not within tolerance</div>
-<div class=tabTab>options.debug: bit0 is set, then a visual representation of the IK group will be made</div>
-<div class=tabTab>options.callback: a callback function that allows to inspect and manipulate the Jacobian. It also allows to directly perform joint valiation calculations while skipping internal computations:</div>
-<div class=tabTab>outData=callbackFunction(inData)</div>
-<div>inData.jacobian: a Matrix object representing the Jacobian</div>
-<div>inData.e: a Vector object representing the error vector</div>
-<div>inData.rows: a table describing the jacobian rows</div>
-<div>inData.cols: a table describing the jacobian cols</div>
-<div></div>
-<div>outData.jacobian: an optional Matrix object representing the Jacobian to use in subsequent calculations. If not provided, then the original inData.jacobian is used</div>
-<div>outData.e: an optional Vector object representing the error vector to use in subsequent calculations. If not provided, then the original inData.e is used</div>
-<div>outData.dq: an optional Vector object representing the joint variation to apply. If provided, then internal Jacobian calculations (i.e. Jacobian pseudo-inverse) will be skipped)</div>
-<div>outData.jacobianPinv: an optional Matrix object representing the jacobian pseudo-inverse. If provided (and dq is not provided), then internal Jacobian calculations will be skipped and following executed instead: dq=outData.jacobianPinv*e)</div>
-
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-<div><strong>result</strong>: simIK.result_success, if successful</div>
-<div><strong>reason</strong>: bit-coded flags: simIK.calc_notperformed, simIK.calc_cannotinvert, simIK.calc_notwithintolerance, simIK.calc_stepstoobig, simIK.calc_limithit</div>
-<div><strong>precision</strong>: 2 values indicating the largest linear and angular distance between all tip-target pairs</div>
-</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">int result,int flags,list precision=simIK.handleGroup(int environmentHandle,int ikGroupHandle,map options=None)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.handleGroups">simIK.handleGroups</a>,<a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.findConfigs">simIK.findConfigs</a></td>
-</tr>
-</table>
-<br>
-
-
-
-
-
-
-
-
-
 
 
 <p class="subsectionBar">
@@ -2366,7 +2255,7 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.handleGroup">simIK.handleGroup</a>,<a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.findConfigs">simIK.findConfigs</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.computeJacobian">simIK.computeJacobian</a>, <a href="#simIK.findConfigs">simIK.findConfigs</a></td>
 </tr>
 </table>
 <br>
@@ -2417,6 +2306,9 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
 <p class="subsectionBar">
 <a name="simIK.save" id="simIK.save"></a>simIK.save</p>
 <table class="apiTable">
@@ -2452,6 +2344,10 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setIkElementBase" id="simIK.setIkElementBase"></a><a name="simIK.setElementBase" id="simIK.setElementBase"></a>simIK.setElementBase</p>
@@ -2492,6 +2388,9 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setIkElementConstraints" id="simIK.setIkElementConstraints"></a><a name="simIK.setElementConstraints" id="simIK.setElementConstraints"></a>simIK.setElementConstraints</p>
 <table class="apiTable">
@@ -2529,6 +2428,14 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setIkElementFlags" id="simIK.setIkElementFlags"></a><a name="simIK.setElementFlags" id="simIK.setElementFlags"></a>simIK.setElementFlags</p>
@@ -2568,6 +2475,13 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setIkElementPrecision" id="simIK.setIkElementPrecision"></a><a name="simIK.setElementPrecision" id="simIK.setElementPrecision"></a>simIK.setElementPrecision</p>
 <table class="apiTable">
@@ -2605,6 +2519,14 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setIkElementWeights" id="simIK.setIkElementWeights"></a><a name="simIK.setElementWeights" id="simIK.setElementWeights"></a>simIK.setElementWeights</p>
@@ -2644,6 +2566,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setIkGroupCalculation" id="simIK.setIkGroupCalculation"></a><a name="simIK.setGroupCalculation" id="simIK.setGroupCalculation"></a>simIK.setGroupCalculation</p>
 <table class="apiTable">
@@ -2682,6 +2608,11 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setIkGroupFlags" id="simIK.setIkGroupFlags"></a><a name="simIK.setGroupFlags" id="simIK.setGroupFlags"></a>simIK.setGroupFlags</p>
@@ -2726,6 +2657,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setJointDependency" id="simIK.setJointDependency"></a>simIK.setJointDependency</p>
 <table class="apiTable">
@@ -2767,6 +2702,11 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setJointIkWeight" id="simIK.setJointIkWeight"></a><a name="simIK.setJointWeight" id="simIK.setJointWeight"></a>simIK.setJointWeight</p>
 <table class="apiTable">
@@ -2804,6 +2744,11 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setJointLimitMargin" id="simIK.setJointLimitMargin"></a>simIK.setJointLimitMargin</p>
 <table class="apiTable">
@@ -2840,6 +2785,12 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setJointInterval" id="simIK.setJointInterval"></a>simIK.setJointInterval</p>
@@ -2879,6 +2830,12 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setJointMaxStepSize" id="simIK.setJointMaxStepSize"></a>simIK.setJointMaxStepSize</p>
 <table class="apiTable">
@@ -2915,6 +2872,11 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setJointMode" id="simIK.setJointMode"></a>simIK.setJointMode</p>
@@ -2953,6 +2915,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setJointPosition" id="simIK.setJointPosition"></a>simIK.setJointPosition</p>
 <table class="apiTable">
@@ -2985,13 +2951,21 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.setSphericalJointMatrix">simIK.setSphericalJointMatrix</a>, <a href="#simIK.setSphericalJointRotation">simIK.setSphericalJointRotation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointPosition">simIK.getJointPosition</a>, <a href="#simIK.setJointQuaternion">simIK.setJointQuaternion</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
 
+
+
+
+
+
+
+
+
 <p class="subsectionBar">
-<a name="simIK.setJointScrewLead" id="simIK.setJointScrewLead"></a><a name="simIK.setJointScrewPitch" id="simIK.setJointScrewPitch"></a>simIK.setJointScrewLead</p>
+<a name="simIK.setJointScrewLead" id="simIK.setJointScrewLead"></a>simIK.setJointScrewLead</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
@@ -3027,6 +3001,12 @@ td.section { margin: 0; padding: 0; }
 </tr>
 </table>
 <br>
+
+
+
+
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setLinkedDummy" id="simIK.setLinkedDummy"></a>simIK.setLinkedDummy</p>
@@ -3065,43 +3045,10 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.setObjectMatrix" id="simIK.setObjectMatrix"></a>simIK.setObjectMatrix</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Sets the transformation matrix of an object. If the object is a joint object, the matrix does not include the joint's intrinsic transformation.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setObjectMatrix(int environmentHandle,int objectHandle,float[12] matrix,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>objectHandle</strong>: the handle of the object.</div>
-<div><strong>matrix</strong>: a table of 12 values representing the transformation matrix (the last row of the 4x4 matrix (0,0,0,1) is omitted)</div>
-<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the matrix is expressed. Otherwise, specify simIK.handle_world if you specify the absolute matrix, or simIK.handle_parent if you specify the matrix relative to the parent object.</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setObjectMatrix(int environmentHandle,int objectHandle,list matrix,int relativeToObjectHandle=simIK.handle_world)</td>
-</tr>
 
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectMatrix">simIK.getObjectMatrix</a>, <a href="#simIK.setObjectPose">simIK.setObjectPose</a>, <a href="#simIK.setObjectTransformation">simIK.setObjectTransformation</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
-</tr>
-</table>
-<br>
+
+
 
 <p class="subsectionBar">
 <a name="simIK.setObjectParent" id="simIK.setObjectParent"></a>simIK.setObjectParent</p>
@@ -3141,23 +3088,27 @@ td.section { margin: 0; padding: 0; }
 </table>
 <br>
 
+
+
+
+
 <p class="subsectionBar">
 <a name="simIK.setObjectPose" id="simIK.setObjectPose"></a>simIK.setObjectPose</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Sets the pose (position and quaternion) of an object. If the object is a joint object, the pose does not include the joint's intrinsic transformation.</td>
+<td class="apiTableRightDescr">Sets the pose of an object. If the object is a joint object, the pose does not include the joint's intrinsic transformation.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setObjectPose(int environmentHandle,int objectHandle,float[7] pose,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightLSyn">simIK.setObjectPose(int environmentHandle,int objectHandle,Pose pose,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>objectHandle</strong>: the handle of the object.</div>
-<div><strong>pose</strong>: the position and quaternion (x,y,z,qx,qy,qz,qw).</div>
+<div><strong>pose</strong>: the pose</div>
 <div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the pose is expressed. Otherwise, specify simIK.handle_world if you specify the absolute pose, or simIK.handle_parent if you specify the pose relative to the parent object.</div>
 </td>
 </tr>
@@ -3169,36 +3120,40 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setObjectPose(int environmentHandle,int objectHandle,list pose,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightPSyn">simIK.setObjectPose(int environmentHandle,int objectHandle,Pose pose,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>, <a href="#simIK.setObjectTransformation">simIK.setObjectTransformation</a>, <a href="#simIK.setObjectMatrix">simIK.setObjectMatrix</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectPose">simIK.getObjectPose</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
 
 
+
+
+
+
+
 <p class="subsectionBar">
-<a name="simIK.setObjectTransformation" id="simIK.setObjectTransformation"></a>simIK.setObjectTransformation</p>
+<a name="simIK.setObjectMatrix" id="simIK.setObjectMatrix"></a>simIK.setObjectMatrix</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Sets the transformation (position and quaternion/Euler angles) of an object. If the object is a joint object, the transformation does not include the joint's intrinsic transformation.</td>
+<td class="apiTableRightDescr">Sets the transformation matrix of an object. If the object is a joint object, the matrix does not include the joint's intrinsic transformation.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setObjectTransformation(int environmentHandle,int objectHandle,float[3] position,float[] eulerOrQuaternion,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightLSyn">simIK.setObjectMatrix(int environmentHandle,int objectHandle,Matrix4x4 m,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>objectHandle</strong>: the handle of the object.</div>
-<div><strong>position</strong>: the position component of the transformation.</div>
-<div><strong>eulerOrQuaternion</strong>: the orientation component of the transformation. If 3 values are specified, then they will be interpreted as Euler angles (alpha,beta,gamma). If 4 values are specified, they will be interpreted as quaternion values (x,y,z,w).</div>
-<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the transformation is expressed. Otherwise, specify simIK.handle_world if you specify the absolute transformation, or simIK.handle_parent if you specify the transformation relative to the parent object.</div>
+<div><strong>m</strong>: the matrix</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the matrix is expressed. Otherwise, specify simIK.handle_world if you specify the absolute matrix, or simIK.handle_parent if you specify the matrix relative to the parent object.</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -3209,34 +3164,127 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setObjectTransformation(int environmentHandle,int objectHandle,list position,list eulerOrQuaternion,int relativeToObjectHandle=simIK.handle_world)</td>
+<td class="apiTableRightPSyn">simIK.setObjectMatrix(int environmentHandle,int objectHandle,Matrix4x4 m,int relativeToObjectHandle=simIK.handle_world)</td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectTransformation">simIK.getObjectTransformation</a>, <a href="#simIK.setObjectPose">simIK.setObjectPose</a>, <a href="#simIK.setObjectMatrix">simIK.setObjectMatrix</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectMatrix">simIK.getObjectMatrix</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
 
 
+
+
+
+
+
 <p class="subsectionBar">
-<a name="simIK.setSphericalJointMatrix" id="simIK.setSphericalJointMatrix"></a>simIK.setSphericalJointMatrix</p>
+<a name="simIK.setObjectPosition" id="simIK.setObjectPosition"></a>simIK.setObjectPosition</p>
 <table class="apiTable">
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Sets the rotation transformation matrix of a spherical joint.</td>
+<td class="apiTableRightDescr">Sets the position of an object. If the object is a joint object, the position does not include the joint's intrinsic transformation.</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setSphericalJointMatrix(int environmentHandle,int jointHandle,float[12] matrix)</td>
+<td class="apiTableRightLSyn">simIK.setObjectPosition(int environmentHandle,int objectHandle,Vector3 pos,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>objectHandle</strong>: the handle of the object.</div>
+<div><strong>pos</strong>: the position</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the position is expressed. Otherwise, specify simIK.handle_world if you specify the absolute position, or simIK.handle_parent if you specify the position relative to the parent object.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">simIK.setObjectPosition(int environmentHandle,int objectHandle,Vector3 pos,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectPosition">simIK.getObjectPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+
+
+
+
+
+
+<p class="subsectionBar">
+<a name="simIK.setObjectQuaternion" id="simIK.setObjectQuaternion"></a>simIK.setObjectQuaternion</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Sets the quaternion of an object. If the object is a joint object, the quaternion does not include the joint's intrinsic transformation.</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">simIK.setObjectQuaternion(int environmentHandle,int objectHandle,Quaternion quat,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLParam">Lua arguments</td>
+<td class="apiTableRightLParam">
+<div><strong>environmentHandle</strong>: the handle of the environment.</div>
+<div><strong>objectHandle</strong>: the handle of the object.</div>
+<div><strong>quat</strong>: the quaternion</div>
+<div><strong>relativeToObjectHandle</strong>: the handle of an object relative to which the quaternion is expressed. Otherwise, specify simIK.handle_world if you specify the absolute quaternion, or simIK.handle_parent if you specify the quaternion relative to the parent object.</div>
+</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLRet">Lua return values</td>
+<td class="apiTableRightLRet">
+</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftPSyn">Python synopsis</td>
+<td class="apiTableRightPSyn">simIK.setObjectQuaternion(int environmentHandle,int objectHandle,Quaternion quat,int relativeToObjectHandle=simIK.handle_world)</td>
+</tr>
+
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">See also</td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getObjectQuaternion">simIK.getObjectQuaternion</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+</tr>
+</table>
+<br>
+
+
+
+
+
+
+
+<p class="subsectionBar">
+<a name="simIK.setJointQuaternion" id="simIK.setJointQuaternion"></a>simIK.setJointQuaternion</p>
+<table class="apiTable">
+<tr class="apiTableTr">
+<td class="apiTableLeftDescr">Description</td>
+<td class="apiTableRightDescr">Sets the intrinsic quaternion of a spherical joint.</td>
+</tr>
+<tr class="apiTableTr">
+<td class="apiTableLeftLSyn">Lua synopsis</td>
+<td class="apiTableRightLSyn">simIK.setJointQuaternion(int environmentHandle,int jointHandle,Quaternion quat)</td>
 </tr>
 <tr class="apiTableTr">
 <td class="apiTableLeftLParam">Lua arguments</td>
 <td class="apiTableRightLParam">
 <div><strong>environmentHandle</strong>: the handle of the environment.</div>
 <div><strong>jointHandle</strong>: the handle of the joint.</div>
-<div><strong>matrix</strong>: a table of 12 values representing the transformation matrix (the last row of the 4x4 matrix (0,0,0,1) is omitted). The translation part in the matrix will be ignored.</div>
+<div><strong>quat</strong>: a quaternion</div>
 </td>
 </tr>
 <tr class="apiTableTr">
@@ -3247,52 +3295,16 @@ td.section { margin: 0; padding: 0; }
 
 <tr class="apiTableTr">
 <td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setSphericalJointMatrix(int environmentHandle,int jointHandle,list matrix)</td>
+<td class="apiTableRightPSyn">simIK.setJointQuaternion(int environmentHandle,int jointHandle,Quaternion quat)</td>
 </tr>
 
 <tr class="apiTableTr">
 <td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointMatrix">simIK.getJointMatrix</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.setSphericalJointRotation">simIK.setSphericalJointRotation</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
+<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointQuaternion">simIK.getJointQuaternion</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
 </tr>
 </table>
 <br>
 
-<p class="subsectionBar">
-<a name="simIK.setSphericalJointRotation" id="simIK.setSphericalJointRotation"></a>simIK.setSphericalJointRotation</p>
-<table class="apiTable">
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">Description</td>
-<td class="apiTableRightDescr">Sets the rotation transformation of a spherical joint.</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLSyn">Lua synopsis</td>
-<td class="apiTableRightLSyn">simIK.setSphericalJointRotation(int environmentHandle,int jointHandle,float[] eulerOrQuaternion)</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLParam">Lua arguments</td>
-<td class="apiTableRightLParam">
-<div><strong>environmentHandle</strong>: the handle of the environment.</div>
-<div><strong>jointHandle</strong>: the handle of the joint.</div>
-<div><strong>eulerOrQuaternion</strong>: the rotation transformation to apply. If 3 values are specified, they will be interpreted as Euler angles (alpha,beta,gamma). If 4 values are specified, they will be interpreted as quaternion values (x,y,z,w).</div>
-</td>
-</tr>
-<tr class="apiTableTr">
-<td class="apiTableLeftLRet">Lua return values</td>
-<td class="apiTableRightLRet">
-</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftPSyn">Python synopsis</td>
-<td class="apiTableRightPSyn">simIK.setSphericalJointRotation(int environmentHandle,int jointHandle,list eulerOrQuaternion)</td>
-</tr>
-
-<tr class="apiTableTr">
-<td class="apiTableLeftDescr">See also</td>
-<td class="apiTableRightDescr"><a href="#simIK.createEnvironment">simIK.createEnvironment</a>, <a href="#simIK.getJointTransformation">simIK.getJointTransformation</a>, <a href="#simIK.setSphericalJointMatrix">simIK.setSphericalJointMatrix</a>, <a href="#simIK.setJointPosition">simIK.setJointPosition</a>, <a href="#simIK.getObjectHandle">simIK.getObjectHandle</a></td>
-</tr>
-</table>
-<br>
 
 
 
