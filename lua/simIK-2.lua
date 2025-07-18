@@ -11,7 +11,7 @@ simIK.getJointPose = wrap(simIK.getJointPose, function(origFunc)
     end
 end)
 
-function simIK.getJointQuaternion(env, handle)
+function simIK.getJointQuaternion(...)
     local ikEnv, jointHandle = checkargs({ {type = 'int'}, {type = 'int'} }, ...)
     local q = simIK.getJointPose(ikEnv, jointHandle)
     return simEigen.Quaternion({q[4], q[5], q[6], q[7]})
@@ -42,13 +42,13 @@ simIK.getObjectMatrix = wrap(simIK.getObjectMatrix, function(origFunc)
     return function(env, handle, rel)
         rel = rel or simIK.handle_world
         local m = simEigen.Matrix(3, 4, origFunc(env, handle, rel))
-        m = m:vertcat(simEigen.Matrix(1, 4, {0.0, 0.0, 0.0, 1.0})
+        m = m:vertcat(simEigen.Matrix(1, 4, {0.0, 0.0, 0.0, 1.0}))
         return m
     end
 end)
 
 simIK.setObjectMatrix = wrap(simIK.setObjectMatrix, function(origFunc)
-    return function(env, handle, pos, matr, rel)
+    return function(env, handle, matr, rel)
         rel = rel or simIK.handle_world
         return origFunc(env, handle, matr:data(), rel)
     end
@@ -93,15 +93,14 @@ function simIK.setObjectPosition(env, handle, pos, rel)
 end
 
 function __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
+    -- Returns a table of Vectors
     if index > #jointHandles then
-        return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+        return {confS:copy()}
     else
-        local c = {}
-        for i = 1, #jointHandles, 1 do c[i] = confS[i] end
+        local c = confS:copy()
         local solutions = {}
         while c[index] <= x[index][2] do
-            local s = __.simIKLoopThroughAltConfigSolutions(
-                          ikEnvironment, jointHandles, desiredPose, c, x, index + 1)
+            local s = __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, c, x, index + 1)
             for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
             c[index] = c[index] + math.pi * 2
         end
@@ -110,6 +109,7 @@ function __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desi
 end
 
 function simIK.getAlternateConfigs(...)
+    -- Returns a table of Vectors
     local ikEnv, jointHandles, lowLimits, ranges = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
@@ -126,7 +126,7 @@ function simIK.getAlternateConfigs(...)
 
     local retVal = {}
     local x = {}
-    local confS = {}
+    local confS = simEigen.Vector(#jointHandles, 0.0)
     local err = false
     local inputConfig = {}
     for i = 1, #jointHandles, 1 do
@@ -199,17 +199,10 @@ function simIK.getAlternateConfigs(...)
     local configs = {}
     if not err then
         local desiredPose = 0
-        configs = __.simIKLoopThroughAltConfigSolutions(
-                      ikEnv, jointHandles, desiredPose, confS, x, 1
-                  )
+        configs = __.simIKLoopThroughAltConfigSolutions(ikEnv, jointHandles, desiredPose, confS, x, 1)
     end
     sim.setStepping(lb)
 
-    if next(configs) ~= nil then
-        local simEigen = require('simEigen')
-        configs = simEigen.Matrix:fromtable(configs)
-        configs = configs:data()
-    end
     return configs
 end
 
@@ -513,7 +506,7 @@ function simIK.findConfig(...)
             fun = fun[__callback]
         end
         if type(fun) == 'function' then
-            return fun(config, auxData)
+            return fun(simEigen.Vector(config), auxData)
         end
     end
     local funcNm, t
@@ -522,7 +515,7 @@ function simIK.findConfig(...)
         funcNm = '__ikcb'
         t = sim.getScript(sim.handle_self)
     end
-    local retVal = simIK._findConfig(env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t)
+    local retVal = simEigen.Vector(simIK._findConfig(env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t))
     -- simIK.eraseEnvironment(env)
     sim.setStepping(lb)
     return retVal
@@ -697,7 +690,6 @@ function simIK.handleGroups(...)
         local data = {}
         data.rows = {}
         data.cols = {}
-        local simEigen = require('simEigen')
         if pythonCallback then
             data.jacobian = jacobian
             data.e = errorVect
@@ -1121,7 +1113,6 @@ function simIK.solvePath(...)
             {type = 'table', default = {}},
         }, ...)
 
-    local simEigen = require('simEigen')
     collisionPairs = collisionPairs or {}
     local delta = opts.delta or 0.005
     local errorCallback = opts.errorCallback or function(e)
@@ -1161,13 +1152,11 @@ function simIK.solvePath(...)
     end
     local getConfig = opts.getConfig or partial(map, sim.getJointPosition, simJoints)
     local setConfig = opts.setConfig or partial(foreach, sim.setJointPosition, simJoints)
-    local getIkConfig = opts.getIkConfig or
-                            partial(map, partial(simIK.getJointPosition, ikEnv), ikJoints)
-    local setIkConfig = opts.setIkConfig or
-                            partial(foreach, partial(simIK.setJointPosition, ikEnv), ikJoints)
+    local getIkConfig = opts.getIkConfig or partial(map, partial(simIK.getJointPosition, ikEnv), ikJoints)
+    local setIkConfig = opts.setIkConfig or partial(foreach, partial(simIK.setJointPosition, ikEnv), ikJoints)
 
     -- save current robot config:
-    local origIkCfg = getIkConfig()
+    local origIkCfg = simEigen.Vector(getIkConfig())
 
     local cfgs = {}
     local posAlongPath = 0
@@ -1192,9 +1181,7 @@ function simIK.solvePath(...)
         -- move target to next position:
         moveIkTarget(posAlongPath)
         -- if IK failed, return failure:
-        local ikResult, failureCode = simIK.handleGroups(
-                                          ikEnv, {ikGroup}, {callback = opts.jacobianCallback}
-                                      )
+        local ikResult, failureCode = simIK.handleGroups(ikEnv, {ikGroup}, {callback = opts.jacobianCallback})
         if ikResult ~= simIK.result_success then
             reportError(
                 'Failed to perform IK step at t=%.2f (reason: %s)', posAlongPath / totalLength,
@@ -1204,8 +1191,8 @@ function simIK.solvePath(...)
         end
         -- if collidableHandle given, and there is a collision, return failure:
         if #collisionPairs > 0 then
-            local origSimCfg = getConfig()
-            setConfig(getIkConfig())
+            local origSimCfg = simEigen.Vector(getConfig())
+            setConfig(simEigen.Vector(getIkConfig()))
             for i = 1, #collisionPairs, 2 do
                 if sim.checkCollision(collisionPairs[i], collisionPairs[i + 1]) ~= 0 then
                     local function getObjectAlias(h)
@@ -1226,7 +1213,7 @@ function simIK.solvePath(...)
         end
         callStepCb(false)
         -- otherwise store config and continue:
-        table.insert(cfgs, getIkConfig())
+        table.insert(cfgs, simEigen.Vector(getIkConfig()))
         -- move position on path forward:
         posAlongPath = math.min(posAlongPath + delta, totalLength)
     end
@@ -1282,12 +1269,13 @@ function simIK.applyIkEnvironmentToScene(...)
 end
 
 function simIK.findConfigs(...)
+    -- Returns a table of vectors
     local ikEnv, ikGroup, ikJoints, params, otherConfigs = checkargs({
         {type = 'int'},
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
         {type = 'table', default_nil = true, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'int', default_nil = true, nullable = true},
+        {type = 'vector', size = '1..*', default_nil = true, nullable = true},
     }, ...)
     params = params or {}
     -- params.findMultiple 
@@ -1354,7 +1342,8 @@ function simIK.findConfigs(...)
 end
 
 function simIK.getConfig(ikEnv, jh)
-    local retVal = {}
+    -- Returns a vector
+    local retVal = simEigen.Vector(#jh, 0.0)
     for i = 1, #jh do
         retVal[i] = simIK.getJointPosition(ikEnv, jh[i])
     end
@@ -1368,10 +1357,11 @@ function simIK.setConfig(ikEnv, jh, config)
 end
 
 function __.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
+    -- Returns a table of vectors
     local dof = #jointHandles
     local retVal = {}
     local x = {}
-    local confS = {}
+    local confS = simEigen.Vector(#jointHandles, 0.0)
     local err = false
     for i = 1, #jointHandles, 1 do
         local c, interv = simIK.getJointInterval(ikEnv, jointHandles[i])
@@ -1397,8 +1387,7 @@ function __.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
     local configs = {}
     if not err then
         local desiredPose = 0
-        configs = __.simIKLoopThroughAltConfigSolutions(
-                      ikEnv, jointHandles, desiredPose, confS, x, 1)
+        configs = __.simIKLoopThroughAltConfigSolutions(ikEnv, jointHandles, desiredPose, confS, x, 1)
     end
     
     -- Exclude the input config:
