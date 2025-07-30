@@ -3,93 +3,92 @@ local __ = {}
 local sim = require('sim-2')
 local simEigen = require('simEigen')
 local checkargs = require('checkargs')
+local checkargs2 = require('checkargs-2')
 
 simIK.getJointPose = wrap(simIK.getJointPose, function(origFunc)
     return function(...)
-        local p = origFunc(...)
+        local ikEnv, jointHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
+        local p = origFunc(ikEnv, jointHandle)
         return simEigen.Pose(p)
     end
 end)
 
 function simIK.getJointQuaternion(...)
-    local ikEnv, jointHandle = checkargs({ {type = 'int'}, {type = 'int'} }, ...)
-    local q = simIK.getJointPose(ikEnv, jointHandle)
-    return simEigen.Quaternion({q[4], q[5], q[6], q[7]})
+    local ikEnv, jointHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
+    local p = simIK.getJointPose(ikEnv, jointHandle)
+    return p:q
 end
 
 simIK.setJointQuaternion = wrap(simIK.setJointQuaternion, function(origFunc)
     return function(...)
-        local ikEnv, jointHandle, quat = checkargs({ {type = 'int'}, {type = 'int'}, {type = 'Quaternion'} }, ...)
+        local ikEnv, jointHandle, quat = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'quaternion'} }, ...)
         origFunc(ikEnv, jointHandle, quat:data())
     end
 end)
 
 simIK.computeGroupJacobian = wrap(simIK.computeGroupJacobian, function(origFunc)
     return function(...)
-        local J, E = origFunc(...)
+        local ikEnv, groupHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
+        local J, E = origFunc(ikEnv, groupHandle)
         return simEigen.Matrix(#E, -1, J), simEigen.Vector(E)
     end
 end)
 
 simIK.computeJacobian = wrap(simIK.computeJacobian, function(origFunc)
-    return function(env, baseObj, lastJoint, constraints, tipPose, targetPose, constrPose)
-        local J, E = origFunc(env, baseObj, lastJoint, constraints, tipPose:data(), targetPose:data(), constrPose:data())
+    return function(...)
+        local ikEnv, baseObj, lastJoint, constraints, tipPose, targetPose, constrPose = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int'}, {type = 'int'}, {type = 'pose'}, {type = 'pose', default_nil = true, nullable = true}, {type = 'pose', default_nil = true, nullable = true} }, ...)
+        if targetPose ~= nil then
+            targetPose = targetPose:data()
+        end
+        if constrPose ~= nil then
+            constrPose = constrPose:data()
+        end
+        local J, E = origFunc(ikEnv, baseObj, lastJoint, constraints, tipPose:data(), targetPose, constrPose)
         return simEigen.Matrix(#E, -1, J), simEigen.Vector(E)
     end
 end)
 
-simIK.getObjectMatrix = wrap(simIK.getObjectMatrix, function(origFunc)
-    return function(env, handle, rel)
-        rel = rel or simIK.handle_world
-        local m = simEigen.Matrix(3, 4, origFunc(env, handle, rel))
-        m = m:vertcat(simEigen.Matrix(1, 4, {0.0, 0.0, 0.0, 1.0}))
-        return m
-    end
-end)
+simIK.getObjectMatrix = nil -- dropped in simIK-2
+simIK.setObjectMatrix = nil -- dropped in simIK-2
+simIK.getJointTransformation = nil -- dropped in simIK-2
+__.getObjectTransformation = simIK.getObjectTransformation -- only used indirectly in simIK-2
+__.setObjectTransformation = simIK.setObjectTransformation -- only used indirectly in simIK-2
+simIK.getObjectTransformation = nil
+simIK.setObjectTransformation = nil
 
-simIK.setObjectMatrix = wrap(simIK.setObjectMatrix, function(origFunc)
-    return function(env, handle, matr, rel)
-        rel = rel or simIK.handle_world
-        return origFunc(env, handle, matr:data(), rel)
-    end
-end)
-
-function simIK.getObjectPose(env, handle, rel)
-    rel = rel or simIK.handle_world
-    local pos, quat = simIK.getObjectTransformation(env, handle, rel)
+function simIK.getObjectPose(...)
+    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
     return simEigen.Pose{pos[1], pos[2], pos[3], quat[1], quat[2], quat[3], quat[4]}
 end
 
-function simIK.setObjectPose(env, handle, pose, rel)
-    rel = rel or simIK.handle_world
-    simIK.setObjectTransformation(env, handle, pose:data(), {pose[4], pose[5], pose[6], pose[7]}, rel)
+function simIK.setObjectPose(...)
+    local ikEnv, handle, pose, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'pose'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    __.setObjectTransformation(ikEnv, handle, pose:t:data(), pose:q:data(), rel)
 end
 
-function simIK.getObjectQuaternion(env, handle, rel)
-    rel = rel or simIK.handle_world
-    local pos, quat = simIK.getObjectTransformation(env, handle, rel)
+function simIK.getObjectQuaternion(...)
+    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
     return simEigen.Quaternion(quat)
 end
 
-function simIK.setObjectQuaternion(env, handle, quat, rel)
-    rel = rel or simIK.handle_world
-    local pos = simIK.getObjectPosition(env, handle, rel)
-    simIK.setObjectTransformation(env, handle, pos:data(), quat:data(), rel)
+function simIK.setObjectQuaternion(...)
+    local ikEnv, handle, quat, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'quaternion'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    local pos, _quat = __.getObjectTransformation(ikEnv, handle, rel)
+    __.setObjectTransformation(ikEnv, handle, pos, quat:data(), rel)
 end
 
-function simIK.getObjectPosition(env, handle, rel)
-    rel = rel or simIK.handle_world
-    local pose, quat = simIK.getObjectTransformation(env, handle, rel)
-    return simEigen.Vector({pose[1], pose[2], pose[3]})
+function simIK.getObjectPosition(...)
+    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
+    return simEigen.Vector(pos)
 end
 
-function simIK.setObjectPosition(env, handle, pos, rel)
-    rel = rel or simIK.handle_world
-    local pose = simIK.getObjectPose(env, handle, rel)
-    pose[1] = pos[1]
-    pose[2] = pos[2]
-    pose[3] = pos[3]
-    simIK.setObjectTransformation(env, handle, pose:data(), rel)
+function simIK.setObjectPosition(...)
+    local ikEnv, handle, pos, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'vector3'}, {type = 'int', default = simIK.handle_world}  }, ...)
+    local _pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
+   __.setObjectTransformation(ikEnv, handle, _pos, quat:data(), rel)
 end
 
 function __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
@@ -232,11 +231,7 @@ function simIK.syncFromSim(...)
         end
         for i = 1, #groupData.targetTipBaseTriplets, 1 do
             -- Make sure target relative to base is in sync too:
-            simIK.setObjectMatrix(
-                ikEnv, groupData.targetTipBaseTriplets[i][4], sim.getObjectMatrix(
-                    groupData.targetTipBaseTriplets[i][1], groupData.targetTipBaseTriplets[i][3]
-                ), groupData.targetTipBaseTriplets[i][6]
-            )
+            simIK.setObjectPose(ikEnv, groupData.targetTipBaseTriplets[i][4], sim.getObjectPose(groupData.targetTipBaseTriplets[i][1], groupData.targetTipBaseTriplets[i][3]), groupData.targetTipBaseTriplets[i][6])
         end
     end
     sim.setStepping(lb)
@@ -372,7 +367,7 @@ function simIK.addElementFromScene(...)
                 end
                 simToIkMap[simIterator] = ikIterator
                 ikToSimMap[ikIterator] = simIterator
-                simIK.setObjectMatrix(ikEnv, ikIterator, sim.getObjectMatrix(simIterator))
+                simIK.setObjectPose(ikEnv, ikIterator, sim.getObjectPose(simIterator))
             end
             if sim.getObjectType(simIterator) == sim.sceneobject_joint then
                 groupData.joints[simIterator] = ikIterator
@@ -431,14 +426,14 @@ function simIK.addElementFromScene(...)
             ikJo_s = createIkJointFromSimJoint(ikEnv, slave)
             simToIkMap[slave] = ikJo_s
             ikToSimMap[ikJo_s] = slave
-            simIK.setObjectMatrix(ikEnv, ikJo_s, sim.getObjectMatrix(slave))
+            simIK.setObjectPose(ikEnv, ikJo_s, sim.getObjectPose(slave))
             groupData.joints[slave] = ikJo_s
         end
         if ikJo_m == nil then
             ikJo_m = createIkJointFromSimJoint(ikEnv, master)
             simToIkMap[master] = ikJo_m
             ikToSimMap[ikJo_m] = master
-            simIK.setObjectMatrix(ikEnv, ikJo_m, sim.getObjectMatrix(master))
+            simIK.setObjectPose(ikEnv, ikJo_m, sim.getObjectPose(master))
             groupData.joints[master] = ikJo_m
         end
         local dep, off, mult = sim.getJointDependency(slave)
@@ -859,8 +854,8 @@ function simIK.generatePath(...)
 
     local env = simIK.duplicateEnvironment(ikEnv)
     local targetHandle = simIK.getTargetDummy(env, tip)
-    local startMatrix = simIK.getObjectMatrix(env, tip)
-    local goalMatrix = simIK.getObjectMatrix(env, targetHandle)
+    local startPose = simIK.getObjectPose(env, tip)
+    local goalPose = simIK.getObjectPose(env, targetHandle)
     local retPath = {{}}
     for i = 1, #ikJoints, 1 do retPath[1][i] = simIK.getJointPosition(env, ikJoints[i]) end
     local success = true
@@ -874,8 +869,8 @@ function simIK.generatePath(...)
     if success then
         for j = 1, ptCnt - 1, 1 do
             local t = j / (ptCnt - 1)
-            local m = sim.interpolateMatrices(startMatrix, goalMatrix, t)
-            simIK.setObjectMatrix(env, targetHandle, m)
+            local m = startPose:interp(t, goalPose) --sim.interpolatePoses(startPose, goalPose, t)
+            simIK.setObjectPose(env, targetHandle, m)
             success = simIK.handleGroups(env, {ikGroup}) == simIK.result_success
             if not success then break end
             retPath[j + 1] = {}
@@ -995,7 +990,7 @@ function simIK.createDebugOverlay(...)
             local p = simIK.getObjectPosition(ikEnv, prevObj)
             local p1 = simIK.getObjectPose(ikEnv, obj)
             local p2 = simIK.getJointPose(ikEnv, obj)
-            p1 = sim.multiplyPoses(p1, p2)
+            p1 = sim.multiplyPoses(p1, p2):data()
             sim.addDrawingObjectItem(drawingConts.linkCont, {p[1], p[2], p[3], p1[1], p1[2], p1[3]})
             local spherical = (simIK.getJointType(ikEnv, obj) == simIK.jointtype_spherical)
             local m = simIK.getJointMode(ikEnv, obj) -- simIK.jointmode_passive or simIK.jointmode_ik
@@ -1011,21 +1006,17 @@ function simIK.createDebugOverlay(...)
             elseif m == simIK.jointmode_passive then
                 ind2 = 3
             end
-            local m = simIK.getObjectMatrix(ikEnv, obj)
+            local p = simIK.getObjectPose(ikEnv, obj)
+            local m = p:totransform()
             if spherical then
-                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], {m[4], m[8], m[12]})
+                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], p.t:data())
             else
-                sim.addDrawingObjectItem(
-                    drawingConts.jointCont[ind1 + ind2], {
-                        m[4] - m[3] * hs, m[8] - m[7] * hs, m[12] - m[11] * hs, m[4] + m[3] * hs,
-                        m[8] + m[7] * hs, m[12] + m[11] * hs,
-                    }
-                )
+                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], {p.t[1] - m[1][3] * hs, p.t[2] - m[2][3] * hs, p.t[3] - m[3][3] * hs, p.t[1] + m[1][3] * hs, p.t[2] + m[2][3] * hs, p.t[3] + m[3][3] * hs} )
             end
         else
             if prevObj ~= obj then
-                local p = simIK.getObjectPose(ikEnv, obj)
-                local p2 = simIK.getObjectPose(ikEnv, prevObj)
+                local p = simIK.getObjectPosition(ikEnv, obj):data()
+                local p2 = simIK.getObjectPosition(ikEnv, prevObj):data()
                 p[4] = p2[1]
                 p[5] = p2[2]
                 p[6] = p2[3]
@@ -1037,15 +1028,15 @@ function simIK.createDebugOverlay(...)
         obj = simIK.getObjectParent(ikEnv, obj)
     end
 
-    local p = simIK.getObjectPose(ikEnv, prevObj)
+    local p = simIK.getObjectPose(ikEnv, prevObj):data()
     p[4] = 0
     p[5] = 0
     p[6] = 0
     if ikBase ~= -1 then
         local p2 = simIK.getObjectPose(ikEnv, ikBase)
-        p[4] = p2[1]
-        p[5] = p2[2]
-        p[6] = p2[3]
+        p[4] = p2.t[1]
+        p[5] = p2.t[2]
+        p[6] = p2.t[3]
     end
     sim.addDrawingObjectItem(drawingConts.linkCont, p)
 

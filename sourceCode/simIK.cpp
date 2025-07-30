@@ -3018,7 +3018,7 @@ void LUA_FINDCONFIG_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getObjectTransformation
+// simIK.getObjectTransformation , only used indirectly in simIK-2
 // --------------------------------------------------------------------------------------
 const int inArgs_GETOBJECTTRANSFORMATION[]={
     3,
@@ -3079,7 +3079,7 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setObjectTransformation
+// simIK.setObjectTransformation, only used indirectly in simIK-2
 // --------------------------------------------------------------------------------------
 const int inArgs_SETOBJECTTRANSFORMATION[]={
     5,
@@ -3131,7 +3131,7 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.getObjectMatrix
+// simIK.getObjectMatrix deprecated in simIK-2
 // --------------------------------------------------------------------------------------
 const int inArgs_GETOBJECTMATRIX[]={
     3,
@@ -3181,7 +3181,7 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.setObjectMatrix
+// simIK.setObjectMatrix deprecated in simIK-2
 // --------------------------------------------------------------------------------------
 const int inArgs_SETOBJECTMATRIX[]={
     4,
@@ -3555,10 +3555,10 @@ SIM_DLLEXPORT int simInit(SSimInit* info)
     simRegisterScriptCallbackFunction("setElementWeights",nullptr,LUA_SETIKELEMENTWEIGHTS_CALLBACK);
     simRegisterScriptCallbackFunction("_handleGroups",nullptr,LUA_HANDLEIKGROUPS_CALLBACK);
     simRegisterScriptCallbackFunction("_findConfig",nullptr,LUA_FINDCONFIG_CALLBACK);
-    simRegisterScriptCallbackFunction("getObjectTransformation",nullptr,LUA_GETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction("setObjectTransformation",nullptr,LUA_SETOBJECTTRANSFORMATION_CALLBACK);
-    simRegisterScriptCallbackFunction("getObjectMatrix",nullptr,LUA_GETOBJECTMATRIX_CALLBACK);
-    simRegisterScriptCallbackFunction("setObjectMatrix",nullptr,LUA_SETOBJECTMATRIX_CALLBACK);
+    simRegisterScriptCallbackFunction("getObjectTransformation",nullptr,LUA_GETOBJECTTRANSFORMATION_CALLBACK); // only used indirectly in simIK-2
+    simRegisterScriptCallbackFunction("setObjectTransformation",nullptr,LUA_SETOBJECTTRANSFORMATION_CALLBACK); // only used indirectly in simIK-2
+    simRegisterScriptCallbackFunction("getObjectMatrix",nullptr,LUA_GETOBJECTMATRIX_CALLBACK); // deprecated in simIK-2
+    simRegisterScriptCallbackFunction("setObjectMatrix",nullptr,LUA_SETOBJECTMATRIX_CALLBACK); // deprecated in simIK-2
     simRegisterScriptCallbackFunction("computeJacobian",nullptr,LUA_COMPUTEJACOBIAN_CALLBACK);
     simRegisterScriptCallbackFunction("computeGroupJacobian",nullptr,LUA_COMPUTEGROUPJACOBIAN_CALLBACK);
 
