@@ -17,7 +17,7 @@ if(NOT COPPELIASIM_INCLUDE_DIR)
     endif()
 endif()
 list(APPEND CMAKE_MODULE_PATH ${COPPELIASIM_INCLUDE_DIR}/cmake)
-find_package(CoppeliaSim 4.5.1.7 REQUIRED)
+find_package(CoppeliaSim 4.5.1.7 REQUIRED COMPONENTS simLib-2 simLib-scriptFunctionData-2 simMath-1)
 find_package(Eigen3 REQUIRED)
 
 coppeliasim_add_plugin(
@@ -36,15 +36,6 @@ coppeliasim_add_plugin(
     ../coppeliaKinematicsRoutines/sceneObject.cpp
     ../coppeliaKinematicsRoutines/dummy.cpp
     ../coppeliaKinematicsRoutines/joint.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/mathFuncs.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/3Vector.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/4Vector.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/7Vector.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/3X3Matrix.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/4X4Matrix.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simMath/mXnMatrix.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simLib-2/scriptFunctionData.cpp
-    ${COPPELIASIM_INCLUDE_DIR}/simLib-2/scriptFunctionDataItem.cpp
 )
 target_compile_definitions(simIK PRIVATE SIM_MATH_DOUBLE)
 target_include_directories(simIK PRIVATE ../coppeliaKinematicsRoutines)
