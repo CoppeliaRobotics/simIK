@@ -2242,6 +2242,49 @@ void LUA_SETIKGROUPCALCULATION_CALLBACK(SScriptCallBack* p)
 
 
 // --------------------------------------------------------------------------------------
+// simIK.getGroupTipTargetDistance
+// --------------------------------------------------------------------------------------
+const int inArgs_GETIKGROUPDIPTARGETDISTANCE[]={
+    3,
+    sim_script_arg_int32, 0,
+    sim_script_arg_int32, 0,
+    sim_script_arg_double, 0,
+};
+
+void LUA_GETIKGROUPTIPTARGETDISTANCE_CALLBACK(SScriptCallBack* p)
+{
+    CScriptFunctionData D;
+    double dist = 0.0;
+    bool result = false;
+    if (D.readDataFromStack(p->stackID, inArgs_GETIKGROUPDIPTARGETDISTANCE, inArgs_GETIKGROUPDIPTARGETDISTANCE[0], nullptr))
+    {
+        std::vector<CScriptFunctionDataItem>* inData = D.getInDataPtr();
+        int envId = inData->at(0).int32Data[0];
+        int ikGroupHandle = inData->at(1).int32Data[0];
+        double orientationMetric = inData->at(2).doubleData[0];
+        std::string err;
+        {
+            if (ikSwitchEnvironment(envId))
+            {
+                result = ikGetGroupTipTargetDistance(ikGroupHandle, &dist, orientationMetric);
+                if (!result)
+                    err = ikGetLastError();
+            }
+            else
+                err = ikGetLastError();
+        }
+        if (err.size() > 0)
+            simSetLastError(nullptr, err.c_str());
+    }
+    if (result)
+    {
+        D.pushOutData(CScriptFunctionDataItem(dist));
+        D.writeDataToStack(p->stackID);
+    }
+}
+// --------------------------------------------------------------------------------------
+
+// --------------------------------------------------------------------------------------
 // simIK.addElement
 // --------------------------------------------------------------------------------------
 const int inArgs_ADDIKELEMENT[]={
@@ -3354,7 +3397,7 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
 // --------------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------------
-// simIK.computeJacobian
+// simIK.computeGroupJacobian
 // --------------------------------------------------------------------------------------
 const int inArgs_COMPUTEGROUPJACOBIAN[]={
     2,
@@ -3540,6 +3583,7 @@ SIM_DLLEXPORT int simInit(SSimInit* info)
     simRegisterScriptCallbackFunction("setGroupFlags",nullptr,LUA_SETIKGROUPFLAGS_CALLBACK);
     simRegisterScriptCallbackFunction("getGroupCalculation",nullptr,LUA_GETIKGROUPCALCULATION_CALLBACK);
     simRegisterScriptCallbackFunction("setGroupCalculation",nullptr,LUA_SETIKGROUPCALCULATION_CALLBACK);
+    simRegisterScriptCallbackFunction("getGroupTipTargetDistance",nullptr,LUA_GETIKGROUPTIPTARGETDISTANCE_CALLBACK);
     simRegisterScriptCallbackFunction("getGroupJointLimitHits",nullptr,LUA_GETIKGROUPJOINTLIMITHITS_CALLBACK);
     simRegisterScriptCallbackFunction("getGroupJoints",nullptr,LUA_GETGROUPJOINTS_CALLBACK);
     simRegisterScriptCallbackFunction("addElement",nullptr,LUA_ADDIKELEMENT_CALLBACK);
@@ -3590,6 +3634,7 @@ SIM_DLLEXPORT int simInit(SSimInit* info)
     simRegisterScriptVariable("result_success",std::to_string(ik_result_success).c_str(),0);
     simRegisterScriptVariable("result_fail",std::to_string(ik_result_fail).c_str(),0);
 
+    simRegisterScriptVariable("calc_ok",std::to_string(ik_calc_ok).c_str(),0);
     simRegisterScriptVariable("calc_notperformed",std::to_string(ik_calc_notperformed).c_str(),0);
     simRegisterScriptVariable("calc_cannotinvert",std::to_string(ik_calc_cannotinvert).c_str(),0);
     simRegisterScriptVariable("calc_notwithintolerance",std::to_string(ik_calc_notwithintolerance).c_str(),0);

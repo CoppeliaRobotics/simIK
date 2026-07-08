@@ -1,373 +1,963 @@
 local simIK = loadPlugin('simIK')
+local simEigen = require'simEigen'
+local class = require('middleclass')
+local sim = require('sim')
+local sim2 = require('sim-2')
+local checkargs = require('checkargs-2')
+local properties = require('middleclassProperties')
+
 local __ = {}
-local sim = require('sim-2')
-local simEigen = require('simEigen')
-local checkargs = require('checkargs')
-local checkargs2 = require('checkargs-2')
 
-simIK.getJointPose = wrap(simIK.getJointPose, function(origFunc)
-    return function(...)
-        local ikEnv, jointHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
-        local p = origFunc(ikEnv, jointHandle)
-        return simEigen.Pose(p)
-    end
-end)
-
-function simIK.getJointQuaternion(...)
-    local ikEnv, jointHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
-    local p = simIK.getJointPose(ikEnv, jointHandle)
-    return p:q
+function simIK._getObjectPose(env, handle, rel)
+    rel = rel or simIK.handle_world
+    local p, q = simIK.getObjectTransformation(env, handle, rel)
+    return {p[1], p[2], p[3], q[1], q[2], q[3], q[4]}
 end
 
-simIK.setJointQuaternion = wrap(simIK.setJointQuaternion, function(origFunc)
-    return function(...)
-        local ikEnv, jointHandle, quat = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'quaternion'} }, ...)
-        origFunc(ikEnv, jointHandle, quat:data())
-    end
-end)
+--==================================================================
+-- IK object class
+--==================================================================
+local IKObject = class('IKObject')
+properties.enable(IKObject)
 
-simIK.computeGroupJacobian = wrap(simIK.computeGroupJacobian, function(origFunc)
-    return function(...)
-        local ikEnv, groupHandle = checkargs2({ {type = 'int'}, {type = 'int'} }, ...)
-        local J, E = origFunc(ikEnv, groupHandle)
-        return simEigen.Matrix(#E, -1, J), simEigen.Vector(E)
-    end
-end)
+IKObject.static.property('sceneObjectHandle', { -- just for doc
+    type = sim.propertytype_int,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The corresponding scene object handle"},
+})
 
-simIK.computeJacobian = wrap(simIK.computeJacobian, function(origFunc)
-    return function(...)
-        local ikEnv, baseObj, lastJoint, constraints, tipPose, targetPose, constrPose = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int'}, {type = 'int'}, {type = 'pose'}, {type = 'pose', default_nil = true, nullable = true}, {type = 'pose', default_nil = true, nullable = true} }, ...)
-        if targetPose ~= nil then
-            targetPose = targetPose:data()
+IKObject.static.property('type', {
+    type = sim.propertytype_string,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The object type"},
+    get = function(self)
+        local t = simIK.getObjectType(self._ik.handle, self.handle)
+        local retVal = 'unknown'
+        local items = {[simIK.objecttype_dummy] = 'dummy', [simIK.objecttype_joint] = 'joint'}
+        local r = items[t]
+        if r then
+            retVal = r
         end
-        if constrPose ~= nil then
-            constrPose = constrPose:data()
-        end
-        local J, E = origFunc(ikEnv, baseObj, lastJoint, constraints, tipPose:data(), targetPose, constrPose)
-        return simEigen.Matrix(#E, -1, J), simEigen.Vector(E)
+        return retVal
+    end,
+})
+
+function IKObject:setPose(p, opt)
+    p = checkargs.checkargsEx({funcName = 'IKObject:setPose'}, {
+        {type = 'pose'},
+    }, p)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKObject:setPose, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
     end
-end)
-
-simIK.getObjectMatrix = nil -- dropped in simIK-2
-simIK.setObjectMatrix = nil -- dropped in simIK-2
-simIK.getJointTransformation = nil -- dropped in simIK-2
-__.getObjectTransformation = simIK.getObjectTransformation -- only used indirectly in simIK-2
-__.setObjectTransformation = simIK.setObjectTransformation -- only used indirectly in simIK-2
-simIK.getObjectTransformation = nil
-simIK.setObjectTransformation = nil
-
-function simIK.getObjectPose(...)
-    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
-    return simEigen.Pose{pos[1], pos[2], pos[3], quat[1], quat[2], quat[3], quat[4]}
+    simIK.setObjectTransformation(self._ik.handle, self.handle, p.t:data(), p.q:data(), hRel)
 end
 
-function simIK.setObjectPose(...)
-    local ikEnv, handle, pose, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'pose'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    __.setObjectTransformation(ikEnv, handle, pose:t:data(), pose:q:data(), rel)
+function IKObject:getPose(opt)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKObject:getPose, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
+    end
+    local t, q = simIK.getObjectTransformation(self._ik.handle, self.handle, hRel)
+    return simEigen.Pose(t, q)
 end
 
-function simIK.getObjectQuaternion(...)
-    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
-    return simEigen.Quaternion(quat)
+function IKObject:setPosition(p, opt)
+    p = checkargs.checkargsEx({funcName = 'IKObject:setPosition'}, {
+        {type = 'vector3'},
+    }, p)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKObject:setPosition, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
+    end
+    local t, q = simIK.getObjectTransformation(self._ik.handle, self.handle, hRel)
+    simIK.setObjectTransformation(self._ik.handle, self.handle, p:data(), q, hRel)
 end
 
-function simIK.setObjectQuaternion(...)
-    local ikEnv, handle, quat, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'quaternion'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    local pos, _quat = __.getObjectTransformation(ikEnv, handle, rel)
-    __.setObjectTransformation(ikEnv, handle, pos, quat:data(), rel)
+function IKObject:getPosition(opt)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKObject:getPosition, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
+    end
+    local t, q = simIK.getObjectTransformation(self._ik.handle, self.handle, hRel)
+    return simEigen.Vector(t)
 end
 
-function simIK.getObjectPosition(...)
-    local ikEnv, handle, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    local pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
-    return simEigen.Vector(pos)
+function IKObject:setQuaternion(p, opt)
+    p = checkargs.checkargsEx({funcName = 'IKObject:setQuaternion'}, {
+        {type = 'quaternion'},
+    }, p)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKObject:setQuaternion, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
+    end
+    local t, q = simIK.getObjectTransformation(self._ik.handle, self.handle, hRel)
+    simIK.setObjectTransformation(self._ik.handle, self.handle, t, p:data(), hRel)
 end
 
-function simIK.setObjectPosition(...)
-    local ikEnv, handle, pos, rel = checkargs2({ {type = 'int'}, {type = 'int'}, {type = 'vector3'}, {type = 'int', default = simIK.handle_world}  }, ...)
-    local _pos, quat = __.getObjectTransformation(ikEnv, handle, rel)
-   __.setObjectTransformation(ikEnv, handle, _pos, quat:data(), rel)
+function IKObject:getQuaternion(opt)
+    checkargs.checkfields({funcName = 'IKObject:getQuaternion, options argument'}, {
+        {name = 'relativeToObject', type = 'object', class = IKObject, nullable = true},
+    }, opt)
+    local hRel = -1
+    if opt.relativeToObject then
+        hRel = opt.relativeToObject.handle
+    end
+    local t, q = simIK.getObjectTransformation(self._ik.handle, self.handle, hRel)
+    return simEigen.Quaternion(q)
 end
 
-function __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, confS, x, index)
-    -- Returns a table of Vectors
-    if index > #jointHandles then
-        return {confS:copy()}
+function IKObject:initialize(ik, objectHandle)
+    self._ik = ik
+    self.handle = objectHandle
+end
+
+--==================================================================
+-- IK joint class
+--==================================================================
+local IKJoint = class("IKJoint", IKObject)
+properties.enable(IKJoint)
+
+IKJoint.static.property('passive', {
+    type = sim.propertytype_bool,
+    info = {description = "Whether the joint participates in IK resolution"},
+    get = function(self) 
+        return simIK.getJointMode(self._ik.handle, self.handle) == simIK.jointmode_passive
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.passive property'}, {
+            {type = 'bool'},
+        }, value)
+        local v = simIK.jointmode_ik
+        if value then
+            v = simIK.jointmode_passive
+        end
+        simIK.setJointMode(self._ik.handle, self.handle, v)
+    end,
+})
+
+IKJoint.static.property('jointPosition', {
+    type = sim.propertytype_float,
+    info = {description = "The prismatic/revolute joint's linear/angular displacement"},
+    get = function(self) 
+        return simIK.getJointPosition(self._ik.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.position property'}, {
+            {type = 'float'},
+        }, value)
+        simIK.setJointPosition(self._ik.handle, self.handle, value)
+    end,
+})
+
+IKJoint.static.property('jointQuaternion', {
+    type = sim.propertytype_quaternion,
+    info = {description = "The spherical joint's orientation"},
+    get = function(self) 
+        local p, q = simIK.getJointTransformation(self._ik.handle, self.handle)
+        return simEigen.Quaternion(q)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.quaternion property'}, {
+            {type = 'quaternion'},
+        }, value)
+        simIK.setSphericalJointRotation(self._ik.handle, self.handle, value:data())
+    end,
+})
+
+IKJoint.static.property('jointConfiguration', {
+    type = sim.propertytype_floatarray,
+    info = {description = "The joint's configuration. 1 value for prismatic and revolute joints, 4 values for a spherical joint"},
+    get = function(self)
+        local retVal
+        if simIK.getJointType(self._ik.handle, self.handle) == simIK.jointtype_spherical then
+            local p, q = simIK.getJointTransformation(self._ik.handle, self.handle)
+            retVal = q
+        else
+            retVal = {simIK.getJointPosition(self._ik.handle, self.handle)}
+        end
+        return retVal
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.configuration property'}, {
+            {type = 'table', itemType = 'float', size = "1..4"},
+        }, value)
+        if simIK.getJointType(self._ik.handle, self.handle) == simIK.jointtype_spherical then
+            simIK.setSphericalJointRotation(self._ik.handle, self.handle, value)
+        else
+            simIK.setJointPosition(self._ik.handle, self.handle, value[1])
+        end
+    end,
+})
+
+IKJoint.static.property('weight', {
+    type = sim.propertytype_float,
+    info = {description = "The joint weight"},
+    get = function(self)
+        return simIK.getJointWeight(self._ik.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.weight property'}, {
+            {type = 'float'},
+        }, value)
+        simIK.setJointWeight(self._ik.handle, self.handle, value)
+    end,
+})
+
+IKJoint.static.property('limitMargin', {
+    type = sim.propertytype_float,
+    info = {description = "The joint limit margin"},
+    get = function(self)
+        return simIK.getJointLimitMargin(self._ik.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.limitMargin property'}, {
+            {type = 'float'},
+        }, value)
+        simIK.setJointLimitMargin(self._ik.handle, self.handle, value)
+    end,
+})
+
+IKJoint.static.property('maxStepSize', {
+    type = sim.propertytype_float,
+    info = {description = "The joint maximum step size"},
+    get = function(self)
+        return simIK.getJointMaxStepSize(self._ik.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKJoint.maxStepSize property'}, {
+            {type = 'float'},
+        }, value)
+        simIK.setJointMaxStepSize(self._ik.handle, self.handle, value)
+    end,
+})
+
+IKJoint.static.property('jointType', {
+    type = sim.propertytype_string,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The joint type"},
+    get = function(self)
+        local t = simIK.getJointType(self._ik.handle, self.handle)
+        local retVal = 'unknown'
+        local items = {[simIK.jointtype_prismatic] = 'prismatic', [simIK.jointtype_revolute] = 'revolute', [simIK.jointtype_spherical] = 'spherical'}
+        local r = items[t]
+        if r then
+            retVal = r
+        end
+        return retVal
+    end,
+})
+
+IKJoint.static.property('bounds', {
+    type = sim.propertytype_floatarray,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The joint lower and upper bounds"},
+    get = function(self)
+        local t = simIK.getJointType(self._ik.handle, self.handle)
+        local cycl, interv = simIK.getJointInterval(self._ik.handle, self.handle)
+        local retVal = {}
+        if t ~= simIK.jointtype_spherical then
+            if cycl then
+                retVal = {}
+            else
+                retVal = {interv[1], interv[1] + interv[2]}
+            end
+        end
+        return retVal
+    end,
+})
+
+function IKJoint:initialize(ik, objectHandle)
+    IKObject.initialize(self, ik, objectHandle)
+end
+
+--==================================================================
+-- IK element class
+--==================================================================
+local IKElement = class('IKElement')
+properties.enable(IKElement)
+
+IKElement.static.property('jointList', { -- just for doc
+    type = sim.propertytype_objectarray,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The involved joints, from base to tip"},
+})
+
+IKElement.static.property('base', { -- just for doc
+    type = sim.propertytype_object,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The associated base object"},
+})
+
+IKElement.static.property('tip', { -- just for doc
+    type = sim.propertytype_object,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The associated tip object"},
+})
+
+IKElement.static.property('target', { -- just for doc
+    type = sim.propertytype_object,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The associated target object"},
+})
+
+IKElement.static.property('constraints', {
+    type = sim.propertytype_int,
+    info = {description = "Element constraints"},
+    get = function(self) 
+        return simIK.getElementConstraints(self._ik.handle, self._group.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKElement.constraints property'}, {
+            {type = 'int'},
+        }, value)
+        simIK.setElementConstraints(self._ik.handle, self._group.handle, self.handle, value)
+    end,
+})
+
+IKElement.static.property('enabled', {
+    type = sim.propertytype_bool,
+    info = {description = "Element enable state"},
+    get = function(self) 
+        return (simIK.getElementFlags(self._ik.handle, self._group.handle, self.handle) & 1) ~= 0
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKElement.enabled property'}, {
+            {type = 'bool'},
+        }, value)
+        value = value and 1 or 0
+        simIK.setElementFlags(self._ik.handle, self._group.handle, self.handle, value)
+    end,
+})
+
+IKElement.static.property('precision', {
+    type = sim.propertytype_floatarray,
+    info = {description = "Element precision"},
+    get = function(self) 
+        return simIK.getElementPrecision(self._ik.handle, self._group.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKElement.precision property'}, {
+            {type = 'table', itemType = 'float', size = 2},
+        }, value)
+        simIK.setElementPrecision(self._ik.handle, self._group.handle, self.handle, value)
+    end,
+})
+
+IKElement.static.property('weights', {
+    type = sim.propertytype_floatarray,
+    info = {description = "Element weights"},
+    get = function(self) 
+        return simIK.getElementWeights(self._ik.handle, self._group.handle, self.handle)
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKElement.weights property'}, {
+            {type = 'table', itemType = 'float', size = 2},
+        }, value)
+        simIK.setElementWeights(self._ik.handle, self._group.handle, self.handle, value)
+    end,
+})
+
+function IKElement:initialize(ik, group, elementHandle, opt)
+    self._ik = ik
+    self._group = group
+    self.handle = elementHandle
+    self._joints = {} -- set in addElementFromScene
+    self.jointList = {} -- set in addElementFromScene
+    
+    opt = opt or {}
+
+    if opt.precision then
+        simIK.setElementPrecision(self._ik.handle, self._group.handle, self.handle, opt.precision)
+    end
+    if opt.weights then
+        simIK.setElementWeights(self._ik.handle, self._group.handle, self.handle, opt.weights)
+    end
+    if opt.enabled then
+        simIK.setElementFlags(self._ik.handle, self._group.handle, self.handle, opt.enabled and 1 or 0)
+    end
+end
+
+--==================================================================
+-- IK group class
+--==================================================================
+local IKGroup = class('IKGroup')
+properties.enable(IKGroup)
+
+IKGroup.static.property('elementList', { -- just for doc
+    type = sim.propertytype_objectarray,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The elements in this group"},
+})
+
+IKGroup.static.property('method', {
+    type = sim.propertytype_string,
+    info = {description = "Group calculation method"},
+    get = function(self) 
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        local retVal = 'unknown'
+        local items = {[simIK.method_pseudo_inverse] = 'pseudoInverse', [simIK.method_undamped_pseudo_inverse] = 'undampedPseudoInverse', [simIK.method_damped_least_squares] = 'dampedLeastSquares', [simIK.method_jacobian_transpose] = 'jacobianTranspose'}
+        local r = items[m]
+        if r then
+            retVal = r
+        end
+        return retVal
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKGroup.method property'}, {
+            {enum = {pseudoInverse = simIK.method_pseudo_inverse, undampedPseudoInverse = simIK.method_undamped_pseudo_inverse, dampedLeastSquares = simIK.method_damped_least_squares, jacobianTranspose = simIK.method_jacobian_transpose}},
+        }, value)
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        simIK.setGroupCalculation(self._ik.handle, self.handle, value, damp, it)
+    end,
+})
+
+IKGroup.static.property('maxIterations', {
+    type = sim.propertytype_int,
+    info = {description = "Maximum number of iterations"},
+    get = function(self) 
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        return it
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKGroup.maxIterations property'}, {
+            {type = 'int'},
+        }, value)
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        simIK.setGroupCalculation(self._ik.handle, self.handle, m, damp, value)
+    end,
+})
+
+IKGroup.static.property('damping', {
+    type = sim.propertytype_float,
+    info = {description = "Damping coefficient"},
+    get = function(self) 
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        return damp
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKGroup.damping property'}, {
+            {type = 'float'},
+        }, value)
+        local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+        simIK.setGroupCalculation(self._ik.handle, self.handle, m, value, it)
+    end,
+})
+
+IKGroup.static.property('enabled', {
+    type = sim.propertytype_bool,
+    info = {description = "Enabled state"},
+    get = function(self)
+        local fl = simIK.getGroupFlags(self._ik.handle, self.handle)
+        return (fl & simIK.group_enabled) ~= 0
+    end,
+    set = function(self, value)
+        value = checkargs.checkargsEx({funcName = 'IKGroup.enabled property'}, {
+            {type = 'bool'},
+        }, value)
+        local fl = simIK.getGroupFlags(self._ik.handle, self.handle)
+        fl = fl & simIK.group_enabled
+        if not value then
+            fl = fl - simIK.group_enabled
+        end
+        simIK.setGroupFlags(self._ik.handle, self.handle, fl)
+    end,
+})
+
+function IKGroup:initialize(ik, groupHandle, opt)
+    self._ik = ik
+    self.handle = groupHandle
+    self._elementMap = {}
+    self.elementList = {}
+    self._joints = {}
+
+    local meth, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+    if opt.method then
+        meth = opt.method
+    end
+    if opt.damping then
+        damp = opt.damping
+    end
+    if opt.maxIterations then
+        it = opt.maxIterations
+    end
+    simIK.setGroupCalculation(self._ik.handle, self.handle, meth, damp, it)
+    local fl = simIK.getGroupFlags(self._ik.handle, self.handle)
+    if opt.enabled ~= nil then
+        fl = fl & simIK.group_enabled
+        if not opt.enabled then
+            fl = fl - simIK.group_enabled
+        end
+    end
+    simIK.setGroupFlags(self._ik.handle, self.handle, fl)
+end
+
+function IKGroup:solve(opt)
+    local retVal = false
+    local reason = simIK.calc_notperformed
+    local achievedPrecision = {0.0, 0.0}
+    local ok
+    for i = 1, #self.elementList do
+        if not self.elementList[i].passive then
+            ok = true
+            break
+        end
+    end
+    assert(ok, 'nothing to solve.')
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKGroup:solve, options argument'}, {
+        {name = 'debug', type = 'int', default = 0},
+        {name = 'syncWorlds', type = 'bool', default = true},
+        {name = 'ignoreTolerance', type = 'bool', default = false},
+    }, opt)
+
+    if opt.syncWorlds then 
+        self:syncFromSim()
+    end
+    local _
+    _, reason, achievedPrecision = self._ik:_handleGroups({self.handle}, opt)
+    if (reason & (simIK.calc_notperformed | simIK.calc_cannotinvert | simIK.calc_invalidcallbackdata)) == 0 then
+        -- no serious error
+        if ((reason & simIK.calc_notwithintolerance) == 0) or opt.ignoreTolerance then
+            retVal = true
+        end
     else
-        local c = confS:copy()
-        local solutions = {}
-        while c[index] <= x[index][2] do
-            local s = __.simIKLoopThroughAltConfigSolutions(ikEnvironment, jointHandles, desiredPose, c, x, index + 1)
-            for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
-            c[index] = c[index] + math.pi * 2
-        end
-        return solutions
+        -- serious error
+        retVal = false
     end
+    if retVal and opt.syncWorlds then
+        self:syncToSim()
+    end
+
+    self._ik:_debugGroupIfNeeded(self.handle, opt.debug)
+    if (not retVal) and opt.syncWorlds then 
+        self:syncFromSim() -- not really necessary, but better to keep IK world ordered
+    end
+    return retVal, reason, achievedPrecision
 end
 
-function simIK.getAlternateConfigs(...)
-    -- Returns a table of Vectors
-    local ikEnv, jointHandles, lowLimits, ranges = checkargs({
+function IKGroup:addElementFromScene(base, tip, target, const, opt)
+    sim2.self:setStepping(true)
+    base, tip, target, const, opt = checkargs.checkargsEx({funcName = 'IKGroup:addElementFromScene'}, {
+        {type = 'handle', nullable = true},
+        {type = 'handle'},
+        {type = 'handle'},
         {type = 'int'},
-        {type = 'table', size = '1..*', item_type = 'int'},
-        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
-        {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
-    }, ...)
+        {type = 'table', nullable = true},
+    }, base, tip, target, const, opt)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKGroup:addElementFromScene, options argument'}, {
+        {name = 'precision', type = 'table', size = 2, itemType = 'float', nullable = true},
+        {name = 'weights', type = 'table', size = 2, itemType = 'float', default = {1.0, 1.0}},
+        {name = 'enabled', type = 'bool', default = true},
+    }, opt)
 
-    local dof = #jointHandles
-    if (lowLimits and dof ~= #lowLimits) or (ranges and dof ~= #ranges) then
-        error("Bad table size.")
+
+
+    local ik = self._ik
+    local baseH = -1
+    if base then
+        baseH = base.handle
     end
-
-    local lb = sim.setStepping(true)
-
-    local retVal = {}
-    local x = {}
-    local confS = simEigen.Vector(#jointHandles, 0.0)
-    local err = false
-    local inputConfig = {}
-    for i = 1, #jointHandles, 1 do
-        inputConfig[i] = simIK.getJointPosition(ikEnv, jointHandles[i])
-        local c, interv = simIK.getJointInterval(ikEnv, jointHandles[i])
-        local t = simIK.getJointType(ikEnv, jointHandles[i])
-        local sp = simIK.getJointScrewLead(ikEnv, jointHandles[i])
-        if t == simIK.jointtype_revolute and not c then
-            if sp == 0 then
-                if inputConfig[i] - math.pi * 2 >= interv[1] or inputConfig[i] + math.pi * 2 <=
-                    interv[1] + interv[2] then
-                    -- We use the low and range values from the joint's settings
-                    local y = inputConfig[i]
-                    while y - math.pi * 2 >= interv[1] do y = y - math.pi * 2 end
-                    x[i] = {y, interv[1] + interv[2]}
-                end
+    local tipH = tip.handle
+    local targetH = target.handle
+    opt = opt or {}
+    local elementHandle, simToIkMap = ik:_addElementFromScene(self.handle, baseH, tipH, targetH, const)
+    opt.constraints = const
+    local element = IKElement(ik, self, elementHandle, opt)
+    self._elementMap[elementHandle] = element
+    self.elementList[#self.elementList + 1] = element
+    
+    -- Wrap simIK objects:
+    for k, v in pairs(simToIkMap) do
+        if self._ik.objects[k] == nil then
+            if simIK.getObjectType(ik.handle, v) == simIK.objecttype_joint then
+                local joint = IKJoint(ik, v)
+                joint.sceneObjectHandle = k
+                ik.objects[k] = joint
+                ik.joints[k] = joint
+            else
+                local obj = IKObject(ik, v)
+                obj.sceneObjectHandle = k
+                ik.objects[k] = obj
             end
         end
-        if x[i] then
-            if lowLimits and ranges then
-                -- the user specified low and range values. Use those instead:
-                local l = lowLimits[i]
-                local r = ranges[i]
-                if r ~= 0 then
-                    if r > 0 then
-                        if l < interv[1] then
-                            -- correct for user bad input
-                            r = r - (interv[1] - l)
-                            l = interv[1]
-                        end
-                        if l > interv[1] + interv[2] then
-                            -- bad user input. No alternative position for this joint
-                            x[i] = {inputConfig[i], inputConfig[i]}
-                            err = true
+    end
+    element.base = ik.objects[baseH]
+    element.tip = ik.objects[tipH]
+    element.target = ik.objects[targetH]
+    
+    local obj = tip.parent
+    while obj ~= base do
+        if obj.type == 'joint' and ik.joints[obj.handle] then
+            self._joints[obj.handle] = ik.joints[obj.handle]
+            element._joints[obj.handle] = ik.joints[obj.handle]
+            element.jointList[#element.jointList + 1] = ik.joints[obj.handle]
+        end
+        obj = obj.parent
+    end
+    element.jointList = table.reversed(element.jointList)
+    self.simToIkMap = simToIkMap
+    sim2.self:setStepping(false)
+    return element
+end
+
+function IKGroup:findConfig(poses, opt)
+    sim2.self:setStepping(true)
+    local retVal 
+    poses = checkargs.checkargsEx({funcName = 'IKGroup:findConfig'}, {
+        {type = 'table', itemType = 'pose', size = '1..*'},
+    }, poses)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IKGroup:findConfig, options argument'}, {
+        {name = 'orientationMetric', type = 'float', default = 0.5},
+        {name = 'solveDistance', type = 'float', default = 2.5},
+        {name = 'maxTime', type = 'float', default = 1.0},
+        {name = 'altConfigs', type = 'bool', default = false},
+    }, opt)
+    local cb
+    if opt.callback then
+        if type(opt.callback) == 'function' then
+            cb = opt.callback
+        elseif type(opt.callback) == 'string' then
+            cb = _G[opt.callback]
+        end
+    end
+    
+    local elementJoints = {}
+    local allJointsMap = {}
+    if self.enabled then
+        for j = 1, #self.elementList do
+            local v = self.elementList[j]
+            if v.enabled then
+                local ej = {}
+                for i = 1, #v.jointList do
+                    if not v.jointList[i].passive then
+                        ej[#ej + 1] = v.jointList[i]
+                        allJointsMap[v.jointList[i].sceneObjectHandle] = v.jointList[i]
+                    end
+                end
+                elementJoints[#elementJoints + 1] = ej
+            end
+        end
+    end
+
+    if #elementJoints > 0 and #elementJoints == #poses then
+        local startTime = sim2.app.systemTime
+        while sim2.app.systemTime - startTime < opt.maxTime do
+            local ind = 1
+            for i = 1, #self.elementList do
+                local v = self.elementList[i]
+                if v.enabled then
+                    v.target:setPose(poses[ind])
+                    ind = ind + 1
+                end
+            end
+            for k, v in pairs(allJointsMap) do
+                if v.jointType == 'spherical' then
+                    v.jointQuaternion = sim2.app.randomQuaternion
+                else
+                    if #v.bounds == 2 then
+                        v.jointPosition = v.bounds[1] + math.random() * (v.bounds[2] - v.bounds[1])
+                    else
+                        v.jointPosition = -math.pi + math.random() * 2.0 * math.pi
+                    end
+                end
+            end
+            if opt.solveDistance >= self:_getGroupTipTargetDistance(opt.orientationMetric) then
+                local r = self:solve({syncWorlds = false})
+                if r and cb then
+                    r = cb(r)
+                end
+                if r then
+                    local config = {}
+                    local bounds = {}
+                    local t = {}
+                    local indicesMap = {}
+                    for k, v in pairs(allJointsMap) do
+                        indicesMap[v.handle] = #config + 1
+                        config = table.add(config, v.jointConfiguration)
+                        if v.jointType == 'spherical' then
+                            t = table.add(t, {'quat', 'quat', 'quat', 'quat'})
+                            bounds = table.add(bounds, {{}, {}, {}, {}})
                         else
-                            if l + r > interv[1] + interv[2] then
-                                -- correct for user bad input
-                                r = interv[1] + interv[2] - l
-                            end
-                            if inputConfig[i] - math.pi * 2 >= l or inputConfig[i] + math.pi * 2 <=
-                                l + r then
-                                local y = inputConfig[i]
-                                while y < l do y = y + math.pi * 2 end
-                                while y - math.pi * 2 >= l do
-                                    y = y - math.pi * 2
-                                end
-                                x[i] = {y, l + r}
+                            if v.jointType == 'prismatic' then
+                                t[#t + 1] = 'lin'
                             else
-                                -- no alternative position for this joint
-                                x[i] = {inputConfig[i], inputConfig[i]}
-                                err = (inputConfig[i] < l) or (inputConfig[i] > l + r)
+                                t[#t + 1] = 'ang'
+                            end
+                            bounds[#bounds + 1] = v.bounds
+                        end
+                    end
+                    local m
+                    if opt.altConfigs then
+                        local Path = require'Path'
+                        local path = Path(nil, {types=t, bounds=bounds})
+                        m = path:configs(config)
+                    else
+                        m = simEigen.Vector(config)
+                    end
+                    retVal = m
+                    retVal = simEigen.Matrix(0, m:cols(), {})
+                    for i = 1, #self.elementList do
+                        local v = self.elementList[i]
+                        if v.enabled then
+                            for j = 1, #v.jointList do
+                                local joint = v.jointList[j]
+                                local cnt = 1
+                                if joint.jointType == 'spherical' then
+                                    cnt = 4
+                                end
+                                retVal = retVal:vertcat(m:block(indicesMap[joint.handle], 1, cnt, -1))
                             end
                         end
-                    else
-                        r = -r
-                        l = inputConfig[i] - r * 0.5
-                        if l < x[i][1] then l = x[i][1] end
-                        local u = inputConfig[i] + r * 0.5
-                        if u > x[i][2] then u = x[i][2] end
-                        x[i] = {l, u}
                     end
+                    break
+                end
+            end
+        end
+    end
+    sim2.self:setStepping(false)
+    return retVal
+end
+
+function IKGroup:syncFromSim()
+    sim2.self:setStepping(true)
+    local ikEnv = self._ik.handle
+    local groupData = self._ik._ikGroupData[self.handle]
+    for k, v in pairs(groupData.joints) do
+        if sim.isHandle(k) then
+            if sim.getJointType(k) == sim.joint_spherical then
+--                simIK.setSphericalJointMatrix(ikEnv, v, sim.getJointMatrix(k))
+                simIK.setSphericalJointMatrix(ikEnv, v, simEigen.Pose({0.0, 0.0, 0.0}, sim2.Object(k).joint.quaternion):totransform():data())
+            else
+                simIK.setJointPosition(ikEnv, v, sim.getJointPosition(k))
+            end
+        else
+            -- probably a joint in a dependency relation that was removed
+            simIK.eraseObject(ikEnv, v)
+            groupData.joints[k] = nil
+            self._ik._simToIkMap[k] = nil
+        end
+    end
+    for i = 1, #groupData.targetTipBaseTriplets do
+        simIK.setObjectMatrix(ikEnv,
+            groupData.targetTipBaseTriplets[i][4], sim.getObjectMatrix(
+                groupData.targetTipBaseTriplets[i][1], groupData.targetTipBaseTriplets[i][3]
+            ), groupData.targetTipBaseTriplets[i][6]
+        )
+    end
+    sim2.self:setStepping(false)
+end
+
+function IKGroup:syncToSim()
+    sim2.self:setStepping(true)
+    local ikEnv = self._ik.handle
+    local groupData = self._ik._ikGroupData[self.handle]
+    for k, v in pairs(groupData.joints) do
+        if sim.isHandle(k) then
+            if sim.getJointType(k) == sim.joint_spherical then
+                if sim.getJointMode(k) ~= sim.jointmode_dynamic or not sim.isDynamicallyEnabled(k) then
+                    sim2.Object(k).quaternion = self._joints[k].jointQuaternion
+--                    sim.setSphericalJointMatrix(k, simIK.getJointMatrix(ikEnv, v))
+                end
+            else
+                if sim.getJointMode(k) == sim.jointmode_dynamic and sim.isDynamicallyEnabled(k) then
+                    sim.setJointTargetPosition(k, simIK.getJointPosition(ikEnv, v))
+                else
+                    sim.setJointPosition(k, simIK.getJointPosition(ikEnv, v))
                 end
             end
         else
-            -- there's no alternative position for this joint
-            x[i] = {inputConfig[i], inputConfig[i]}
+            simIK.eraseObject(ikEnv, v)
+            groupData.joints[k] = nil
+            self._ik._simToIkMap[k] = nil
         end
-        confS[i] = x[i][1]
     end
-    local configs = {}
-    if not err then
-        local desiredPose = 0
-        configs = __.simIKLoopThroughAltConfigSolutions(ikEnv, jointHandles, desiredPose, confS, x, 1)
-    end
-    sim.setStepping(lb)
-
-    return configs
+    sim2.self:setStepping(false)
 end
 
-function simIK.syncFromSim(...)
-    local ikEnv, ikGroups = checkargs({
-        {type = 'int'},
-        {type = 'table'},
-    }, ...)
-
-    local lb = sim.setStepping(true)
-    for g = 1, #ikGroups, 1 do
-        local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
-        for k, v in pairs(groupData.joints) do
-            if sim.isHandle(k) then
-                if sim.getJointType(k) == sim.joint_spherical then
-                    simIK.setJointQuaternion(ikEnv, v, sim.getJointQuaternion(k))
-                else
-                    simIK.setJointPosition(ikEnv, v, sim.getJointPosition(k))
-                end
-            else
-                -- that is probably a joint in a dependency relation, that was removed
-                simIK.eraseObject(ikEnv, v)
-                groupData.joints[k] = nil
-                __.ikEnvs[ikEnv].simToIkMap[k] = nil
-                __.ikEnvs[ikEnv].ikToSimMap[v] = nil
-            end
-        end
-        for i = 1, #groupData.targetTipBaseTriplets, 1 do
-            -- Make sure target relative to base is in sync too:
-            simIK.setObjectPose(ikEnv, groupData.targetTipBaseTriplets[i][4], sim.getObjectPose(groupData.targetTipBaseTriplets[i][1], groupData.targetTipBaseTriplets[i][3]), groupData.targetTipBaseTriplets[i][6])
-        end
-    end
-    sim.setStepping(lb)
+function IKGroup:_getGroupTipTargetDistance(orientationMetric)
+    local ikEnv = self._ik.handle
+    return simIK.getGroupTipTargetDistance(ikEnv, self.handle, orientationMetric)
 end
 
-function simIK.syncToSim(...)
-    local ikEnv, ikGroups = checkargs({
-        {type = 'int'},
-        {type = 'table'},
-    }, ...)
+--==================================================================
+-- IK class
+--==================================================================
 
-    local lb = sim.setStepping(true)
-    for g = 1, #ikGroups, 1 do
-        local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroups[g]]
-        for k, v in pairs(groupData.joints) do
-            if sim.isHandle(k) then
-                if sim.getJointType(k) == sim.joint_spherical then
-                    if sim.getJointMode(k) ~= sim.jointmode_dynamic or not sim.isDynamicallyEnabled(k) then
-                        sim.setJointQuaternion(k, simIK.getJointQuaternion(ikEnv, v))
-                    end
-                else
-                    if sim.getJointMode(k) == sim.jointmode_dynamic and sim.isDynamicallyEnabled(k) then
-                        sim.setJointTargetPosition(k, simIK.getJointPosition(ikEnv, v))
-                    else
-                        sim.setJointPosition(k, simIK.getJointPosition(ikEnv, v))
-                    end
-                end
-            else
-                -- that is probably a joint in a dependency relation, that was removed
-                simIK.eraseObject(ikEnv, v)
-                groupData.joints[k] = nil
-                __.ikEnvs[ikEnv].simToIkMap[k] = nil
-                __.ikEnvs[ikEnv].ikToSimMap[v] = nil
-            end
-        end
-    end
-    sim.setStepping(lb)
+local IK = class('IK')
+properties.enable(IK)
+
+IK.static.property('objects', { -- just for doc
+    type = sim.propertytype_objectmap,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "A map linking scene object handles to their corresponding IK objects"},
+})
+
+IK.static.property('joints', { -- just for doc
+    type = sim.propertytype_objectmap,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "A map linking scene joint handles to their corresponding IK joints"},
+})
+
+IK.static.property('groupList', { -- just for doc
+    type = sim.propertytype_objectarray,
+    flags = sim.propertyinfo_silent | sim.propertyinfo_notwritable | sim.propertyinfo_modelhashexclude,
+    info = {description = "The groups in this IK world"},
+})
+
+function IK:initialize()
+    self.handle = simIK.createEnvironment()
+    self.objects = {}
+    self.joints = {}
+    self.groupList = {}
+    self._groupMap = {}
+    
+    -- internal use:
+    self._ikGroupData = {}
+    self._ikGroupHandles = {}
+    self._simToIkMap = {}
+    self._ikDebug = nil
+    
+    self.constraint_x = simIK.constraint_x
+    self.constraint_y = simIK.constraint_y
+    self.constraint_z = simIK.constraint_z
+    self.constraint_alphabeta = simIK.constraint_alpha_beta
+    self.constraint_gamma = simIK.constraint_gamma
+    self.constraint_position = simIK.constraint_position
+    self.constraint_orientation = simIK.constraint_orientation
+    self.constraint_pose = simIK.constraint_pose
+
+    self.calc_notperformed = simIK.calc_notperformed
+    self.calc_cannotinvert = simIK.calc_cannotinvert
+    self.calc_outoftolerance = simIK.calc_notwithintolerance
+    self.calc_largesteps = simIK.calc_stepstoobig
+    self.calc_boundshit = simIK.calc_limithit
+    self.calc_invalidcallbackdata = simIK.calc_invalidcallbackdata
 end
 
-function simIK.debugGroupIfNeeded(ikEnv, ikGroup, debugFlags)
-    if not __.ikEnvs then __.ikEnvs = {} end
+function IK:createGroup(opt)
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IK:createGroup, options argument'}, {
+        {name = 'method', enum = {pseudoInverse = simIK.method_pseudo_inverse, undampedPseudoInverse = simIK.method_undamped_pseudo_inverse, dampedLeastSquares = simIK.method_damped_least_squares, jacobianTranspose = simIK.method_jacobian_transpose}, nullable = true},
+        {name = 'damping', type = 'float', nullable = true},
+        {name = 'maxIterations', type = 'int', range = '1..*', nullable = true},
+        {name = 'enabled', type = 'bool', nullable = true},
+    }, opt)
 
-    if __.ikEnvs[ikEnv] then -- when an IK environment is duplicated, it does not appear in __.ikEnvs...
-        local p = sim.getIntProperty(sim.handle_app, 'signal.simIK.debug_world', {noError = true})
-        if (p and (p & 1) ~= 0) or ((debugFlags & 1) ~= 0) then
-            local lb = sim.setStepping(true)
-            local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroup]
-            groupData.visualDebug = {}
-            for i = 1, #groupData.targetTipBaseTriplets, 1 do
-                groupData.visualDebug[i] = simIK.createDebugOverlay(
-                                               ikEnv, groupData.targetTipBaseTriplets[i][5],
-                                               groupData.targetTipBaseTriplets[i][6]
-                                           )
-            end
-            sim.setStepping(lb)
-        else
-            local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroup]
-            if groupData.visualDebug then
-                for i = 1, #groupData.visualDebug, 1 do
-                    simIK.eraseDebugOverlay(groupData.visualDebug[i])
-                end
-            end
-            groupData.visualDebug = {}
+    local groupHandle = simIK.createIkGroup(self.handle)
+    self._ikGroupHandles[#self._ikGroupHandles + 1] = groupHandle
+    local group = IKGroup(self, groupHandle, opt)
+    self.groupList[#self.groupList + 1] = group
+    self._groupMap[groupHandle] = group
+    return group
+end
+
+function IK:syncFromSim()
+    sim2.self:setStepping(true)
+    for g = 1, #self.groupList do
+        self.groupList[g]:syncFromSim()
+    end
+    sim2.self:setStepping(false)
+end
+
+function IK:syncToSim()
+    sim2.self:setStepping(true)
+    for g = 1, #self.groupList do
+        self.groupList[g]:syncToSim()
+    end
+    sim2.self:setStepping(false)
+end
+
+function IK:_debugGroupIfNeeded(ikGroup, debugFlags)
+    local groupData = self._ikGroupData[ikGroup]
+    if not groupData then return end
+
+    local p = sim.getIntProperty(sim.handle_app, 'signal.simIK.debug_world', {noError = true})
+    if (p and (p & 1) ~= 0) or ((debugFlags & 1) ~= 0) then
+        sim2.self:setStepping(true)
+        groupData.visualDebug = {}
+        for i = 1, #groupData.targetTipBaseTriplets do
+            groupData.visualDebug[i] = self:_createDebugOverlay(
+                                           groupData.targetTipBaseTriplets[i][5],
+                                           groupData.targetTipBaseTriplets[i][6]
+                                       )
         end
+        sim2.self:setStepping(false)
+    else
+        if groupData.visualDebug then
+            for i = 1, #groupData.visualDebug do
+                self:_eraseDebugOverlay(groupData.visualDebug[i])
+            end
+        end
+        groupData.visualDebug = {}
     end
 end
 
-function simIK.addElementFromScene(...)
-    local ikEnv, ikGroup, simBase, simTip, simTarget, constraints = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'int'},
-    }, ...)
+function IK:_addElementFromScene(ikGroup, simBase, simTip, simTarget, constraints)
+    sim2.self:setStepping(true)
+    local ikEnv = self.handle
 
-    local lb = sim.setStepping(true)
-
-    if not __.ikEnvs then __.ikEnvs = {} end
-    if not __.ikEnvs[ikEnv] then __.ikEnvs[ikEnv] = {} end
-    if not __.ikEnvs[ikEnv].ikGroups then
-        __.ikEnvs[ikEnv].ikGroups = {}
-        __.ikEnvs[ikEnv].simToIkMap = {}
-        __.ikEnvs[ikEnv].ikToSimMap = {}
-    end
-    local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroup]
-    -- simToIkMap and ikToSimMap, need to be scoped by ik env, and not ik group,
-    -- otherwise we may have duplicates:
-    local simToIkMap = __.ikEnvs[ikEnv].simToIkMap
-    local ikToSimMap = __.ikEnvs[ikEnv].ikToSimMap
+    local groupData = self._ikGroupData[ikGroup]
+    -- simToIkMap is scoped by env (not by group) to avoid duplicates:
+    local simToIkMap = self._simToIkMap
     if not groupData then
-        groupData = {}
-        groupData.joints = {}
-        groupData.targetTipBaseTriplets = {}
-        __.ikEnvs[ikEnv].ikGroups[ikGroup] = groupData
+        groupData = {joints = {}, targetTipBaseTriplets = {}}
+        self._ikGroupData[ikGroup] = groupData
     end
 
-    function createIkJointFromSimJoint(ikEnv, simJoint)
+    local function createIkJointFromSimJoint(simJoint)
         local t = sim.getJointType(simJoint)
         local ikJoint = simIK.createJoint(ikEnv, t)
         local c, interv = sim.getJointInterval(simJoint)
         simIK.setJointInterval(ikEnv, ikJoint, c, interv)
         local sp = sim.getFloatProperty(simJoint, 'screwLead')
         simIK.setJointScrewLead(ikEnv, ikJoint, sp)
-        --[[
-        local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_step_size)
-        simIK.setJointMaxStepSize(ikEnv, ikJoint, sp)
-        local sp = sim.getObjectFloatParam(simJoint, sim.jointfloatparam_ik_weight)
-        simIK.setJointWeight(ikEnv, ikJoint, sp)
-        --]]
         if t == sim.joint_spherical then
-            simIK.setJointQuaternion(ikEnv, ikJoint, sim.getJointQuaternion(simJoint))
+--            simIK.setSphericalJointMatrix(ikEnv, ikJoint, sim.getJointMatrix(simJoint))
+            simIK.setSphericalJointMatrix(ikEnv, ikJoint, simEigen.Pose({0.0, 0.0, 0.0}, sim2.Object(simJoint).joint.quaternion):totransform():data())
         else
             simIK.setJointPosition(ikEnv, ikJoint, sim.getJointPosition(simJoint))
         end
         return ikJoint
     end
 
-    function iterateAndAdd(theTip, theBase)
+    local function iterateAndAdd(theTip, theBase)
         local ikPrevIterator = -1
         local simIterator = theTip
         while true do
             local ikIterator = -1
             if simToIkMap[simIterator] then
-                -- object already added (but maybe parenting not done yet, e.g. with master joints in dependency relationship)
                 ikIterator = simToIkMap[simIterator]
             else
                 if sim.getObjectType(simIterator) ~= sim.sceneobject_joint then
                     ikIterator = simIK.createDummy(ikEnv)
                 else
-                    ikIterator = createIkJointFromSimJoint(ikEnv, simIterator)
+                    ikIterator = createIkJointFromSimJoint(simIterator)
                 end
                 simToIkMap[simIterator] = ikIterator
-                ikToSimMap[ikIterator] = simIterator
-                simIK.setObjectPose(ikEnv, ikIterator, sim.getObjectPose(simIterator))
+                simIK.setObjectMatrix(self.handle, ikIterator, sim.getObjectMatrix(simIterator), simIK.handle_world)
             end
             if sim.getObjectType(simIterator) == sim.sceneobject_joint then
                 groupData.joints[simIterator] = ikIterator
@@ -382,26 +972,23 @@ function simIK.addElementFromScene(...)
         end
     end
 
-    iterateAndAdd(simTip, -1) -- need to add the whole chain down to world, otherwise subtle bugs!
+    iterateAndAdd(simTip, -1) -- add the whole chain down to world, otherwise subtle bugs!
     local ikTip = simToIkMap[simTip]
-    local ikBase = -1;
+    local ikBase = -1
     if simBase ~= -1 then ikBase = simToIkMap[simBase] end
-    iterateAndAdd(simTarget, -1) -- need to add the whole target chain down to world too, otherwise subtle bugs!
+    iterateAndAdd(simTarget, -1) -- add the whole target chain down to world too!
     local ikTarget = simToIkMap[simTarget]
     simIK.setTargetDummy(ikEnv, ikTip, ikTarget)
     groupData.targetTipBaseTriplets[#groupData.targetTipBaseTriplets + 1] = {
         simTarget, simTip, simBase, ikTarget, ikTip, ikBase,
     }
 
-    -- Now handle joint dependencies. Consider slave0 --> slave1 --> .. --> master
-    -- We add all master and slave joints, even if not in the IK world (for simplification, since we could have complex daisy chains)
-    -- We will however have to be careful, and always first check if a joint is still valid (e.g. we could remove a joint from the scene
-    -- in an unrelated model)
+    -- joint dependencies (slaves/masters/passives):
     local simJoints = sim.getObjectsInTree(sim.handle_scene, sim.sceneobject_joint)
     local slaves = {}
     local masters = {}
     local passives = {}
-    for i = 1, #simJoints, 1 do
+    for i = 1, #simJoints do
         local jo = simJoints[i]
         if sim.getJointMode(jo) == sim.jointmode_dependent then
             local dep, off, mult = sim.getJointDependency(jo)
@@ -413,128 +1000,67 @@ function simIK.addElementFromScene(...)
             end
         end
     end
-    for i = 1, #passives, 1 do
+    for i = 1, #passives do
         local ikJo = simToIkMap[passives[i]]
         if ikJo then simIK.setJointMode(ikEnv, ikJo, simIK.jointmode_passive) end
     end
-    for i = 1, #slaves, 1 do
+    for i = 1, #slaves do
         local slave = slaves[i]
         local master = masters[i]
         local ikJo_s = simToIkMap[slave]
         local ikJo_m = simToIkMap[master]
         if ikJo_s == nil then
-            ikJo_s = createIkJointFromSimJoint(ikEnv, slave)
+            ikJo_s = createIkJointFromSimJoint(slave)
             simToIkMap[slave] = ikJo_s
-            ikToSimMap[ikJo_s] = slave
-            simIK.setObjectPose(ikEnv, ikJo_s, sim.getObjectPose(slave))
+            simIK.setObjectMatrix(self.handle, ikJo_s, sim.getObjectMatrix(slave), simIK.handle_world)
             groupData.joints[slave] = ikJo_s
         end
         if ikJo_m == nil then
-            ikJo_m = createIkJointFromSimJoint(ikEnv, master)
+            ikJo_m = createIkJointFromSimJoint(master)
             simToIkMap[master] = ikJo_m
-            ikToSimMap[ikJo_m] = master
-            simIK.setObjectPose(ikEnv, ikJo_m, sim.getObjectPose(master))
+            simIK.setObjectMatrix(self.handle, ikJo_m, sim.getObjectMatrix(master), simIK.handle_world)
             groupData.joints[master] = ikJo_m
         end
         local dep, off, mult = sim.getJointDependency(slave)
-        simIK.setJointDependency(ikEnv, ikJo_s, ikJo_m, off, mult)
+        self:_setJointDependency(ikJo_s, ikJo_m, off, mult)
     end
 
     local ikElement = simIK.addElement(ikEnv, ikGroup, ikTip)
     simIK.setElementBase(ikEnv, ikGroup, ikElement, ikBase, -1)
     simIK.setElementConstraints(ikEnv, ikGroup, ikElement, constraints)
-    sim.setStepping(lb)
-    return ikElement, simToIkMap, ikToSimMap
+    sim2.self:setStepping(false)
+    return ikElement, simToIkMap
 end
 
-function simIK.eraseEnvironment(...)
-    local ikEnv = checkargs({
-        {type = 'int'},
-    }, ...)
-
-    local lb = sim.setStepping(true)
-
-    if __.ikEnvs and __.ikEnvs[ikEnv] then
-        local env = __.ikEnvs[ikEnv]
-        if env.ikGroups then
-            for k, v in pairs(env.ikGroups) do
-                if v.visualDebug then
-                    for i = 1, #v.visualDebug do
-                        simIK.eraseDebugOverlay(v.visualDebug[i])
-                    end
-                end
+function IK:remove()
+    sim2.self:setStepping(true)
+    for k, v in pairs(self._ikGroupData) do
+        if v.visualDebug then
+            for i = 1, #v.visualDebug do
+                self:_eraseDebugOverlay(v.visualDebug[i])
             end
         end
-        __.ikEnvs[ikEnv] = nil
     end
-    simIK._eraseEnvironment(ikEnv)
-    sim.setStepping(lb)
+    self.groupList = {}
+    self.objects = {}
+    self.joints = {}
+    self._groupMap = {}
+    self._ikGroupData = {}
+    self._ikGroupHandles = {}
+    self._simToIkMap = {}
+    if self.handle then
+        simIK._eraseEnvironment(self.handle)
+        self.handle = nil
+    end
+    sim2.self:setStepping(false)
 end
 
-function simIK.findConfig(...)
-    -- Use simIK.findConfigs instead (which uses simIK.findConfig)
-    local ikEnv, ikGroup, joints, thresholdDist, maxTime, metric, callback, auxData = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'table', size = '1..*', item_type = 'int'},
-        {type = 'float', default = 0.1},
-        {type = 'float', default = 0.5},
-        {type = 'table', size = 4, item_type = 'float', default = {1, 1, 1, 0.1}, nullable = true},
-        {type = 'any', default_nil = true, nullable = true},
-        {type = 'any', default_nil = true, nullable = true},
-    }, ...)
-
-    local dof = #joints
-    local lb = sim.setStepping(true)
-
-    -- local env=simIK.duplicateEnvironment(ikEnv)
-    local env = ikEnv
-    if metric == nil then metric = {1, 1, 1, 0.1} end
-    local __callback
-    function __ikcb(config)
-        local fun = _G
-        if string.find(__callback, "%.") then
-            for w in __callback:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
-                if fun[w] then fun = fun[w] end
-            end
-        else
-            fun = fun[__callback]
-        end
-        if type(fun) == 'function' then
-            return fun(simEigen.Vector(config), auxData)
-        end
-    end
-    local funcNm, t
-    if callback then
-        __callback = reify(callback)
-        funcNm = '__ikcb'
-        t = sim.getScript(sim.handle_self)
-    end
-    local retVal = simEigen.Vector(simIK._findConfig(env, ikGroup, joints, thresholdDist, maxTime * 1000, metric, funcNm, t))
-    -- simIK.eraseEnvironment(env)
-    sim.setStepping(lb)
-    return retVal
-end
-
-function simIK.handleGroup(...) -- convenience function
-    local ikEnv, ikGroup, options = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'table', default = {}},
-    }, ...)
-
-    return simIK.handleGroups(ikEnv, {ikGroup}, options)
-end
-
-function simIK.debugJacobianDisplay(inData)
-    local groupData = __.ikEnvs[__.currentIkEnv].ikGroups[inData.groupHandle]
-    local groupIdStr = string.format('env:%d/group:%d', __.currentIkEnv, inData.groupHandle)
+function IK:_debugJacobianDisplay(inData)
+    sim2.self:setStepping(true)
+    local groupData = self._ikGroupData[inData.group.handle]
+    local groupIdStr = string.format('env:%d/group:%d', self.handle, inData.group.handle)
     local simQML
-    pcall(
-        function()
-            simQML = require 'simQML'
-        end
-    )
+    pcall(function() simQML = require 'simQML' end)
     if simQML then
         if groupData.jacobianDebug == nil then
             groupData.jacobianDebug = {qmlEngine = simQML.createEngine()}
@@ -665,42 +1191,86 @@ function simIK.debugJacobianDisplay(inData)
         jacobianDebugPrint = false
         inData.jacobian:print 'J'
     end
+    sim2.self:setStepping(false)
 end
 
-function simIK.handleGroups(...)
-    local ikEnv, ikGroups, options = checkargs({
-        {type = 'int'},
-        {type = 'table'},
-        {type = 'table', default = {}},
-    }, ...)
+function IK:solve(opt)
+    sim2.self:setStepping(true)
+    local reason = simIK.calc_notperformed
+    local achievedPrecision = {0.0, 0.0}
 
-    local lb = sim.setStepping(true)
-    __.currentIkEnv = ikEnv
+    opt = opt or {}
+    checkargs.checkfields({funcName = 'IK:solve, options argument'}, {
+        {name = 'debug', type = 'int', default = 0},
+        {name = 'syncWorlds', type = 'bool', default = true},
+        {name = 'ignoreTolerance', type = 'bool', default = false},
+    }, opt)
+
+    local sync = opt.syncWorlds
+    if sync then
+        opt.syncWorlds = false
+        self:syncFromSim()
+    end
+
+    local retVal = false
+    for i = 1, #self.groupList do
+        local group = self.groupList[i]
+        if group.enabled then
+            local ret, rea, prec = group:solve(opt)
+            if reason == simIK.calc_notperformed then
+                reason = 0
+                retVal = true
+            end
+            reason = reason | rea
+            for j = 1, 2 do
+                if prec[j] > achievedPrecision[j] then
+                    achievedPrecision[j] = prec[j]
+                end
+            end
+            retVal = retVal and ret 
+        end
+    end
+
+    if sync then
+        if retVal then
+            self:syncToSim()
+        else
+            self:syncFromSim() -- not really necessary, but better to keep IK world ordered
+        end
+    end
+    sim2.self:setStepping(false)
+    return retVal, reason, achievedPrecision
+end
+
+
+function IK:_handleGroups(ikGroups, options)
+    sim2.self:setStepping(true)
+    local ikEnv = self.handle
     local debugFlags = 0
     if options.debug then debugFlags = options.debug end
     local p = sim.getIntProperty(sim.handle_app, 'signal.simIK.debug_world', {noError = true})
-    local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0)) and __.ikEnvs[ikEnv] -- when an IK environment is duplicated, it does not appear in __.ikEnvs...
+    local debugJacobian = (((debugFlags & 2) ~= 0) or (p and (p & 2) ~= 0))
     local pythonCallback = false
     function __cb(rows_constr, rows_ikEl, cols_handles, cols_dofIndex, jacobian, errorVect, groupId, iteration)
         local data = {}
         data.rows = {}
         data.cols = {}
+        data.group = self._groupMap[groupId]
         if pythonCallback then
             data.jacobian = jacobian
             data.e = errorVect
         else
             data.jacobian = simEigen.Matrix(#rows_constr, #cols_handles, jacobian)
-            data.e = simEigen.Matrix(#rows_constr, 1, errorVect)
+            data.e = simEigen.Vector(errorVect)
         end
-        for i = 1, #rows_constr, 1 do
-            data.rows[i] = {constraint = rows_constr[i], element = rows_ikEl[i]}
+        for i = 1, #rows_constr do
+            data.rows[i] = {constraint = rows_constr[i], element = data.group._elementMap[rows_ikEl[i]]}
         end
-        for i = 1, #cols_handles, 1 do
+        for i = 1, #cols_handles do
             data.cols[i] = {joint = cols_handles[i], dofIndex = cols_dofIndex[i]}
         end
-        data.groupHandle = groupId
         data.iteration = iteration
-        if debugJacobian then simIK.debugJacobianDisplay(data) end
+        if debugJacobian then self:_debugJacobianDisplay(data) end
         local j = {}
         local e = {}
         local dq = {}
@@ -786,48 +1356,18 @@ function simIK.handleGroups(...)
             pythonCallback = true
         end
     end
-    if options.syncWorlds then simIK.syncFromSim(ikEnv, ikGroups) end
-    local retVal, reason, prec = simIK._handleGroups(ikEnv, ikGroups, funcNm, t)
-    if options.syncWorlds then
-        if (reason & simIK.calc_notwithintolerance) == 0 or options.allowError then
-            simIK.syncToSim(ikEnv, ikGroups)
-        end
-    end
-    for i = 1, #ikGroups, 1 do simIK.debugGroupIfNeeded(ikEnv, ikGroups[i], debugFlags) end
-    sim.setStepping(lb)
+    local retVal, reason, prec = simIK._handleGroups(self.handle, ikGroups, funcNm, t)
+    sim2.self:setStepping(false)
     return retVal, reason, prec
 end
 
-function simIK.getFailureDescription(reason)
-    local d = {}
-    for _, k in ipairs {
-        'notperformed', 'cannotinvert', 'notwithintolerance', 'stepstoobig', 'limithit',
-    } do
-        local f = 'calc_' .. k
-        if reason & simIK[f] > 0 then
-            reason = reason & ~simIK[f]
-            table.insert(d, k)
-        end
-    end
-    if reason ~= 0 then table.insert(d, tostring(reason)) end
-    return table.tostring(d)
-end
-
-function simIK.setJointDependency(...)
-    local ikEnv, slaveJoint, masterJoint, offset, mult, callback = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'float', default = 0.0},
-        {type = 'float', default = 1.0},
-        {type = 'any', default_nil = true, nullable = true},
-    }, ...)
-
-    function __depcb(ikEnv, slaveJoint, masterPos)
+function IK:_setJointDependency(slaveJoint, masterJoint, offset, mult, callback)
+    local ikEnv = self.handle
+    function __depcb(env, sJoint, masterPos)
         if type(callback) == 'string' then
-            return _G[callback](ikEnv, slaveJoint, masterPos)
+            return _G[callback](env, sJoint, masterPos)
         else
-            return callback(ikEnv, slaveJoint, masterPos)
+            return callback(env, sJoint, masterPos)
         end
     end
     local funcNm, t
@@ -836,12 +1376,12 @@ function simIK.setJointDependency(...)
         t = sim.getScript(sim.handle_self)
     end
     simIK._setJointDependency(ikEnv, slaveJoint, masterJoint, offset, mult, funcNm, t)
-    return retVal
 end
 
-function simIK.generatePath(...)
-    local ikEnv, ikGroup, ikJoints, tip, ptCnt, callback, auxData = checkargs({
-        {type = 'int'},
+--[[
+function IK:generatePath(...)
+    sim2.self:setStepping(true)
+    local ikGroup, ikJoints, tip, ptCnt, callback, auxData = checkargs({
         {type = 'int'},
         {type = 'table', size = '1..*', item_type = 'int'},
         {type = 'int'},
@@ -850,14 +1390,12 @@ function simIK.generatePath(...)
         {type = 'any', default_nil = true},
     }, ...)
 
-    local lb = sim.setStepping(true)
-
-    local env = simIK.duplicateEnvironment(ikEnv)
-    local targetHandle = simIK.getTargetDummy(env, tip)
-    local startPose = simIK.getObjectPose(env, tip)
-    local goalPose = simIK.getObjectPose(env, targetHandle)
+    local tmpEnv = simIK.duplicateEnvironment(self.handle)
+    local targetHandle = simIK.getTargetDummy(tmpEnv, tip)
+    local startMatrix = simIK.getObjectMatrix(tmpEnv, tip, simIK.handle_world)
+    local goalMatrix = simIK.getObjectMatrix(tmpEnv, targetHandle, simIK.handle_world)
     local retPath = {{}}
-    for i = 1, #ikJoints, 1 do retPath[1][i] = simIK.getJointPosition(env, ikJoints[i]) end
+    for i = 1, #ikJoints do retPath[1][i] = simIK.getJointPosition(tmp.handle, ikJoints[i]) end
     local success = true
     if callback then
         if type(callback) == 'string' then
@@ -867,15 +1405,15 @@ function simIK.generatePath(...)
         end
     end
     if success then
-        for j = 1, ptCnt - 1, 1 do
+        for j = 1, ptCnt - 1 do
             local t = j / (ptCnt - 1)
-            local m = startPose:interp(t, goalPose) --sim.interpolatePoses(startPose, goalPose, t)
-            simIK.setObjectPose(env, targetHandle, m)
-            success = simIK.handleGroups(env, {ikGroup}) == simIK.result_success
+            local m = sim.interpolateMatrices(startMatrix, goalMatrix, t)
+            simIK.setObjectMatrix(tmpEnv, targetHandle, m, simIK.handle_world)
+            success = simIK._handleGroups(tmpEnv, {ikGroup}) == simIK.result_success
             if not success then break end
             retPath[j + 1] = {}
-            for i = 1, #ikJoints, 1 do
-                retPath[j + 1][i] = simIK.getJointPosition(env, ikJoints[i])
+            for i = 1, #ikJoints do
+                retPath[j + 1][i] = simIK.getJointPosition(tmp.handle, ikJoints[i])
             end
             if callback then
                 if type(callback) == 'string' then
@@ -887,30 +1425,31 @@ function simIK.generatePath(...)
             if not success then break end
         end
     end
-    simIK.eraseEnvironment(env)
-    sim.setStepping(lb)
+    simIK._eraseEnvironment(tmpEnv)
+    tmp:remove()
     if not success then
         retPath = {}
     else
         retPath = table.collapse(retPath)
     end
+    sim2.self:setStepping(false)
     return retPath
 end
+--]]
 
-function simIK.createDebugOverlay(...)
-    local ikEnv, ikTip, ikBase = checkargs({
-        {type = 'int'},
+function IK:_createDebugOverlay(...)
+    local ikTip, ikBase = checkargs({
         {type = 'int'},
         {type = 'int', default = -1},
     }, ...)
 
-    if not __.ikDebug then __.ikDebug = {ikEnv = {}, ikDebugId = 0} end
-    if not __.ikDebug.ikEnv[ikEnv] then __.ikDebug.ikEnv[ikEnv] = {} end
-    if not __.ikDebug.ikEnv[ikEnv][ikTip] then
-        __.ikDebug.ikEnv[ikEnv][ikTip] = {drawingConts = {}, id = __.ikDebug.ikDebugId}
-        __.ikDebug.ikDebugId = __.ikDebug.ikDebugId + 1
+    local ikEnv = self.handle
+    if not self._ikDebug then self._ikDebug = {tips = {}, nextId = 0} end
+    if not self._ikDebug.tips[ikTip] then
+        self._ikDebug.tips[ikTip] = {drawingConts = {}, id = self._ikDebug.nextId}
+        self._ikDebug.nextId = self._ikDebug.nextId + 1
     end
-    local drawingConts = __.ikDebug.ikEnv[ikEnv][ikTip].drawingConts
+    local drawingConts = self._ikDebug.tips[ikTip].drawingConts
 
     local ikTarget = simIK.getTargetDummy(ikEnv, ikTip)
     if drawingConts.targetCont == nil then
@@ -919,14 +1458,14 @@ function simIK.createDebugOverlay(...)
                                           sim.drawing_cyclic, 0.012, 0, -1, 1, {1, 0, 0}
                                   )
     end
-    sim.addDrawingObjectItem(drawingConts.targetCont, simIK.getObjectPose(ikEnv, ikTarget))
+    sim.addDrawingObjectItem(drawingConts.targetCont, simIK._getObjectPose(self.handle, ikTarget))
     if drawingConts.tipCont == nil then
         drawingConts.tipCont = sim.addDrawingObject(
                                    sim.drawing_spherepts | sim.drawing_overlay | sim.drawing_cyclic,
                                    0.01, 0, -1, 1, {0, 1, 0}
                                )
     end
-    sim.addDrawingObjectItem(drawingConts.tipCont, simIK.getObjectPose(ikEnv, ikTip))
+    sim.addDrawingObjectItem(drawingConts.tipCont, simIK._getObjectPose(self.handle, ikTip))
     if drawingConts.linkCont == nil then
         drawingConts.linkCont = sim.addDrawingObject(
                                     sim.drawing_lines | sim.drawing_overlay, 2, 0, -1, 0, {0, 0, 0}
@@ -949,7 +1488,7 @@ function simIK.createDebugOverlay(...)
                                 )
     end
     local w = {0, 0, 0, 1, 0, 0, 0}
-    if ikBase ~= -1 then w = simIK.getObjectPose(ikEnv, ikBase) end
+    if ikBase ~= -1 then w = simIK._getObjectPose(self.handle, ikBase) end
     sim.addDrawingObjectItem(drawingConts.baseCont, w)
     if drawingConts.jointCont == nil then
         drawingConts.jointCont = {}
@@ -987,15 +1526,17 @@ function simIK.createDebugOverlay(...)
     while obj ~= -1 and obj ~= ikBase do
         local t = simIK.getObjectType(ikEnv, obj)
         if t == simIK.objecttype_joint then
-            local p = simIK.getObjectPosition(ikEnv, prevObj)
-            local p1 = simIK.getObjectPose(ikEnv, obj)
-            local p2 = simIK.getJointPose(ikEnv, obj)
-            p1 = sim.multiplyPoses(p1, p2):data()
-            sim.addDrawingObjectItem(drawingConts.linkCont, {p[1], p[2], p[3], p1[1], p1[2], p1[3]})
+            local p = simIK._getObjectPose(self.handle, prevObj)
+            local m1 = simIK.getObjectMatrix(self.handle, obj, simIK.handle_world)
+            local m2 = simIK.getJointMatrix(ikEnv, obj)
+            m1 = sim.multiplyMatrices(m1, m2)
+            p[4] = m1[4]
+            p[5] = m1[8]
+            p[6] = m1[12]
+            sim.addDrawingObjectItem(drawingConts.linkCont, p)
             local spherical = (simIK.getJointType(ikEnv, obj) == simIK.jointtype_spherical)
-            local m = simIK.getJointMode(ikEnv, obj) -- simIK.jointmode_passive or simIK.jointmode_ik
+            local m = simIK.getJointMode(ikEnv, obj)
             local d = simIK.getJointDependency(ikEnv, obj)
-            local drt = sim.drawing_lines
             local hs = 0.025
             local ind1 = 0
             local ind2 = 1
@@ -1006,17 +1547,21 @@ function simIK.createDebugOverlay(...)
             elseif m == simIK.jointmode_passive then
                 ind2 = 3
             end
-            local p = simIK.getObjectPose(ikEnv, obj)
-            local m = p:totransform()
+            local mm = simIK.getObjectMatrix(self.handle, obj, simIK.handle_world)
             if spherical then
-                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], p.t:data())
+                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], {mm[4], mm[8], mm[12]})
             else
-                sim.addDrawingObjectItem(drawingConts.jointCont[ind1 + ind2], {p.t[1] - m[1][3] * hs, p.t[2] - m[2][3] * hs, p.t[3] - m[3][3] * hs, p.t[1] + m[1][3] * hs, p.t[2] + m[2][3] * hs, p.t[3] + m[3][3] * hs} )
+                sim.addDrawingObjectItem(
+                    drawingConts.jointCont[ind1 + ind2], {
+                        mm[4] - mm[3] * hs, mm[8] - mm[7] * hs, mm[12] - mm[11] * hs,
+                        mm[4] + mm[3] * hs, mm[8] + mm[7] * hs, mm[12] + mm[11] * hs,
+                    }
+                )
             end
         else
             if prevObj ~= obj then
-                local p = simIK.getObjectPosition(ikEnv, obj):data()
-                local p2 = simIK.getObjectPosition(ikEnv, prevObj):data()
+                local p = simIK._getObjectPose(self.handle, obj)
+                local p2 = simIK._getObjectPose(self.handle, prevObj)
                 p[4] = p2[1]
                 p[5] = p2[2]
                 p[6] = p2[3]
@@ -1028,372 +1573,61 @@ function simIK.createDebugOverlay(...)
         obj = simIK.getObjectParent(ikEnv, obj)
     end
 
-    local p = simIK.getObjectPose(ikEnv, prevObj):data()
+    local p = simIK._getObjectPose(self.handle, prevObj)
     p[4] = 0
     p[5] = 0
     p[6] = 0
     if ikBase ~= -1 then
-        local p2 = simIK.getObjectPose(ikEnv, ikBase)
-        p[4] = p2.t[1]
-        p[5] = p2.t[2]
-        p[6] = p2.t[3]
+        local p2 = simIK._getObjectPose(self.handle, ikBase)
+        p[4] = p2[1]
+        p[5] = p2[2]
+        p[6] = p2[3]
     end
     sim.addDrawingObjectItem(drawingConts.linkCont, p)
 
-    return __.ikDebug.ikEnv[ikEnv][ikTip].id
+    return self._ikDebug.tips[ikTip].id
 end
 
-function simIK.eraseDebugOverlay(...)
+function IK:_eraseDebugOverlay(...)
     local id = checkargs({
         {type = 'int'},
     }, ...)
 
-    if __.ikDebug then
-        for k, env in pairs(__.ikDebug.ikEnv) do
-            for l, tip in pairs(env) do
-                if tip.id == id then
-                    if tip.drawingConts.targetCont ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.targetCont)
-                        tip.drawingConts.targetCont = nil
-                    end
-                    if tip.drawingConts.tipCont ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.tipCont)
-                        tip.drawingConts.tipCont = nil
-                    end
-                    if tip.drawingConts.linkCont ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.linkCont)
-                        tip.drawingConts.linkCont = nil
-                    end
-                    if tip.drawingConts.linkContN ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.linkContN)
-                        tip.drawingConts.linkContN = nil
-                    end
-                    if tip.drawingConts.baseCont ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.baseCont)
-                        tip.drawingConts.baseCont = nil
-                    end
-                    if tip.drawingConts.jointCont ~= nil then
-                        sim.removeDrawingObject(tip.drawingConts.jointCont[1])
-                        sim.removeDrawingObject(tip.drawingConts.jointCont[2])
-                        sim.removeDrawingObject(tip.drawingConts.jointCont[3])
-                        sim.removeDrawingObject(tip.drawingConts.jointCont[4])
-                        sim.removeDrawingObject(tip.drawingConts.jointCont[6])
-                        tip.drawingConts.jointCont = nil
-                    end
-                    return
+    if self._ikDebug then
+        for tipHandle, tip in pairs(self._ikDebug.tips) do
+            if tip.id == id then
+                if tip.drawingConts.targetCont ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.targetCont)
+                    tip.drawingConts.targetCont = nil
                 end
-            end
-        end
-    end
-end
-
-function simIK.solvePath(...)
-    -- undocumented (for now) function
-    -- simPath can be a Path object handle, or the path data itself
-    -- ikPath a dummy with a pose and parent consistent with simPath
-    local ikEnv, ikGroup, ikTarget, ikJoints, simJoints, ikPath, simPath, collisionPairs, opts =
-        checkargs({
-            {type = 'int'},
-            {type = 'int'},
-            {type = 'int'},
-            {type = 'table', size = '1..*', item_type = 'int'},
-            {type = 'table', size = '1..*', item_type = 'int'},
-            {type = 'int'},
-            {union = {{type = 'handle'}, {type = 'table'}}},
-            {type = 'table', default = {}},
-            {type = 'table', default = {}},
-        }, ...)
-
-    collisionPairs = collisionPairs or {}
-    local delta = opts.delta or 0.005
-    local errorCallback = opts.errorCallback or function(e)
-    end
-    local function reportError(...)
-        errorCallback(string.format(...))
-    end
-
-    local function callStepCb(failed)
-        if opts.stepCallback then opts.stepCallback(failed) end
-    end
-
-    local pathData = simPath
-    if math.type(simPath) == 'integer' and sim.isHandle(simPath) then
-        -- read path data inside path object:
-        pathData = sim.getBufferProperty(simPath, 'customData.PATH')
-        assert(pathData ~= nil and #pathData > 0, 'object does not contain PATH data')
-        pathData = sim.unpackDoubleTable(pathData)
-    end
-    local m = simEigen.Matrix(#pathData // 7, 7, pathData)
-    --local pathPositions = m:slice(1, 1, m:rows(), 3):data()
-    --local pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
-    local pathPositions = m:block(1, 1, m:rows(), 3):data()
-    local pathQuaternions = m:block(1, 4, m:rows(), 4):data()
-    local pathLengths, totalLength = sim.getPathLengths(pathPositions, 3)
-
-    local moveIkTarget = opts.moveIkTarget or function(posAlongPath)
-        local pose = sim.getPathInterpolatedConfig(
-                         pathData, pathLengths, posAlongPath, nil, {0, 0, 0, 2, 2, 2, 2}
-                     )
-        -- re-fetch path pose, should path be part of the IK chain:
-        if ikPath ~= -1 then
-            local pathPose = simIK.getObjectPose(ikEnv, ikPath)
-            pose = sim.multiplyPoses(pathPose, pose)
-        end
-        simIK.setObjectPose(ikEnv, ikTarget, pose)
-    end
-    local getConfig = opts.getConfig or partial(map, sim.getJointPosition, simJoints)
-    local setConfig = opts.setConfig or partial(foreach, sim.setJointPosition, simJoints)
-    local getIkConfig = opts.getIkConfig or partial(map, partial(simIK.getJointPosition, ikEnv), ikJoints)
-    local setIkConfig = opts.setIkConfig or partial(foreach, partial(simIK.setJointPosition, ikEnv), ikJoints)
-
-    -- save current robot config:
-    local origIkCfg = simEigen.Vector(getIkConfig())
-
-    local cfgs = {}
-    local posAlongPath = 0
-    local finished = false
-
-    -- find initial config:
-    moveIkTarget(0)
-    local cfg = simIK.findConfigs(ikEnv, ikGroup, ikJoints)
-    if #cfg == 0 then
-        reportError('Failed to find initial config')
-        goto fail
-    else
-        cfg = cfg[1]
-    end
-
-    -- apply config in ik world:
-    setIkConfig(cfg)
-
-    -- follow path via IK solver:
-    while not finished do
-        if math.abs(posAlongPath - totalLength) < 1e-6 then finished = true end
-        -- move target to next position:
-        moveIkTarget(posAlongPath)
-        -- if IK failed, return failure:
-        local ikResult, failureCode = simIK.handleGroups(ikEnv, {ikGroup}, {callback = opts.jacobianCallback})
-        if ikResult ~= simIK.result_success then
-            reportError(
-                'Failed to perform IK step at t=%.2f (reason: %s)', posAlongPath / totalLength,
-                simIK.getFailureDescription(failureCode)
-            )
-            goto fail
-        end
-        -- if collidableHandle given, and there is a collision, return failure:
-        if #collisionPairs > 0 then
-            local origSimCfg = simEigen.Vector(getConfig())
-            setConfig(simEigen.Vector(getIkConfig()))
-            for i = 1, #collisionPairs, 2 do
-                if sim.checkCollision(collisionPairs[i], collisionPairs[i + 1]) ~= 0 then
-                    local function getObjectAlias(h)
-                        if h == sim.handle_all then return '[[all]]' end
-                        local r, a = pcall(sim.getObjectAlias, h)
-                        return r and a or h
-                    end
-                    reportError(
-                        'Failed due to collision %s/%s at t=%.2f',
-                        getObjectAlias(collisionPairs[i]), getObjectAlias(collisionPairs[i + 1]),
-                        posAlongPath / totalLength
-                    )
-                    setConfig(origSimCfg)
-                    goto fail
+                if tip.drawingConts.tipCont ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.tipCont)
+                    tip.drawingConts.tipCont = nil
                 end
-            end
-            setConfig(origSimCfg)
-        end
-        callStepCb(false)
-        -- otherwise store config and continue:
-        table.insert(cfgs, simEigen.Vector(getIkConfig()))
-        -- move position on path forward:
-        posAlongPath = math.min(posAlongPath + delta, totalLength)
-    end
-
-    if cfgs then
-        setIkConfig(origIkCfg)
-        return cfgs
-    end
-
-    ::fail::
-    callStepCb(true)
-    setIkConfig(origIkCfg)
-end
-
-function simIK.addIkElementFromScene(...)
-    -- deprecated
-    return simIK.addElementFromScene(...)
-end
-
-function simIK.handleIkGroup(...)
-    -- deprecated
-    return simIK.handleGroup(...)
-end
-
-function simIK.applySceneToIkEnvironment(...)
-    -- deprecated
-    local ikEnv, ikGroup = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-    }, ...)
-
-    return simIK.syncFromSim(ikEnv, {ikGroup})
-end
-
-function simIK.applyIkEnvironmentToScene(...)
-    -- deprecated
-    local ikEnv, ikGroup, applyOnlyWhenSuccessful = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'bool', default = false},
-    }, ...)
-
-    local lb = sim.setStepping(true)
-
-    simIK.syncFromSim(ikEnv, {ikGroup})
-    local groupData = __.ikEnvs[ikEnv].ikGroups[ikGroup]
-    local res, reason, prec = simIK.handleGroups(ikEnv, {ikGroup})
-    if res == simIK.result_success or not applyOnlyWhenSuccessful then
-        simIK.syncToSim(ikEnv, {ikGroup})
-    end
-    sim.setStepping(lb)
-    return res, reason, prec
-end
-
-function simIK.findConfigs(...)
-    -- Returns a table of vectors
-    local ikEnv, ikGroup, ikJoints, params, otherConfigs = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'table', size = '1..*', item_type = 'int'},
-        {type = 'table', default_nil = true, nullable = true},
-        {type = 'vector', size = '1..*', default_nil = true, nullable = true},
-    }, ...)
-    params = params or {}
-    -- params.findMultiple 
-    if params.findAlt == nil then params.findAlt = true end 
-    params.maxDist = params.maxDist or 0.3
-    params.maxTime = params.maxTime or 0.2
-    params.pMetric = params.pMetric or {1.0, 1.0, 1.0, 0.1}
-    params.cMetric = params.cMetric or table.rep(1.0, #ikJoints)
-    otherConfigs = otherConfigs or {}
-    local lb = sim.setStepping(true)
-    local retConfs = {}
-    
-    local st = sim.getSystemTime()
-    while true do
-        local ct = sim.getSystemTime()
-        local conf = simIK.findConfig(ikEnv, ikGroup, ikJoints, params.maxDist, math.max(params.maxTime - (ct - st), 0.01), params.pMetric, params.cb, params.auxData)
-        if conf then
-            if #retConfs == 0 then
-                retConfs = otherConfigs
-            end
-            local altConfigs = {}
-            if params.findAlt then
-                -- find all alternate, valid configs:
-                altConfigs = __.simIKGetAltConfigs(ikEnv, ikJoints, conf)
-                if params.cb then
-                    local cnt = 1
-                    while cnt <= #altConfigs do
-                        if params.cb(altConfigs[cnt], params.auxData) then
-                            cnt = cnt + 1
-                        else
-                            table.remove(altConfigs, cnt)
-                        end
-                    end
+                if tip.drawingConts.linkCont ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.linkCont)
+                    tip.drawingConts.linkCont = nil
                 end
-            end
-            retConfs[#retConfs + 1] = conf
-            for i = 1, #altConfigs do
-                retConfs[#retConfs + 1] = altConfigs[i]
-            end
-        end
-        if (not params.findMultiple) or (ct - st >= params.maxTime) then
-            break
-        end
-    end
-        
-    if #retConfs > 1 then
-        -- Order configs according to proximity to current config:
-        local cc = simIK.getConfig(ikEnv, ikJoints)
-        local configs = {}
-        local dists = {}
-        for i = 1, #retConfs do
-            local d = sim.getConfigDistance(cc, retConfs[i], params.cMetric)
-            dists[i] = d
-            configs[d] = retConfs[i]
-        end
-        retConfs = {}
-        table.sort(dists)
-        for i = 1, #dists do
-            retConfs[#retConfs + 1] = configs[dists[i]]
-        end
-    end
-    sim.setStepping(lb)
-    return retConfs
-end
-
-function simIK.getConfig(ikEnv, jh)
-    -- Returns a vector
-    local retVal = simEigen.Vector(#jh, 0.0)
-    for i = 1, #jh do
-        retVal[i] = simIK.getJointPosition(ikEnv, jh[i])
-    end
-    return retVal
-end
-
-function simIK.setConfig(ikEnv, jh, config)
-    for i = 1, #jh do
-        simIK.setJointPosition(ikEnv, jh[i], config[i])
-    end
-end
-
-function __.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
-    -- Returns a table of vectors
-    local dof = #jointHandles
-    local retVal = {}
-    local x = {}
-    local confS = simEigen.Vector(#jointHandles, 0.0)
-    local err = false
-    for i = 1, #jointHandles, 1 do
-        local c, interv = simIK.getJointInterval(ikEnv, jointHandles[i])
-        local t = simIK.getJointType(ikEnv, jointHandles[i])
-        local sp = simIK.getJointScrewLead(ikEnv, jointHandles[i])
-        if t == simIK.jointtype_revolute and not c then
-            if sp == 0 then
-                if inputConfig[i] - math.pi * 2 >= interv[1] or inputConfig[i] + math.pi * 2 <=
-                    interv[1] + interv[2] then
-                    -- We use the low and range values from the joint's settings
-                    local y = inputConfig[i]
-                    while y - math.pi * 2 >= interv[1] do y = y - math.pi * 2 end
-                    x[i] = {y, interv[1] + interv[2]}
+                if tip.drawingConts.linkContN ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.linkContN)
+                    tip.drawingConts.linkContN = nil
                 end
+                if tip.drawingConts.baseCont ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.baseCont)
+                    tip.drawingConts.baseCont = nil
+                end
+                if tip.drawingConts.jointCont ~= nil then
+                    sim.removeDrawingObject(tip.drawingConts.jointCont[1])
+                    sim.removeDrawingObject(tip.drawingConts.jointCont[2])
+                    sim.removeDrawingObject(tip.drawingConts.jointCont[3])
+                    sim.removeDrawingObject(tip.drawingConts.jointCont[4])
+                    sim.removeDrawingObject(tip.drawingConts.jointCont[6])
+                    tip.drawingConts.jointCont = nil
+                end
+                return
             end
         end
-        if not x[i] then
-            -- there's no alternative position for this joint
-            x[i] = {inputConfig[i], inputConfig[i]}
-        end
-        confS[i] = x[i][1]
     end
-    local configs = {}
-    if not err then
-        local desiredPose = 0
-        configs = __.simIKLoopThroughAltConfigSolutions(ikEnv, jointHandles, desiredPose, confS, x, 1)
-    end
-    
-    -- Exclude the input config:
-    for j = 1, #configs do
-        local distSq = 0.0
-        for i = 1, #inputConfig do
-            local d = inputConfig[i] - configs[j][i]
-            distSq = distSq + d * d
-        end
-        if distSq < 0.1 then
-            table.remove(configs, j)
-            break
-        end
-    end
-    return configs
 end
 
-return simIK
+return IK
