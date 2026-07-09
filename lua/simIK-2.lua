@@ -513,26 +513,45 @@ function IKGroup:initialize(ik, groupHandle, opt)
 end
 
 function IKGroup:solve(opt)
+    sim2.self:setStepping(true)
     local retVal = false
     local reason = simIK.calc_notperformed
     local achievedPrecision = {0.0, 0.0}
-    local ok
-    for i = 1, #self.elementList do
-        if not self.elementList[i].passive then
-            ok = true
-            break
-        end
-    end
-    assert(ok, 'nothing to solve.')
     opt = opt or {}
     checkargs.checkfields({funcName = 'IKGroup:solve, options argument'}, {
         {name = 'debug', type = 'int', default = 0},
         {name = 'syncWorlds', type = 'bool', default = true},
         {name = 'ignoreTolerance', type = 'bool', default = false},
+        {name = 'returnExtras', type = 'bool', default = false},
     }, opt)
 
+    local ok
+    for i = 1, #self.elementList do
+        local el = self.elementList[i]
+        local enabledJoints = false
+        for j = 1, #el.jointList do
+            local joint = el.jointList[j]
+            if opt.returnExtras then
+                joint.grpMetaData = {joint = joint, initConf = joint.jointConfiguration, index = 0, cnt = 0}
+            end
+            if not joint.passive then
+                enabledJoints = true
+            end
+        end
+        if el.enabled and enabledJoints then
+            ok = true
+            if not opt.returnExtras then
+                break
+            end
+        end
+    end
+    if not self.enabled then
+        ok = false
+    end
+    assert(ok, 'nothing to solve.')
+
     if opt.syncWorlds then 
-        self:syncFromSim()
+        self:syncFromScene()
     end
     local _
     _, reason, achievedPrecision = self._ik:_handleGroups({self.handle}, opt)
@@ -546,14 +565,52 @@ function IKGroup:solve(opt)
         retVal = false
     end
     if retVal and opt.syncWorlds then
-        self:syncToSim()
+        self:syncToScene()
     end
 
     self._ik:_debugGroupIfNeeded(self.handle, opt.debug)
     if (not retVal) and opt.syncWorlds then 
-        self:syncFromSim() -- not really necessary, but better to keep IK world ordered
+        self:syncFromScene() -- not really necessary, but better to keep IK world ordered
     end
-    return retVal, reason, achievedPrecision
+    local vec = simEigen.Vector{}
+    local metaData = {}
+    if opt.returnExtras then
+        if retVal then
+            local vect = {}
+            for i = 1, #self.elementList do
+                local el = self.elementList[i]
+                local jv = {}
+                for j = 1, #el.jointList do
+                    local joint = el.jointList[j]
+                    if joint.grpMetaData.index == 0 then
+                        joint.grpMetaData.index = #vect + 1 + #jv
+                        local conf = joint.jointConfiguration
+                        jv = table.add(jv, conf)
+                        joint.grpMetaData.cnt = #conf
+                        joint.grpMetaData.touched = (joint.grpMetaData.initConf[1] ~= conf[1])
+                        if not joint.grpMetaData.touched and #conf == 4 then
+                            joint.grpMetaData.touched = (joint.grpMetaData.initConf[2] ~= conf[2]) or (joint.grpMetaData.initConf[3] ~= conf[3])
+                        end
+                        joint.grpMetaData.initConf = nil
+                    end
+                end
+                vect = table.add(vect, jv)
+            end
+            vec = simEigen.Vector(vect)
+        end
+        for i = 1, #self.elementList do
+            local el = self.elementList[i]
+            for j = 1, #el.jointList do
+                local joint = el.jointList[j]
+                if joint.grpMetaData and joint.grpMetaData.cnt ~= 0 then
+                    metaData[#metaData + 1] = joint.grpMetaData
+                end
+                joint.grpMetaData = nil
+            end
+        end
+    end
+    sim2.self:setStepping(false)
+    return retVal, reason, achievedPrecision, vec, metaData
 end
 
 function IKGroup:addElementFromScene(base, tip, target, const, opt)
@@ -624,7 +681,7 @@ end
 
 function IKGroup:findConfig(poses, opt)
     sim2.self:setStepping(true)
-    local retVal 
+    local retVal = {}
     poses = checkargs.checkargsEx({funcName = 'IKGroup:findConfig'}, {
         {type = 'table', itemType = 'pose', size = '1..*'},
     }, poses)
@@ -649,99 +706,79 @@ function IKGroup:findConfig(poses, opt)
     if self.enabled then
         for j = 1, #self.elementList do
             local v = self.elementList[j]
+            local ej = {}
             if v.enabled then
-                local ej = {}
                 for i = 1, #v.jointList do
                     if not v.jointList[i].passive then
                         ej[#ej + 1] = v.jointList[i]
                         allJointsMap[v.jointList[i].sceneObjectHandle] = v.jointList[i]
                     end
                 end
-                elementJoints[#elementJoints + 1] = ej
             end
+            elementJoints[#elementJoints + 1] = ej
         end
     end
 
-    if #elementJoints > 0 and #elementJoints == #poses then
-        local startTime = sim2.app.systemTime
-        while sim2.app.systemTime - startTime < opt.maxTime do
-            local ind = 1
-            for i = 1, #self.elementList do
-                local v = self.elementList[i]
-                if v.enabled then
-                    v.target:setPose(poses[ind])
-                    ind = ind + 1
-                end
+    assert(#elementJoints > 0 and #elementJoints == #poses, "element count should match pose count.")
+    local startTime = sim2.app.systemTime
+    while sim2.app.systemTime - startTime < opt.maxTime do
+        for i = 1, #self.elementList do
+            local v = self.elementList[i]
+            if v.enabled then
+                v.target:setPose(poses[i])
             end
-            for k, v in pairs(allJointsMap) do
-                if v.jointType == 'spherical' then
-                    v.jointQuaternion = sim2.app.randomQuaternion
+        end
+        for k, v in pairs(allJointsMap) do
+            if v.jointType == 'spherical' then
+                v.jointQuaternion = sim2.app.randomQuaternion
+            else
+                if #v.bounds == 2 then
+                    v.jointPosition = v.bounds[1] + math.random() * (v.bounds[2] - v.bounds[1])
                 else
-                    if #v.bounds == 2 then
-                        v.jointPosition = v.bounds[1] + math.random() * (v.bounds[2] - v.bounds[1])
-                    else
-                        v.jointPosition = -math.pi + math.random() * 2.0 * math.pi
-                    end
+                    v.jointPosition = -math.pi + math.random() * 2.0 * math.pi
                 end
             end
-            if opt.solveDistance >= self:_getGroupTipTargetDistance(opt.orientationMetric) then
-                local r = self:solve({syncWorlds = false})
-                if r and cb then
-                    r = cb(r)
-                end
-                if r then
-                    local config = {}
-                    local bounds = {}
-                    local t = {}
-                    local indicesMap = {}
-                    for k, v in pairs(allJointsMap) do
-                        indicesMap[v.handle] = #config + 1
-                        config = table.add(config, v.jointConfiguration)
+        end
+        if opt.solveDistance >= self:_getGroupTipTargetDistance(opt.orientationMetric) then
+            local r, flags, prec, vect, meta = self:solve({syncWorlds = false, returnExtras = true})
+            if r and cb then
+                vect = cb(vect, meta)
+            end
+            if r and vect then
+                if opt.altConfigs then
+                    local bounds = table.rep({}, vect:rows())
+                    local t = table.rep('ang', vect:rows())
+                    for i = 1, #meta do
+                        local m = meta[i]
+                        local v = m.joint
                         if v.jointType == 'spherical' then
-                            t = table.add(t, {'quat', 'quat', 'quat', 'quat'})
-                            bounds = table.add(bounds, {{}, {}, {}, {}})
+                            t[m.index + 0] = 'quat'
+                            t[m.index + 1] = 'quat'
+                            t[m.index + 2] = 'quat'
+                            t[m.index + 3] = 'quat'
                         else
                             if v.jointType == 'prismatic' then
-                                t[#t + 1] = 'lin'
-                            else
-                                t[#t + 1] = 'ang'
+                                t[m.index] = 'lin'
                             end
-                            bounds[#bounds + 1] = v.bounds
+                            bounds[m.index] = v.bounds
                         end
                     end
-                    local m
-                    if opt.altConfigs then
-                        local Path = require'Path'
-                        local path = Path(nil, {types=t, bounds=bounds})
-                        m = path:configs(config)
-                    else
-                        m = simEigen.Vector(config)
-                    end
-                    retVal = m
-                    retVal = simEigen.Matrix(0, m:cols(), {})
-                    for i = 1, #self.elementList do
-                        local v = self.elementList[i]
-                        if v.enabled then
-                            for j = 1, #v.jointList do
-                                local joint = v.jointList[j]
-                                local cnt = 1
-                                if joint.jointType == 'spherical' then
-                                    cnt = 4
-                                end
-                                retVal = retVal:vertcat(m:block(indicesMap[joint.handle], 1, cnt, -1))
-                            end
-                        end
-                    end
-                    break
+                    local Path = require'Path'
+                    local path = Path(nil, {types=t, bounds=bounds})
+                    retVal = path:configs(vect)
+                else
+                    retVal = vect
                 end
+                metaData = meta
+                break
             end
         end
     end
     sim2.self:setStepping(false)
-    return retVal
+    return retVal, metaData
 end
 
-function IKGroup:syncFromSim()
+function IKGroup:syncFromScene()
     sim2.self:setStepping(true)
     local ikEnv = self._ik.handle
     local groupData = self._ik._ikGroupData[self.handle]
@@ -770,7 +807,7 @@ function IKGroup:syncFromSim()
     sim2.self:setStepping(false)
 end
 
-function IKGroup:syncToSim()
+function IKGroup:syncToScene()
     sim2.self:setStepping(true)
     local ikEnv = self._ik.handle
     local groupData = self._ik._ikGroupData[self.handle]
@@ -874,18 +911,18 @@ function IK:createGroup(opt)
     return group
 end
 
-function IK:syncFromSim()
+function IK:syncFromScene()
     sim2.self:setStepping(true)
     for g = 1, #self.groupList do
-        self.groupList[g]:syncFromSim()
+        self.groupList[g]:syncFromScene()
     end
     sim2.self:setStepping(false)
 end
 
-function IK:syncToSim()
+function IK:syncToScene()
     sim2.self:setStepping(true)
     for g = 1, #self.groupList do
-        self.groupList[g]:syncToSim()
+        self.groupList[g]:syncToScene()
     end
     sim2.self:setStepping(false)
 end
@@ -1195,6 +1232,7 @@ function IK:_debugJacobianDisplay(inData)
 end
 
 function IK:solve(opt)
+    local retVal = false
     sim2.self:setStepping(true)
     local reason = simIK.calc_notperformed
     local achievedPrecision = {0.0, 0.0}
@@ -1204,15 +1242,40 @@ function IK:solve(opt)
         {name = 'debug', type = 'int', default = 0},
         {name = 'syncWorlds', type = 'bool', default = true},
         {name = 'ignoreTolerance', type = 'bool', default = false},
+        {name = 'returnExtras', type = 'bool', default = false},
     }, opt)
 
     local sync = opt.syncWorlds
     if sync then
         opt.syncWorlds = false
-        self:syncFromSim()
+        self:syncFromScene()
     end
 
-    local retVal = false
+    local ok = false
+    for k = 1, #self.groupList do
+        local group = self.groupList[k]
+        for i = 1, #group.elementList do
+            local el = group.elementList[i]
+            local enabledJoints = false
+            for j = 1, #el.jointList do
+                local joint = el.jointList[j]
+                if opt.returnExtras then
+                    joint.ikMetaData = {joint = joint, initConf = joint.jointConfiguration, index = 0, cnt = 0}
+                end
+                if not joint.passive then
+                    enabledJoints = true
+                end
+            end
+            if group.enabled and el.enabled and enabledJoints then
+                ok = true
+                if not opt.returnExtras then
+                    break
+                end
+            end
+        end
+    end
+    assert(ok, 'nothing to solve.')
+    
     for i = 1, #self.groupList do
         local group = self.groupList[i]
         if group.enabled then
@@ -1227,19 +1290,63 @@ function IK:solve(opt)
                     achievedPrecision[j] = prec[j]
                 end
             end
-            retVal = retVal and ret 
+            retVal = retVal and ret
         end
     end
 
     if sync then
         if retVal then
-            self:syncToSim()
+            self:syncToScene()
         else
-            self:syncFromSim() -- not really necessary, but better to keep IK world ordered
+            self:syncFromScene() -- not really necessary, but better to keep IK world ordered
+        end
+    end
+    
+    local vec = simEigen.Vector{}
+    local metaData = {}
+    if opt.returnExtras then
+        if retVal then
+            local vect = {}
+            for k = 1, #self.groupList do
+                local group = self.groupList[k]
+                for i = 1, #group.elementList do
+                    local el = group.elementList[i]
+                    local jv = {}
+                    for j = 1, #el.jointList do
+                        local joint = el.jointList[j]
+                        if joint.ikMetaData.index == 0 then
+                            joint.ikMetaData.index = #vect + 1 + #jv
+                            local conf = joint.jointConfiguration
+                            jv = table.add(jv, conf)
+                            joint.ikMetaData.cnt = #conf
+                            joint.ikMetaData.touched = (joint.ikMetaData.initConf[1] ~= conf[1])
+                            if not joint.ikMetaData.touched and #conf == 4 then
+                                joint.ikMetaData.touched = (joint.ikMetaData.initConf[2] ~= conf[2]) or (joint.ikMetaData.initConf[3] ~= conf[3])
+                            end
+                            joint.ikMetaData.initConf = nil
+                        end
+                    end
+                    vect = table.add(vect, jv)
+                end
+            end
+            vec = simEigen.Vector(vect)
+        end
+        for k = 1, #self.groupList do
+            local group = self.groupList[k]
+            for i = 1, #group.elementList do
+                local el = group.elementList[i]
+                for j = 1, #el.jointList do
+                    local joint = el.jointList[j]
+                    if joint.ikMetaData and joint.ikMetaData.cnt ~= 0 then
+                        metaData[#metaData + 1] = joint.ikMetaData
+                    end
+                    joint.ikMetaData = nil
+                end
+            end
         end
     end
     sim2.self:setStepping(false)
-    return retVal, reason, achievedPrecision
+    return retVal, reason, achievedPrecision, vec, metaData
 end
 
 
