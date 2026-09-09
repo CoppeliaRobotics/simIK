@@ -1,6 +1,6 @@
 local simIK = loadPlugin('simIK')
 local __ = {}
-local sim = require('sim')
+local sim = require('sim-1')
 local checkargs = require('checkargs')
 
 __.simIKgetObjectTransformation = simIK.getObjectTransformation
@@ -641,6 +641,9 @@ function simIK.debugJacobianDisplay(inData)
 end
 
 function simIK.handleGroups(...)
+    local m = require 'matrix-2'
+    local Matrix = m.Matrix
+    local Vector = m.Vector
     local ikEnv, ikGroups, options = checkargs({
         {type = 'int'},
         {type = 'table'},
@@ -1282,7 +1285,7 @@ function simIK.getConfigForTipPose(...)
                  )
     else
         if maxTime < 0 then
-            maxTime = -maxTime / 1000 -- probably calling the function the old way 
+            maxTime = -maxTime / 1000 -- probably calling the function the old way
         end
         if maxTime > 2 then maxTime = 2 end
         function __cb(config)
@@ -1312,8 +1315,8 @@ function simIK.findConfigs(...)
         {type = 'table', size = '1..*', item_type = 'int', default_nil = true, nullable = true},
     }, ...)
     params = params or {}
-    -- params.findMultiple 
-    if params.findAlt == nil then params.findAlt = true end 
+    -- params.findMultiple
+    if params.findAlt == nil then params.findAlt = true end
     params.maxDist = params.maxDist or 0.3
     params.maxTime = params.maxTime or 0.2
     params.pMetric = params.pMetric or {1.0, 1.0, 1.0, 0.1}
@@ -1321,7 +1324,7 @@ function simIK.findConfigs(...)
     otherConfigs = otherConfigs or {}
     local lb = sim.setStepping(true)
     local retConfs = {}
-    
+
     local st = sim.getSystemTime()
     while true do
         local ct = sim.getSystemTime()
@@ -1354,7 +1357,7 @@ function simIK.findConfigs(...)
             break
         end
     end
-        
+
     if #retConfs > 1 then
         -- Order configs according to proximity to current config:
         local cc = simIK.getConfig(ikEnv, ikJoints)
@@ -1422,7 +1425,7 @@ function __.simIKGetAltConfigs(ikEnv, jointHandles, inputConfig)
         configs = __.simIKLoopThroughAltConfigSolutions(
                       ikEnv, jointHandles, desiredPose, confS, x, 1)
     end
-    
+
     -- Exclude the input config:
     for j = 1, #configs do
         local distSq = 0.0

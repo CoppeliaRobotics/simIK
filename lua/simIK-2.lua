@@ -1,7 +1,7 @@
 local simIK = loadPlugin('simIK')
 local simEigen = require'simEigen'
 local class = require('middleclass')
-local sim = require('sim')
+local sim = require('sim-1')
 local sim2 = require('sim-2')
 local checkargs = require('checkargs-2')
 local properties = require('middleclassProperties')
@@ -141,7 +141,7 @@ properties.enable(IKJoint)
 IKJoint.static.property('passive', {
     type = sim.propertytype_bool,
     info = {description = "Whether the joint participates in IK resolution"},
-    get = function(self) 
+    get = function(self)
         return simIK.getJointMode(self._ik.handle, self.handle) == simIK.jointmode_passive
     end,
     set = function(self, value)
@@ -159,7 +159,7 @@ IKJoint.static.property('passive', {
 IKJoint.static.property('jointPosition', {
     type = sim.propertytype_float,
     info = {description = "The prismatic/revolute joint's linear/angular displacement"},
-    get = function(self) 
+    get = function(self)
         return simIK.getJointPosition(self._ik.handle, self.handle)
     end,
     set = function(self, value)
@@ -173,7 +173,7 @@ IKJoint.static.property('jointPosition', {
 IKJoint.static.property('jointQuaternion', {
     type = sim.propertytype_quaternion,
     info = {description = "The spherical joint's orientation"},
-    get = function(self) 
+    get = function(self)
         local p, q = simIK.getJointTransformation(self._ik.handle, self.handle)
         return simEigen.Quaternion(q)
     end,
@@ -324,7 +324,7 @@ IKElement.static.property('target', { -- just for doc
 IKElement.static.property('constraints', {
     type = sim.propertytype_int,
     info = {description = "Element constraints"},
-    get = function(self) 
+    get = function(self)
         return simIK.getElementConstraints(self._ik.handle, self._group.handle, self.handle)
     end,
     set = function(self, value)
@@ -338,7 +338,7 @@ IKElement.static.property('constraints', {
 IKElement.static.property('enabled', {
     type = sim.propertytype_bool,
     info = {description = "Element enable state"},
-    get = function(self) 
+    get = function(self)
         return (simIK.getElementFlags(self._ik.handle, self._group.handle, self.handle) & 1) ~= 0
     end,
     set = function(self, value)
@@ -353,7 +353,7 @@ IKElement.static.property('enabled', {
 IKElement.static.property('precision', {
     type = sim.propertytype_floatarray,
     info = {description = "Element precision"},
-    get = function(self) 
+    get = function(self)
         return simIK.getElementPrecision(self._ik.handle, self._group.handle, self.handle)
     end,
     set = function(self, value)
@@ -367,7 +367,7 @@ IKElement.static.property('precision', {
 IKElement.static.property('weights', {
     type = sim.propertytype_floatarray,
     info = {description = "Element weights"},
-    get = function(self) 
+    get = function(self)
         return simIK.getElementWeights(self._ik.handle, self._group.handle, self.handle)
     end,
     set = function(self, value)
@@ -384,7 +384,7 @@ function IKElement:initialize(ik, group, elementHandle, opt)
     self.handle = elementHandle
     self._joints = {} -- set in addElementFromScene
     self.jointList = {} -- set in addElementFromScene
-    
+
     opt = opt or {}
 
     if opt.precision then
@@ -413,7 +413,7 @@ IKGroup.static.property('elementList', { -- just for doc
 IKGroup.static.property('method', {
     type = sim.propertytype_string,
     info = {description = "Group calculation method"},
-    get = function(self) 
+    get = function(self)
         local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
         local retVal = 'unknown'
         local items = {[simIK.method_pseudo_inverse] = 'pseudoInverse', [simIK.method_undamped_pseudo_inverse] = 'undampedPseudoInverse', [simIK.method_damped_least_squares] = 'dampedLeastSquares', [simIK.method_jacobian_transpose] = 'jacobianTranspose'}
@@ -435,7 +435,7 @@ IKGroup.static.property('method', {
 IKGroup.static.property('maxIterations', {
     type = sim.propertytype_int,
     info = {description = "Maximum number of iterations"},
-    get = function(self) 
+    get = function(self)
         local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
         return it
     end,
@@ -451,7 +451,7 @@ IKGroup.static.property('maxIterations', {
 IKGroup.static.property('damping', {
     type = sim.propertytype_float,
     info = {description = "Damping coefficient"},
-    get = function(self) 
+    get = function(self)
         local m, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
         return damp
     end,
@@ -550,7 +550,7 @@ function IKGroup:solve(opt)
     end
     assert(ok, 'nothing to solve.')
 
-    if opt.syncWorlds then 
+    if opt.syncWorlds then
         self:syncFromScene()
     end
     local _
@@ -569,7 +569,7 @@ function IKGroup:solve(opt)
     end
 
     self._ik:_debugGroupIfNeeded(self.handle, opt.debug)
-    if (not retVal) and opt.syncWorlds then 
+    if (not retVal) and opt.syncWorlds then
         self:syncFromScene() -- not really necessary, but better to keep IK world ordered
     end
     local vec = simEigen.Vector{}
@@ -644,7 +644,7 @@ function IKGroup:addElementFromScene(base, tip, target, const, opt)
     local element = IKElement(ik, self, elementHandle, opt)
     self._elementMap[elementHandle] = element
     self.elementList[#self.elementList + 1] = element
-    
+
     -- Wrap simIK objects:
     for k, v in pairs(simToIkMap) do
         if self._ik.objects[k] == nil then
@@ -663,7 +663,7 @@ function IKGroup:addElementFromScene(base, tip, target, const, opt)
     element.base = ik.objects[baseH]
     element.tip = ik.objects[tipH]
     element.target = ik.objects[targetH]
-    
+
     local obj = tip.parent
     while obj ~= base do
         if obj.type == 'joint' and ik.joints[obj.handle] then
@@ -700,7 +700,7 @@ function IKGroup:findConfig(poses, opt)
             cb = _G[opt.callback]
         end
     end
-    
+
     local elementJoints = {}
     local allJointsMap = {}
     if self.enabled then
@@ -870,13 +870,13 @@ function IK:initialize()
     self.joints = {}
     self.groupList = {}
     self._groupMap = {}
-    
+
     -- internal use:
     self._ikGroupData = {}
     self._ikGroupHandles = {}
     self._simToIkMap = {}
     self._ikDebug = nil
-    
+
     self.constraint_x = simIK.constraint_x
     self.constraint_y = simIK.constraint_y
     self.constraint_z = simIK.constraint_z
@@ -1275,7 +1275,7 @@ function IK:solve(opt)
         end
     end
     assert(ok, 'nothing to solve.')
-    
+
     for i = 1, #self.groupList do
         local group = self.groupList[i]
         if group.enabled then
@@ -1301,7 +1301,7 @@ function IK:solve(opt)
             self:syncFromScene() -- not really necessary, but better to keep IK world ordered
         end
     end
-    
+
     local vec = simEigen.Vector{}
     local metaData = {}
     if opt.returnExtras then
