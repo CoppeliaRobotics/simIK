@@ -491,7 +491,9 @@ function IKGroup:initialize(ik, groupHandle, opt)
     self.elementList = {}
     self._joints = {}
 
-    local meth, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+--    local meth, damp, it = simIK.getGroupCalculation(self._ik.handle, self.handle)
+    local meth, damp, it = 0, 0.1, 10
+
     if opt.method then
         meth = opt.method
     end
@@ -681,7 +683,8 @@ end
 
 function IKGroup:findConfig(poses, opt)
     sim2.self:setStepping(true)
-    local retVal = {}
+    local retVal = simEigen.Matrix(0, 0, {})
+    local metaData = {}
     poses = checkargs.checkargsEx({funcName = 'IKGroup:findConfig'}, {
         {type = 'table', itemType = 'pose', size = '1..*'},
     }, poses)
