@@ -655,10 +655,12 @@ function IKGroup:addElementFromScene(base, tip, target, const, opt)
                 joint.sceneObjectHandle = k
                 ik.objects[k] = joint
                 ik.joints[k] = joint
+                ik._objectsMap[v] = joint
             else
                 local obj = IKObject(ik, v)
                 obj.sceneObjectHandle = k
                 ik.objects[k] = obj
+                ik._objectsMap[v] = obj
             end
         end
     end
@@ -679,6 +681,15 @@ function IKGroup:addElementFromScene(base, tip, target, const, opt)
     self.simToIkMap = simToIkMap
     sim2.self:setStepping(false)
     return element
+end
+
+function IKGroup:computeJacobian()
+    sim2.self:setStepping(true)
+
+    local ik = self._ik
+    local jacob, e = simIK.computeGroupJacobian(ik.handle, self.handle)
+
+    return simEigen.Matrix(#e, #jacob // #e, jacob), simEigen.Vector(e)
 end
 
 function IKGroup:findConfig(poses, opt)
@@ -871,6 +882,7 @@ function IK:initialize()
     self.handle = simIK.createEnvironment()
     self.objects = {}
     self.joints = {}
+    self._objectsMap = {}
     self.groupList = {}
     self._groupMap = {}
 
@@ -1084,6 +1096,7 @@ function IK:remove()
     self.groupList = {}
     self.objects = {}
     self.joints = {}
+    self._objectsMap = {}
     self._groupMap = {}
     self._ikGroupData = {}
     self._ikGroupHandles = {}
@@ -1245,8 +1258,13 @@ function IK:solve(opt)
         {name = 'debug', type = 'int', default = 0},
         {name = 'syncWorlds', type = 'bool', default = true},
         {name = 'ignoreTolerance', type = 'bool', default = false},
+        {name = 'projected', type = 'bool', default = false},
         {name = 'returnExtras', type = 'bool', default = false},
     }, opt)
+
+    if opt.projected then
+        return self:_solveProjected(opt)
+    end
 
     local sync = opt.syncWorlds
     if sync then
@@ -1352,6 +1370,116 @@ function IK:solve(opt)
     return retVal, reason, achievedPrecision, vec, metaData
 end
 
+function IK:_solveProjected(opt)
+    sim2.self:setStepping(true)
+    local retVal = false
+    local reason = simIK.calc_notperformed
+    local achievedPrecision = {0.0, 0.0}
+
+    if opt.syncWorlds then
+        self:syncFromScene()
+    end
+
+    local ok = false
+    for k = 1, #self.groupList do
+        local group = self.groupList[k]
+        for i = 1, #group.elementList do
+            local el = group.elementList[i]
+            local enabledJoints = false
+            for j = 1, #el.jointList do
+                local joint = el.jointList[j]
+                if opt.returnExtras then
+                    joint.ikMetaData = {joint = joint, initConf = joint.jointConfiguration, index = 0, cnt = 0}
+                end
+                if not joint.passive then
+                    enabledJoints = true
+                end
+            end
+            if group.enabled and el.enabled and enabledJoints then
+                ok = true
+                if not opt.returnExtras then
+                    break
+                end
+            end
+        end
+    end
+    assert(ok, 'nothing to solve.')
+
+    local groupHandlesToSolve = {}
+    for i = 1, #self.groupList do
+        local group = self.groupList[i]
+        if group.enabled then
+            groupHandlesToSolve[#groupHandlesToSolve + 1] = group.handle
+        end
+    end
+
+    local _
+    _, reason, achievedPrecision = self:_handleGroups(groupHandlesToSolve, opt)
+    if (reason & (simIK.calc_notperformed | simIK.calc_cannotinvert | simIK.calc_invalidcallbackdata)) == 0 then
+        -- no serious error
+        if ((reason & simIK.calc_notwithintolerance) == 0) or opt.ignoreTolerance then
+            retVal = true
+        end
+    else
+        -- serious error
+        retVal = false
+    end
+
+
+    if opt.syncWorlds then
+        if retVal then
+            self:syncToScene()
+        else
+            self:syncFromScene() -- not really necessary, but better to keep IK world ordered
+        end
+    end
+
+    local vec = simEigen.Vector{}
+    local metaData = {}
+    if opt.returnExtras then
+        if retVal then
+            local vect = {}
+            for k = 1, #self.groupList do
+                local group = self.groupList[k]
+                for i = 1, #group.elementList do
+                    local el = group.elementList[i]
+                    local jv = {}
+                    for j = 1, #el.jointList do
+                        local joint = el.jointList[j]
+                        if joint.ikMetaData.index == 0 then
+                            joint.ikMetaData.index = #vect + 1 + #jv
+                            local conf = joint.jointConfiguration
+                            jv = table.add(jv, conf)
+                            joint.ikMetaData.cnt = #conf
+                            joint.ikMetaData.touched = (joint.ikMetaData.initConf[1] ~= conf[1])
+                            if not joint.ikMetaData.touched and #conf == 4 then
+                                joint.ikMetaData.touched = (joint.ikMetaData.initConf[2] ~= conf[2]) or (joint.ikMetaData.initConf[3] ~= conf[3])
+                            end
+                            joint.ikMetaData.initConf = nil
+                        end
+                    end
+                    vect = table.add(vect, jv)
+                end
+            end
+            vec = simEigen.Vector(vect)
+        end
+        for k = 1, #self.groupList do
+            local group = self.groupList[k]
+            for i = 1, #group.elementList do
+                local el = group.elementList[i]
+                for j = 1, #el.jointList do
+                    local joint = el.jointList[j]
+                    if joint.ikMetaData and joint.ikMetaData.cnt ~= 0 then
+                        metaData[#metaData + 1] = joint.ikMetaData
+                    end
+                    joint.ikMetaData = nil
+                end
+            end
+        end
+    end
+    sim2.self:setStepping(false)
+    return retVal, reason, achievedPrecision, vec, metaData
+end
 
 function IK:_handleGroups(ikGroups, options)
     sim2.self:setStepping(true)
@@ -1377,7 +1505,7 @@ function IK:_handleGroups(ikGroups, options)
             data.rows[i] = {constraint = rows_constr[i], element = data.group._elementMap[rows_ikEl[i]]}
         end
         for i = 1, #cols_handles do
-            data.cols[i] = {joint = cols_handles[i], dofIndex = cols_dofIndex[i]}
+            data.cols[i] = {joint = self._objectsMap[cols_handles[i]], dofIndex = cols_dofIndex[i]}
         end
         data.iteration = iteration
         if debugJacobian then self:_debugJacobianDisplay(data) end
