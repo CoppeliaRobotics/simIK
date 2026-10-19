@@ -1868,4 +1868,8 @@ function IK:_eraseDebugOverlay(...)
     end
 end
 
-return IK
+-- Both simIK() and simIK.IK() (preferred) work:
+return setmetatable({IK = IK}, {
+    __call = function(_, ...) return IK(...) end
+})
+-- return IK
