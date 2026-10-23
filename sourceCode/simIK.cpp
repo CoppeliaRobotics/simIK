@@ -1622,7 +1622,7 @@ void LUA_GETJOINTMATRIX_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C7Vector tr;
+                CPose tr;
                 result=ikGetJointTransformation(jointHandle,&tr);
                 if (result)
                     tr.getMatrix().getData(matrix);
@@ -1667,7 +1667,7 @@ void LUA_GETJOINTPOSE_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C7Vector tr;
+                CPose tr;
                 result=ikGetJointTransformation(jointHandle, &tr);
                 if (result)
                     tr.getData(pose);
@@ -1714,7 +1714,7 @@ void LUA_SETSPHERICALJOINTMATRIX_CALLBACK(SScriptCallBack* p)
             {
                 C4X4Matrix _m;
                 _m.setData(m);
-                C4Vector q(_m.M.getQuaternion());
+                CQuaternion q(_m.M.getQuaternion());
                 bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
                 if (!result)
                      err=ikGetLastError();
@@ -1751,7 +1751,7 @@ void LUA_SETJOINTQUATERNION_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C4Vector q;
+                CQuaternion q;
                 q.setData(_q);
                 bool result=ikSetSphericalJointQuaternion(jointHandle, &q);
                 if (!result)
@@ -1791,7 +1791,7 @@ void LUA_GETJOINTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C7Vector tr;
+                CPose tr;
                 result=ikGetJointTransformation(jointHandle,&tr);
                 if (result)
                 {   // CoppeliaSim quaternion, internally: w x y z
@@ -1854,11 +1854,11 @@ void LUA_SETSPHERICALJOINTROTATION_CALLBACK(SScriptCallBack* p)
             if (ikSwitchEnvironment(envId))
             {   // CoppeliaSim quaternion, internally: w x y z
                 // CoppeliaSim quaternion, at interfaces: x y z w
-                C4Vector q;
+                CQuaternion q;
                 if (euler!=nullptr)
                     q.setEulerAngles(C3Vector(euler));
                 else
-                    q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
+                    q=CQuaternion(quat[3],quat[0],quat[1],quat[2]);
                 bool result=ikSetSphericalJointQuaternion(jointHandle,&q);
                 if (!result)
                      err=ikGetLastError();
@@ -3087,7 +3087,7 @@ void LUA_GETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C7Vector tr;
+                CPose tr;
                 result=ikGetObjectTransformation(objHandle,relHandle,&tr);
                 if (result)
                 {   // CoppeliaSim quaternion, internally: w x y z
@@ -3154,12 +3154,12 @@ void LUA_SETOBJECTTRANSFORMATION_CALLBACK(SScriptCallBack* p)
             if (ikSwitchEnvironment(envId))
             {   // CoppeliaSim quaternion, internally: w x y z
                 // CoppeliaSim quaternion, at interfaces: x y z w
-                C7Vector tr;
+                CPose tr;
                 tr.X=C3Vector(pos);
                 if (euler!=nullptr)
                     tr.Q.setEulerAngles(C3Vector(euler));
                 if (quat!=nullptr)
-                    tr.Q=C4Vector(quat[3],quat[0],quat[1],quat[2]);
+                    tr.Q=CQuaternion(quat[3],quat[0],quat[1],quat[2]);
                 bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
                 if (!result)
                      err=ikGetLastError();
@@ -3198,7 +3198,7 @@ void LUA_GETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
         {
             if (ikSwitchEnvironment(envId))
             {
-                C7Vector tr;
+                CPose tr;
                 result=ikGetObjectTransformation(objHandle,relHandle,&tr);
                 if (result)
                 {
@@ -3250,7 +3250,7 @@ void LUA_SETOBJECTMATRIX_CALLBACK(SScriptCallBack* p)
             {
                 C4X4Matrix _m;
                 _m.setData(m);
-                C7Vector tr(_m.getTransformation());
+                CPose tr(_m.getTransformation());
                 bool result=ikSetObjectTransformation(objHandle,relHandle,&tr);
                 if (!result)
                     err=ikGetLastError();
@@ -3293,7 +3293,7 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
             if ( (inData->size()>=5)&&(inData->at(3).int32Data.size()==1)&&(inData->at(4).doubleData.size()>=7) )
             { // tip arg, required
                 int constraints=inData->at(3).int32Data[0];
-                C7Vector tipPose;
+                CPose tipPose;
                 if (inData->at(4).doubleData.size()<12)
                     tipPose.setData(inData->at(4).doubleData.data(),true);
                 else
@@ -3302,9 +3302,9 @@ void LUA_COMPUTEJACOBIAN_CALLBACK(SScriptCallBack* p)
                     m.setData(inData->at(4).doubleData.data());
                     tipPose=m.getTransformation();
                 }
-                C7Vector targetPose(tipPose);
-                C7Vector altBase;
-                C7Vector* _altBase=nullptr;
+                CPose targetPose(tipPose);
+                CPose altBase;
+                CPose* _altBase=nullptr;
                 bool ok=true;
                 if (inData->size()>=6)
                 { // target arg, optional

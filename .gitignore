@@ -17,5 +17,6 @@ libsimIK.so.1.0
 libsimIK.so.1.0.0
 debug
 release
+build
 object_script.*.Debug
 object_script.*.Release
